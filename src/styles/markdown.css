@@ -16,6 +16,12 @@
   font-size: clamp(1rem, 1rem + (100cqi - 22.5rem) * 0.125 / 27.5, 1.125rem);
   line-height: clamp(1.4rem, 1.4rem + (100cqi - 22.5rem) * 0.4 / 27.5, 1.8rem);
   overflow-wrap: break-word;
+  /*
+   * Raw HTML can carry inline styles (KaTeX needs them, so they aren't
+   * sanitised). This keeps `position: fixed` and overflowing content inside
+   * the preview instead of covering the rest of the app.
+   */
+  contain: paint;
 }
 
 .md-block:first-child > :first-child {

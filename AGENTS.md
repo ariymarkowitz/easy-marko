@@ -38,7 +38,7 @@ Run `npm run status` before testing with a server. Use an existing server if one
 - Solid 2 conventions are in the cheatsheet.
 - Icons: import icon data from `lucide` and render it with `<Icon>`/`<IconButton>`.
 - CSS: use the tokens in `tokens.css` and add new ones only when needed. Prefer semantic class names; keep utility classes (like `.spacer`) for cases where they make the code simpler. Colours use `light-dark()`.
-- The preview is written with `innerHTML`. Keep markdown-it's `html` option off unless the output is sanitised.
+- The preview is written with `innerHTML` and markdown may contain raw HTML: pass rendered HTML through `sanitizeHtml` (`src/lib/sanitize.ts`) before it's shown or exported.
 - Keep `AGENTS.md` short: only include locations of important files and instructions. No extraneous information.
 
 ## Versioned skills (in node_modules; read on demand)

@@ -25,7 +25,7 @@ export default function Preview() {
               class="md-block"
               data-line={block().line}
               data-end-line={block().endLine}
-              // eslint-disable-next-line solid/no-innerhtml -- markdown-it runs with raw HTML disabled
+              // eslint-disable-next-line solid/no-innerhtml -- the renderer sanitises every block
               innerHTML={block().html}
             />
           )}
