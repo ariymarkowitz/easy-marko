@@ -13,7 +13,7 @@ import { VitePWA, type VitePluginPWAAPI } from 'vite-plugin-pwa';
 function precachePrerenderedShell(): Plugin {
   let pwa: VitePluginPWAAPI | undefined;
   return {
-    name: 'marko-down:precache-prerendered-shell',
+    name: 'easy-marko:precache-prerendered-shell',
     apply: 'build',
     configResolved(config) {
       pwa = config.plugins.find((plugin) => plugin.name === 'vite-plugin-pwa')?.api;
@@ -42,8 +42,8 @@ export default defineConfig({
       // (the top-level build.outDir, `dist`) would precache `client/…` URLs.
       outDir: 'dist/client',
       manifest: {
-        name: 'Marko-down Editor',
-        short_name: 'Marko-down',
+        name: 'Easy Marko',
+        short_name: 'Easy Marko',
         description: 'A minimal markdown editor that works offline.',
         start_url: '/',
         display: 'standalone',

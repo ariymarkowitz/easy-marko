@@ -1,6 +1,6 @@
 # Agent Guide
 
-Marko-down Editor is a single-page, client-only markdown editor that works offline and installs as a PWA. The product spec is in `spec.md`; feature status is tracked in `TODO.md`.
+Easy Marko is a single-page, client-only markdown editor that works offline and installs as a PWA. The product spec is in `spec.md`; feature status is tracked in `TODO.md`.
 
 This is a SolidJS 2.x project. Solid is not React: components run once (there is no re-render), reactivity is fine-grained through signals, and effects/memos have Solid-specific semantics. Do not port React patterns.
 

@@ -1,4 +1,4 @@
-# Welcome to Marko-down
+# Welcome to Easy Marko
 
 A minimal markdown editor that works offline.
 

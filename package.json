@@ -1,5 +1,5 @@
 {
-  "name": "marko-down-editor",
+  "name": "easy-marko",
   "version": "0.0.0",
   "description": "A web-based markdown editor with offline support, installable as a PWA",
   "type": "module",

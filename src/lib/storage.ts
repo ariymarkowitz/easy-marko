@@ -2,9 +2,9 @@
 // data) or full, and saved values can be corrupt, so every access is guarded.
 
 export const STORAGE_KEYS = {
-  theme: 'marko-down:theme',
-  settings: 'marko-down:settings',
-  documents: 'marko-down:documents',
+  theme: 'easy-marko:theme',
+  settings: 'easy-marko:settings',
+  documents: 'easy-marko:documents',
 } as const;
 
 export function readText(key: string): string | null {

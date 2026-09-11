@@ -1,4 +1,4 @@
-# Marko-down Editor
+# Easy Marko
 
 A minimal markdown editor that runs entirely in the browser, works offline, and installs as a Progressive Web App.
 
