@@ -70,6 +70,50 @@ describe('createMarkdownRenderer', () => {
   });
 });
 
+describe('code highlighting', () => {
+  // Languages stay loaded for the whole test run, so each test uses its own.
+  test('highlights fenced code once its language loads, re-rendering only that block', async () => {
+    const loads: Promise<void>[] = [];
+    const render = createMarkdownRenderer({ onLanguageLoad: (loaded) => loads.push(loaded) });
+    const source = '# Title\n\n```python\nimport os\n```\n';
+
+    const [, before] = render(source);
+    expect(before.html).toBe('<pre><code class="language-python">import os\n</code></pre>\n');
+    expect(loads).toHaveLength(1);
+
+    await Promise.all(loads);
+    const spy = vi.spyOn(markdown.renderer, 'render');
+    const [, after] = render(source);
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(after.html).toContain('<span class="tok-keyword">import</span>');
+
+    render(source);
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(loads).toHaveLength(1);
+  });
+
+  test('escapes highlighted code', async () => {
+    const loads: Promise<void>[] = [];
+    const render = createMarkdownRenderer({ onLanguageLoad: (loaded) => loads.push(loaded) });
+    const source = '```ruby\nputs "<b>&</b>"\n```';
+    render(source);
+    await Promise.all(loads);
+    const [block] = render(source);
+    expect(block.html).toContain('tok-');
+    expect(parse(block.html).querySelector('b')).toBeNull();
+    expect(parse(block.html)).toHaveTextContent('puts "<b>&</b>"');
+  });
+
+  test('leaves code in unknown languages as plain text', () => {
+    const loads: Promise<void>[] = [];
+    const [block] = createMarkdownRenderer({ onLanguageLoad: (loaded) => loads.push(loaded) })(
+      '```not-a-language\n<b>x</b>\n```',
+    );
+    expect(block.html).toBe('<pre><code class="language-not-a-language">&lt;b&gt;x&lt;/b&gt;\n</code></pre>\n');
+    expect(loads).toHaveLength(0);
+  });
+});
+
 describe('task lists', () => {
   const render = (source: string) =>
     parse(

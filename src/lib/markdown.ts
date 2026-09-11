@@ -1,5 +1,7 @@
+import type { LanguageDescription } from '@codemirror/language';
 import MarkdownIt from 'markdown-it';
 import katexModule from '@vscode/markdown-it-katex';
+import { findLanguage, highlight } from './highlight';
 import { sanitizeHtml } from './sanitize';
 
 // The plugin is CommonJS with `exports.default`. Node unwraps that for a
@@ -160,14 +162,59 @@ function mergeOpenHtml(tokens: Token[], blocks: BlockRange[]): BlockRange[] {
   return merged;
 }
 
+interface BlockOutput {
+  html: string;
+  /** Languages of fenced code left unhighlighted because they hadn't loaded. */
+  waitingFor: LanguageDescription[];
+}
+
+/** Renders tokens to sanitised HTML, highlighting code whose language has loaded. */
+function renderTokens(tokens: Token[], env: Env): BlockOutput {
+  const waitingFor = new Set<LanguageDescription>();
+  const options = {
+    ...markdown.options,
+    // Returning '' makes markdown-it escape the code as plain text.
+    highlight: (code: string, name: string) => {
+      const language = findLanguage(name);
+      if (!language) return '';
+      if (!language.support) waitingFor.add(language);
+      return highlight(code, language) ?? '';
+    },
+  };
+  const html = sanitizeHtml(markdown.renderer.render(tokens, options, env));
+  return { html, waitingFor: [...waitingFor] };
+}
+
+export interface MarkdownRendererOptions {
+  /**
+   * Called when fenced code needs a language that hasn't loaded, with a
+   * promise that settles once it has loaded or failed to. Rendering again
+   * after that highlights the code.
+   */
+  onLanguageLoad?: (loaded: Promise<void>) => void;
+}
+
 /**
  * Creates a renderer that splits a document into top-level blocks and caches
  * each block's HTML by its source text, so an edit only re-renders (and re-runs
- * KaTeX and the sanitiser for) the blocks it changed.
+ * KaTeX and the sanitiser for) the blocks it changed. Blocks whose code was
+ * waiting for a language re-render once it loads.
  */
-export function createMarkdownRenderer() {
-  let cache = new Map<string, string>();
+export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
+  let cache = new Map<string, BlockOutput>();
   let references = '';
+  const requested = new Set<LanguageDescription>();
+
+  const load = (language: LanguageDescription) => {
+    if (requested.has(language)) return;
+    requested.add(language);
+    options.onLanguageLoad?.(
+      language.load().then(
+        () => undefined,
+        (error: unknown) => console.error(`Couldn't load ${language.name} highlighting`, error),
+      ),
+    );
+  };
 
   return (source: string): RenderedBlock[] => {
     const env: Env = {};
@@ -182,7 +229,7 @@ export function createMarkdownRenderer() {
 
     // CodeMirror normalises line endings to \n, so line maps index into this.
     const lines = source.split('\n');
-    const nextCache = new Map<string, string>();
+    const nextCache = new Map<string, BlockOutput>();
     const occurrences = new Map<string, number>();
     const blocks: RenderedBlock[] = [];
 
@@ -193,16 +240,20 @@ export function createMarkdownRenderer() {
       const endLine = lastMap?.[1] ?? firstMap?.[1] ?? 0;
       const text = firstMap ? lines.slice(line, endLine).join('\n') : undefined;
 
-      const html =
-        (text !== undefined && cache.get(text)) ||
-        sanitizeHtml(markdown.renderer.render(tokens.slice(start, end), markdown.options, env));
-      if (text !== undefined) nextCache.set(text, html);
+      // Reuse a cached block unless a language it was waiting for has loaded since.
+      const cached = text === undefined ? undefined : cache.get(text);
+      const output =
+        cached && cached.waitingFor.every((language) => !language.support)
+          ? cached
+          : renderTokens(tokens.slice(start, end), env);
+      if (text !== undefined) nextCache.set(text, output);
+      output.waitingFor.forEach(load);
 
       const id = text ?? `\0token:${start}`;
       const seen = occurrences.get(id) ?? 0;
       occurrences.set(id, seen + 1);
 
-      blocks.push({ key: seen === 0 ? id : `${id}\0${seen}`, line, endLine, html });
+      blocks.push({ key: seen === 0 ? id : `${id}\0${seen}`, line, endLine, html: output.html });
     }
 
     cache = nextCache;

@@ -27,7 +27,8 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
   - Font size range isn't given in the spec; using 1rem → 1.125rem. **Confirm.**
 - [x] Source syntax highlighting, including fenced code languages
 - [ ] Highlight `$…$` / `$$…$$` maths in the source
-- [ ] Syntax highlighting for fenced code blocks in the preview
+- [x] Syntax highlighting for fenced code blocks in the preview
+  - Same Lezer parsers and `tok-*` colours as the source. Code shows unhighlighted until its language loads, then only the blocks waiting for it re-render.
 
 ## Features
 
