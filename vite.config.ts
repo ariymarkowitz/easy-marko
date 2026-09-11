@@ -47,8 +47,8 @@ export default defineConfig({
         description: 'A minimal markdown editor that works offline.',
         start_url: '/',
         display: 'standalone',
-        background_color: '#ffffff',
-        theme_color: '#f6f6f6',
+        background_color: '#fafafa',
+        theme_color: '#f1f1f1',
         icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
       },
       workbox: {
