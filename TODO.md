@@ -51,7 +51,8 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [x] PWA: web manifest and precaching service worker
 - [ ] Open `.md` files from the OS when installed (manifest `file_handlers` + `launchQueue`)
 - [ ] PNG and maskable icons for wider install support
-- [ ] Prompt to reload when a new version is available
+- [x] Prompt to reload when a new version is available
+  - A new service worker waits until Reload is clicked, then every open tab reloads. The documents backup syncs on `pagehide`, so unsaved edits survive. The app checks for updates hourly and when the page becomes visible, and says once when it's ready to work offline.
 - [ ] Drag and drop files to open them
 - [ ] Display checkboxes using `- [ ]` (and its checked variant)
 - [ ] Export as self-contained HTML document

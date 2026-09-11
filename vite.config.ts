@@ -34,7 +34,8 @@ export default defineConfig({
     // and `vite build` prerenders the shell into a static dist/client.
     solid({ start: true, diagnostics: true }),
     VitePWA({
-      registerType: 'autoUpdate',
+      // A new version waits until the user chooses to reload (see src/pwa.ts).
+      registerType: 'prompt',
       // Registered from src/pwa.ts: the prerendered shell doesn't go through
       // the plugin's HTML injection, so Document.tsx links the manifest too.
       injectRegister: false,
