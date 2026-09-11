@@ -60,3 +60,4 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [ ] Sanitise preview HTML, then allow raw HTML in markdown
 - [ ] Replace `alert()` error reporting with in-app notices
 - [x] Flush the pending auto-backup on `pagehide` (and when the page is hidden)
+- [x] Share the auto-backup between tabs: each sync merges this tab's documents with the stored backup (three-way, by document id, against the backup as the tab last synced it), and `storage` events and page show/hide sync straight away, so tabs pick up each other's edits instead of overwriting them

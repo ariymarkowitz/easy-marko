@@ -1,7 +1,9 @@
-import { createEffect, createStore, deep, onSettled, snapshot } from 'solid-js';
+import { createEffect, createStore, deep, onSettled, reconcile, snapshot } from 'solid-js';
+import { clamp } from '../lib/clamp';
 import { openFile, saveFile } from '../lib/files';
 import { hashText } from '../lib/hash';
-import { readJSON, STORAGE_KEYS, writeText } from '../lib/storage';
+import { mergeById } from '../lib/merge';
+import { parseJSON, readText, STORAGE_KEYS, writeText } from '../lib/storage';
 import welcome from '../content/welcome.md?raw';
 
 export interface MarkdownDocument {
@@ -24,9 +26,21 @@ function createDocument(name = 'Untitled.md', content = ''): MarkdownDocument {
   return { id: crypto.randomUUID(), name, content, savedHash: hashText(content) };
 }
 
+/** A backup's state, or undefined if it's missing, corrupt, or has no documents. */
+function parseBackup(json: string | null): DocumentsState | undefined {
+  const saved = parseJSON<DocumentsState | undefined>(json, undefined);
+  return saved?.documents?.length ? saved : undefined;
+}
+
+/**
+ * The backup as this tab last read or wrote it. All tabs of the app share the
+ * backup, so this is the common base for merging their changes; see syncBackup.
+ */
+let syncedBackup = readText(STORAGE_KEYS.documents);
+
 function initialState(): DocumentsState {
-  const saved = readJSON<DocumentsState | undefined>(STORAGE_KEYS.documents, undefined);
-  if (saved?.documents?.length) {
+  const saved = parseBackup(syncedBackup);
+  if (saved) {
     const hasActive = saved.documents.some((doc) => doc.id === saved.activeId);
     return hasActive ? saved : { ...saved, activeId: saved.documents[0].id };
   }
@@ -148,20 +162,55 @@ export async function saveActiveDocument(): Promise<void> {
   });
 }
 
-/** Debounced auto-backup of every open document to localStorage. Call once from the app root. */
-export function useDocumentsBackup(): void {
-  let pending: string | undefined;
-  const writePending = () => {
-    if (pending === undefined) return;
-    writeText(STORAGE_KEYS.documents, pending);
-    pending = undefined;
-  };
+const sameDocument = (a: MarkdownDocument, b: MarkdownDocument): boolean =>
+  a.name === b.name && a.content === b.content && a.savedHash === b.savedHash;
 
+/**
+ * Merges this tab's documents with the backup, shows the result, and writes
+ * it back. If another tab has written the backup since this tab last synced,
+ * each side keeps the documents it changed (this tab wins where both changed
+ * one), so neither overwrites the other's edits.
+ */
+function syncBackup(): void {
+  const stored = readText(STORAGE_KEYS.documents);
+  let next = snapshot(state);
+  const remote = stored === syncedBackup ? undefined : parseBackup(stored);
+  if (remote) {
+    const local = next;
+    const base = parseBackup(syncedBackup)?.documents ?? [];
+    const documents = mergeById(base, local.documents, remote.documents, sameDocument);
+    // Each tab closed a different document that the other didn't change.
+    if (documents.length === 0) documents.push(createDocument());
+    const activeIndex = local.documents.findIndex((doc) => doc.id === local.activeId);
+    const activeId = documents.some((doc) => doc.id === local.activeId)
+      ? local.activeId
+      : documents[clamp(activeIndex, 0, documents.length - 1)].id;
+    next = { documents, activeId };
+
+    for (const id of fileHandles.keys()) {
+      if (!documents.some((doc) => doc.id === id)) fileHandles.delete(id);
+    }
+    setState((draft) => {
+      reconcile(documents, 'id')(draft.documents);
+      draft.activeId = activeId;
+    });
+  }
+
+  const json = JSON.stringify(next);
+  // If the write fails, the stored backup (already merged) stays the base.
+  syncedBackup = json === stored || writeText(STORAGE_KEYS.documents, json) ? json : stored;
+}
+
+/**
+ * Auto-backup of every open document to localStorage, shared by all tabs of
+ * the app. Syncs 300ms after a change, and straight away when another tab
+ * writes the backup. Call once from the app root.
+ */
+export function useDocumentsBackup(): void {
   createEffect(
     () => JSON.stringify(snapshot(deep(state))),
-    (json) => {
-      pending = json;
-      const timer = setTimeout(writePending, 300);
+    () => {
+      const timer = setTimeout(syncBackup, 300);
       return () => clearTimeout(timer);
     },
     { name: 'documentsBackup' },
@@ -169,13 +218,21 @@ export function useDocumentsBackup(): void {
 
   // Write the last edits straight away when the page goes away. Mobile
   // browsers can discard a background tab without firing pagehide, so also
-  // write whenever the page is hidden.
+  // sync whenever the page is hidden. A page restored from the back/forward
+  // cache missed other tabs' storage events, so sync when it's shown too.
   onSettled(() => {
-    window.addEventListener('pagehide', writePending);
-    document.addEventListener('visibilitychange', writePending);
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === STORAGE_KEYS.documents) syncBackup();
+    };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('pagehide', syncBackup);
+    window.addEventListener('pageshow', syncBackup);
+    document.addEventListener('visibilitychange', syncBackup);
     return () => {
-      window.removeEventListener('pagehide', writePending);
-      document.removeEventListener('visibilitychange', writePending);
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('pagehide', syncBackup);
+      window.removeEventListener('pageshow', syncBackup);
+      document.removeEventListener('visibilitychange', syncBackup);
     };
   });
 }

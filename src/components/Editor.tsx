@@ -1,8 +1,9 @@
-import { createEffect, onSettled, untrack } from 'solid-js';
+import { createEffect, onSettled } from 'solid-js';
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { attachEditor, detachEditor, syncEditorState } from '../editor/controller';
 import { editorExtensions } from '../editor/extensions';
+import { textChange } from '../lib/text-change';
 import { activeDocument, documentsState, updateContent } from '../state/documents';
 
 export default function Editor() {
@@ -35,19 +36,24 @@ export default function Editor() {
       return {
         ids: documentsState.documents.map((d) => d.id),
         id: doc?.id,
-        // Only seeds a new editor state, so typing shouldn't re-run this effect.
-        content: untrack(() => doc?.content ?? ''),
+        content: doc?.content ?? '',
       };
     },
     ({ ids, id, content }) => {
       for (const key of states.keys()) {
         if (!ids.includes(key)) states.delete(key);
       }
-      if (!id || id === documentId) return;
-      if (documentId && ids.includes(documentId)) states.set(documentId, view.state);
-      view.setState(states.get(id) ?? EditorState.create({ doc: content, extensions }));
-      documentId = id;
-      syncEditorState(view.state);
+      if (!id) return;
+      if (id !== documentId) {
+        if (documentId && ids.includes(documentId)) states.set(documentId, view.state);
+        view.setState(states.get(id) ?? EditorState.create({ doc: content, extensions }));
+        documentId = id;
+        syncEditorState(view.state);
+      }
+      // Equal after typing. They differ when another tab changed the document,
+      // even while it wasn't active here.
+      const current = view.state.doc.toString();
+      if (content !== current) view.dispatch({ changes: textChange(current, content) });
     },
   );
 

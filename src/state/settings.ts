@@ -68,6 +68,8 @@ export function setSplitRatio(ratio: number): void {
 export function useSettingsPersistence(): void {
   createEffect(
     () => JSON.stringify(snapshot(deep(settings))),
-    (json) => writeText(STORAGE_KEYS.settings, json),
+    (json) => {
+      writeText(STORAGE_KEYS.settings, json);
+    },
   );
 }

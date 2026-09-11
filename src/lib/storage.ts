@@ -15,11 +15,14 @@ export function readText(key: string): string | null {
   }
 }
 
-export function writeText(key: string, value: string): void {
+/** Returns whether the value was saved. */
+export function writeText(key: string, value: string): boolean {
   try {
     localStorage.setItem(key, value);
+    return true;
   } catch {
     // Best effort: the backup is a convenience, not the source of truth.
+    return false;
   }
 }
 
@@ -31,12 +34,15 @@ export function removeKey(key: string): void {
   }
 }
 
-export function readJSON<T>(key: string, fallback: T): T {
-  const raw = readText(key);
+export function parseJSON<T>(raw: string | null, fallback: T): T {
   if (raw === null) return fallback;
   try {
     return JSON.parse(raw) as T;
   } catch {
     return fallback;
   }
+}
+
+export function readJSON<T>(key: string, fallback: T): T {
+  return parseJSON(readText(key), fallback);
 }
