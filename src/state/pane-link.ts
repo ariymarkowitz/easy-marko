@@ -7,7 +7,8 @@ import { createEffect, createSignal, flush } from 'solid-js';
 import { EditorView } from '@codemirror/view';
 import { editorView } from '../editor/controller';
 import { createScrollMap, mapOffset } from '../lib/scroll-map';
-import { openSplitView, settings } from './settings';
+import { revealPane, viewMode } from './layout';
+import { settings } from './settings';
 
 const [previewPane, setPreviewPane] = createSignal<HTMLElement>();
 
@@ -115,9 +116,9 @@ export function attachPreview(pane: HTMLElement): () => void {
  */
 export function jumpToPreview(line: number, offset: number): void {
   const pane = previewPane();
-  if (settings.viewMode === 'source' || !pane) {
+  if (viewMode() === 'source' || !pane) {
     pendingPreviewJump = { line, offset };
-    openSplitView();
+    revealPane('preview');
     return;
   }
   scrollPreviewToLine(pane, line, offset);
@@ -139,10 +140,10 @@ export function jumpToSource(event: MouseEvent): void {
   const position = doc.line(Math.min(line + 1, doc.lines)).from;
   const offset = event.clientY - pane.getBoundingClientRect().top;
 
-  if (settings.viewMode === 'preview') {
+  if (viewMode() === 'preview') {
     // The editor is hidden, so it can't be measured yet: show it, then let
     // CodeMirror do the scrolling once it has laid itself out.
-    openSplitView();
+    revealPane('source');
     flush();
     view.dispatch({
       selection: { anchor: position },
@@ -207,7 +208,7 @@ export function useScrollSync(): void {
     () => {
       const view = editorView();
       const pane = previewPane();
-      const active = settings.syncScroll && settings.viewMode === 'split';
+      const active = settings.syncScroll && viewMode() === 'split';
       return active && view && pane ? { view, pane } : undefined;
     },
     (panes) => panes && linkScrolling(panes.view, panes.pane),

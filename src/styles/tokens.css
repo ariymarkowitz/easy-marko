@@ -18,6 +18,8 @@
   --color-accent: light-dark(#3464e0, #7a9ff7);
   --color-accent-soft: light-dark(rgb(52 100 224 / 12%), rgb(122 159 247 / 16%));
   --color-selection: light-dark(rgb(52 100 224 / 22%), rgb(122 159 247 / 30%));
+  --color-backdrop: light-dark(rgb(0 0 0 / 15%), rgb(0 0 0 / 45%));
+  --shadow-overlay: 0 0 1.5rem light-dark(rgb(0 0 0 / 15%), rgb(0 0 0 / 50%));
 
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;

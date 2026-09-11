@@ -24,6 +24,7 @@ Run `npm run status` before testing with a server. Use an existing server if one
 - `src/Document.tsx`: the HTML shell (head tags, pre-paint theme script). Prerendered at build time; ships no JS.
 - `src/components/`: UI components.
 - `src/state/`: app state as module-level signals and stores, action functions, and `use*` hooks for their effects (persistence, cross-tab backup sync, theme sync).
+  - `layout.ts`: what the layout shows, from the settings and window width (narrow windows overlay the sidebar and have no split view). Read `viewMode()`/`sidebarOpen()` from it, not the stored settings.
   - `pane-link.ts`: scroll sync and alt-click jumps between the source and preview. Relies on the preview blocks' `data-line`/`data-end-line` attributes.
 - `src/editor/`: CodeMirror extensions/theme, plus the controller other modules use to reach the editor.
 - `src/lib/`: framework-free helpers (markdown rendering, files, storage, backup merging, scroll mapping, text stats).

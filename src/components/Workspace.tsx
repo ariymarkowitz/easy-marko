@@ -1,4 +1,5 @@
 import { Show } from 'solid-js';
+import { viewMode } from '../state/layout';
 import { setSplitRatio, settings, SPLIT_RATIO } from '../state/settings';
 import Editor from './Editor';
 import Preview from './Preview';
@@ -18,18 +19,18 @@ export default function Workspace() {
     <main
       ref={(element) => (workspace = element)}
       class="workspace"
-      data-view={settings.viewMode}
+      data-view={viewMode()}
       style={{ '--split': `${settings.splitRatio * 100}%` }}
     >
       <section
         id="source-pane"
         class="pane source-pane"
         aria-label="Source"
-        hidden={settings.viewMode === 'preview'}
+        hidden={viewMode() === 'preview'}
       >
         <Editor />
       </section>
-      <Show when={settings.viewMode === 'split'}>
+      <Show when={viewMode() === 'split'}>
         <Resizer
           label="Resize panes"
           controls="source-pane"
@@ -40,7 +41,7 @@ export default function Workspace() {
           onChange={setSplitRatio}
         />
       </Show>
-      <Show when={settings.viewMode !== 'source'}>
+      <Show when={viewMode() !== 'source'}>
         <Preview />
       </Show>
     </main>

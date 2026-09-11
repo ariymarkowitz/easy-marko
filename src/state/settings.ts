@@ -5,9 +5,14 @@ import { readJSON, STORAGE_KEYS, writeText } from '../lib/storage';
 export type ViewMode = 'source' | 'split' | 'preview';
 export type PanelMode = Exclude<ViewMode, 'split'>;
 
+/**
+ * The user's layout choices, as they apply to a wide window. state/layout.ts
+ * derives what's shown from them (narrow windows have no split view, for
+ * example) and has the actions behind the layout buttons.
+ */
 export interface Settings {
   viewMode: ViewMode;
-  /** The single-pane view that toggling split view off returns to. */
+  /** The single-pane view that toggling split view off returns to, and that narrow windows show instead of split view. */
   lastPanel: PanelMode;
   sidebarOpen: boolean;
   sidebarWidth: number;
@@ -39,26 +44,15 @@ const [settings, setSettings] = createStore<Settings>({
 
 export { settings };
 
-/**
- * Handles a click on a view button. Clicking the active single-pane view
- * opens split view; clicking split view while active returns to the last
- * single-pane view.
- */
-export function selectViewMode(mode: ViewMode): void {
+export function setViewMode(mode: ViewMode): void {
   setSettings((draft) => {
-    if (mode === 'split') {
-      draft.viewMode = draft.viewMode === 'split' ? draft.lastPanel : 'split';
-    } else {
-      draft.viewMode = draft.viewMode === mode ? 'split' : mode;
-      draft.lastPanel = mode;
-    }
+    draft.viewMode = mode;
   });
 }
 
-/** Shows both panes. Leaving split view later returns to the last single-pane view. */
-export function openSplitView(): void {
+export function setLastPanel(mode: PanelMode): void {
   setSettings((draft) => {
-    draft.viewMode = 'split';
+    draft.lastPanel = mode;
   });
 }
 
@@ -68,9 +62,9 @@ export function toggleSyncScroll(): void {
   });
 }
 
-export function toggleSidebar(): void {
+export function setSidebarOpen(open: boolean): void {
   setSettings((draft) => {
-    draft.sidebarOpen = !draft.sidebarOpen;
+    draft.sidebarOpen = open;
   });
 }
 
