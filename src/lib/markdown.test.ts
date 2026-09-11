@@ -8,7 +8,11 @@ afterEach(() => {
 describe('createMarkdownRenderer', () => {
   test('splits top-level blocks and records their source line', () => {
     const blocks = createMarkdownRenderer()('# Title\n\nSome *text*\n\n- a\n- b\n');
-    expect(blocks.map((block) => block.line)).toEqual([0, 2, 4]);
+    expect(blocks.map((block) => [block.line, block.endLine])).toEqual([
+      [0, 1],
+      [2, 3],
+      [4, 6],
+    ]);
     expect(blocks[0].html).toContain('<h1>Title</h1>');
     expect(blocks[1].html).toContain('<em>text</em>');
     expect(blocks[2].html).toContain('<ul>');

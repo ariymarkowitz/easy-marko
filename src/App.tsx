@@ -13,6 +13,7 @@ import Workspace from './components/Workspace';
 import { registerServiceWorker } from './pwa';
 import { useShortcuts } from './shortcuts';
 import { useDocumentsBackup, useWindowTitle } from './state/documents';
+import { useScrollSync } from './state/pane-link';
 import { setSidebarWidth, settings, useSettingsPersistence } from './state/settings';
 import { useTheme } from './state/theme';
 
@@ -22,6 +23,7 @@ export default function App() {
   useDocumentsBackup();
   useWindowTitle();
   useShortcuts();
+  useScrollSync();
   onSettled(registerServiceWorker);
 
   return (

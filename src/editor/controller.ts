@@ -7,20 +7,19 @@ import { openSearchPanel } from '@codemirror/search';
 import type { EditorState } from '@codemirror/state';
 import type { EditorView } from '@codemirror/view';
 
-let view: EditorView | undefined;
-
+const [editorView, setEditorView] = createSignal<EditorView>();
 const [cursor, setCursor] = createSignal({ line: 1, column: 1 });
 const [canUndo, setCanUndo] = createSignal(false);
 const [canRedo, setCanRedo] = createSignal(false);
 
-export { canRedo, canUndo, cursor };
+export { canRedo, canUndo, cursor, editorView };
 
 export function attachEditor(next: EditorView): void {
-  view = next;
+  setEditorView(next);
 }
 
 export function detachEditor(): void {
-  view = undefined;
+  setEditorView(undefined);
 }
 
 /** Publishes cursor position and undo/redo availability. Call when the editor state changes. */
@@ -33,6 +32,7 @@ export function syncEditorState(state: EditorState): void {
 }
 
 function run(command: (target: EditorView) => boolean): void {
+  const view = editorView();
   if (!view) return;
   command(view);
   view.focus();

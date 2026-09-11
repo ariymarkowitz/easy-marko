@@ -4,6 +4,7 @@ import { EditorView } from '@codemirror/view';
 import { attachEditor, detachEditor, syncEditorState } from '../editor/controller';
 import { editorExtensions } from '../editor/extensions';
 import { activeDocument, documentsState, updateContent } from '../state/documents';
+import { jumpToPreview } from '../state/pane-link';
 
 export default function Editor() {
   /** One state per document, so each keeps its own undo history and selection. */
@@ -17,6 +18,16 @@ export default function Editor() {
         updateContent(documentId, update.state.doc.toString());
       }
       if (update.docChanged || update.selectionSet) syncEditorState(update.state);
+    }),
+    EditorView.domEventHandlers({
+      click: (event, target) => {
+        if (!event.altKey) return false;
+        const position = target.posAtCoords({ x: event.clientX, y: event.clientY });
+        if (position === null) return false;
+        const line = target.state.doc.lineAt(position).number - 1;
+        jumpToPreview(line, event.clientY - target.scrollDOM.getBoundingClientRect().top);
+        return false;
+      },
     }),
   ];
 
