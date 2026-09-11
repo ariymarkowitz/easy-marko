@@ -15,7 +15,7 @@ import {
 } from 'lucide';
 import { canRedo, canUndo, editorCommands } from '../editor/controller';
 import { newDocument, openDocument, saveActiveDocument } from '../state/documents';
-import { setSettings, settings, type ViewMode } from '../state/settings';
+import { selectViewMode, setSettings, settings, type ViewMode } from '../state/settings';
 import { theme, toggleTheme } from '../state/theme';
 import type { IconNode } from './Icon';
 import IconButton from './IconButton';
@@ -56,11 +56,7 @@ export default function Toolbar() {
             icon={item.icon}
             label={item.label}
             pressed={settings.viewMode === item.mode}
-            onClick={() =>
-              setSettings((draft) => {
-                draft.viewMode = item.mode;
-              })
-            }
+            onClick={() => selectViewMode(item.mode)}
           />
         )}
       </For>
