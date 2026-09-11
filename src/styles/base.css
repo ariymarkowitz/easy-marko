@@ -227,6 +227,20 @@ button,
 }
 
 .document-item:hover .document-close,
+.document-item.unsaved .document-close,
 .document-close:focus-visible {
   opacity: 1;
+}
+
+/* Unsaved documents show a dot in place of the close icon until it's hovered or focused. */
+.document-item.unsaved:not(:hover) .document-close:not(:focus-visible) .icon {
+  display: none;
+}
+
+.document-item.unsaved:not(:hover) .document-close:not(:focus-visible)::after {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: currentColor;
 }

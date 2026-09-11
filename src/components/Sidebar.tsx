@@ -1,6 +1,11 @@
-import { For } from 'solid-js';
+import { createMemo, For } from 'solid-js';
 import { X } from 'lucide';
-import { closeDocument, documentsState, selectDocument } from '../state/documents';
+import {
+  closeDocument,
+  documentsState,
+  hasUnsavedChanges,
+  selectDocument,
+} from '../state/documents';
 import IconButton from './IconButton';
 
 export default function Sidebar() {
@@ -9,24 +14,27 @@ export default function Sidebar() {
       <h2 class="sidebar-heading">Documents</h2>
       <ul class="document-list">
         <For each={documentsState.documents}>
-          {(doc) => (
-            <li class="document-item">
-              <button
-                type="button"
-                class="document-name"
-                aria-current={doc.id === documentsState.activeId ? 'true' : undefined}
-                onClick={() => selectDocument(doc.id)}
-              >
-                {doc.name}
-              </button>
-              <IconButton
-                icon={X}
-                label={`Close ${doc.name}`}
-                class="document-close"
-                onClick={() => closeDocument(doc.id)}
-              />
-            </li>
-          )}
+          {(doc) => {
+            const unsaved = createMemo(() => hasUnsavedChanges(doc), { name: 'unsaved' });
+            return (
+              <li class={['document-item', { unsaved: unsaved() }]}>
+                <button
+                  type="button"
+                  class="document-name"
+                  aria-current={doc.id === documentsState.activeId ? 'true' : undefined}
+                  onClick={() => selectDocument(doc.id)}
+                >
+                  {doc.name}
+                </button>
+                <IconButton
+                  icon={X}
+                  label={unsaved() ? `Close ${doc.name} (unsaved changes)` : `Close ${doc.name}`}
+                  class="document-close"
+                  onClick={() => closeDocument(doc.id)}
+                />
+              </li>
+            );
+          }}
         </For>
       </ul>
     </aside>

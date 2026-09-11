@@ -13,7 +13,7 @@ import Workspace from './components/Workspace';
 import { clamp } from './lib/clamp';
 import { registerServiceWorker } from './pwa';
 import { useShortcuts } from './shortcuts';
-import { useDocumentsBackup } from './state/documents';
+import { useDocumentsBackup, useWindowTitle } from './state/documents';
 import { setSettings, settings, useSettingsPersistence } from './state/settings';
 import { useTheme } from './state/theme';
 
@@ -21,6 +21,7 @@ export default function App() {
   useTheme();
   useSettingsPersistence();
   useDocumentsBackup();
+  useWindowTitle();
   useShortcuts();
   onSettled(registerServiceWorker);
 

@@ -37,8 +37,9 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [x] New, open, and save (File System Access API, with file input/download fallback)
 - [x] Auto-backup of open documents to localStorage
 - [ ] Persist file handles in IndexedDB so Save writes to the same file after a reload
-- [ ] Unsaved-changes indicator; confirm before closing unsaved documents
-- [ ] Rename documents; avoid opening the same file twice
+- [x] Unsaved-changes indicator (sidebar dot); confirm before closing unsaved documents
+- [x] Avoid opening the same file twice (only detectable while the file handle is held; see IndexedDB item)
+- [ ] Rename documents
 - [ ] Sync scrolling between panes in split view, with a toggle
 - [ ] Alt-click in the preview jumps to the source, and vice versa (preview blocks already carry `data-line`)
 - [x] Cursor line and column
@@ -58,4 +59,4 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 
 - [ ] Sanitise preview HTML, then allow raw HTML in markdown
 - [ ] Replace `alert()` error reporting with in-app notices
-- [ ] Flush the pending auto-backup on `pagehide`
+- [x] Flush the pending auto-backup on `pagehide` (and when the page is hidden)
