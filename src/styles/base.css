@@ -134,8 +134,15 @@ button,
 }
 
 .resizer:hover,
-.resizer:active {
+.resizer:active,
+.resizer:focus-visible {
   background-color: var(--color-accent);
+}
+
+/* An outline would hide the 1px line, so focus thickens the line instead. */
+.resizer:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--color-accent);
 }
 
 /* Controls */

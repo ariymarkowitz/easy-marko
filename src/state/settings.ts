@@ -17,6 +17,12 @@ export interface Settings {
   syncScroll: boolean;
 }
 
+/** The sidebar width's limits, in pixels, and its keyboard resize steps. */
+export const SIDEBAR_WIDTH = { min: 160, max: 480, step: 10, largeStep: 50 } as const;
+
+/** The split ratio's limits and its keyboard resize steps. */
+export const SPLIT_RATIO = { min: 0.2, max: 0.8, step: 0.02, largeStep: 0.1 } as const;
+
 const defaults: Settings = {
   viewMode: 'split',
   lastPanel: 'source',
@@ -70,13 +76,14 @@ export function toggleSidebar(): void {
 
 export function setSidebarWidth(width: number): void {
   setSettings((draft) => {
-    draft.sidebarWidth = Math.round(clamp(width, 160, 480));
+    draft.sidebarWidth = Math.round(clamp(width, SIDEBAR_WIDTH.min, SIDEBAR_WIDTH.max));
   });
 }
 
 export function setSplitRatio(ratio: number): void {
   setSettings((draft) => {
-    draft.splitRatio = clamp(ratio, 0.2, 0.8);
+    // Rounded so keyboard steps don't pile up floating-point error (0.43999…).
+    draft.splitRatio = Math.round(clamp(ratio, SPLIT_RATIO.min, SPLIT_RATIO.max) * 10000) / 10000;
   });
 }
 

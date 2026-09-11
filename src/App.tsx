@@ -14,7 +14,12 @@ import { registerServiceWorker } from './pwa';
 import { useShortcuts } from './shortcuts';
 import { useDocumentsBackup, useWindowTitle } from './state/documents';
 import { useScrollSync } from './state/pane-link';
-import { setSidebarWidth, settings, useSettingsPersistence } from './state/settings';
+import {
+  setSidebarWidth,
+  settings,
+  SIDEBAR_WIDTH,
+  useSettingsPersistence,
+} from './state/settings';
 import { useTheme } from './state/theme';
 
 export default function App() {
@@ -33,7 +38,14 @@ export default function App() {
         <Show when={settings.sidebarOpen}>
           <Sidebar />
           {/* The sidebar starts at the window's left edge, so the pointer's x is its width. */}
-          <Resizer label="Resize sidebar" onResize={setSidebarWidth} />
+          <Resizer
+            label="Resize sidebar"
+            controls="sidebar"
+            value={settings.sidebarWidth}
+            range={SIDEBAR_WIDTH}
+            onDrag={setSidebarWidth}
+            onChange={setSidebarWidth}
+          />
         </Show>
         <Workspace />
       </div>

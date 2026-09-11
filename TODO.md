@@ -14,7 +14,8 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [x] Source, preview, and side-by-side views
 - [x] Resizable sidebar and split panes
 - [x] Small toolbar and status bar; editor/preview fill the rest
-- [ ] Keyboard-accessible resizers (arrow keys)
+- [x] Keyboard-accessible resizers (arrow keys)
+  - Focusable separators: Left/Right move a step, Shift+Left/Right a larger step, Home/End jump to the limits.
 - [ ] Narrow screens: sidebar as an overlay, no split view below ~700px
 
 ## Presentation and style
