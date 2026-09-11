@@ -1,5 +1,6 @@
 import { createEffect, createStore, deep, flush, onSettled, reconcile, snapshot } from 'solid-js';
 import { clamp } from '../lib/clamp';
+import { exportHtml } from '../lib/export-html';
 import { type OpenedFile, openFile, saveFile } from '../lib/files';
 import { deleteHandles, readHandles, storeHandle } from '../lib/handle-store';
 import { hashText } from '../lib/hash';
@@ -171,7 +172,7 @@ export function closeDocument(id: string): void {
   });
 }
 
-function reportFileError(action: 'open' | 'save', error: unknown): undefined {
+function reportFileError(action: 'open' | 'save' | 'export', error: unknown): undefined {
   console.error(error);
   const reason = error instanceof Error ? error.message : String(error);
   showNotice(`Couldn't ${action} the file: ${reason}`, { tone: 'error' });
@@ -266,6 +267,13 @@ export async function saveActiveDocument(): Promise<void> {
     // The content as written, so edits made while saving still count as unsaved.
     target.savedHash = hashText(content);
   });
+}
+
+/** Saves a standalone HTML copy of the active document. Its markdown file stays the one Save writes to. */
+export async function exportActiveDocument(): Promise<void> {
+  const doc = activeDocument();
+  if (!doc) return;
+  await exportHtml(doc.name, doc.content).catch((error) => reportFileError('export', error));
 }
 
 const sameDocument = (a: MarkdownDocument, b: MarkdownDocument): boolean =>

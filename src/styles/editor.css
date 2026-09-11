@@ -1,6 +1,7 @@
 /*
- * Source syntax colours, on the tok-* classes from the highlighters in
- * editor/extensions.ts. Structural editor styles are in its EditorView.theme.
+ * Syntax colours, on the tok-* classes from the highlighters in
+ * editor/extensions.ts. The preview's fenced code uses the same classes
+ * (lib/highlight.ts). Structural editor styles are in its EditorView.theme.
  */
 
 .tok-heading,

@@ -16,6 +16,12 @@
   font-size: clamp(1rem, 1rem + (100cqi - 22.5rem) * 0.125 / 27.5, 1.125rem);
   line-height: clamp(1.4rem, 1.4rem + (100cqi - 22.5rem) * 0.4 / 27.5, 1.8rem);
   overflow-wrap: break-word;
+  /*
+   * Raw HTML can carry inline styles (KaTeX needs them, so they aren't
+   * sanitised). This keeps `position: fixed` and overflowing content inside
+   * the preview instead of covering the rest of the app.
+   */
+  contain: paint;
 }
 
 .md-block:first-child > :first-child {
@@ -73,6 +79,37 @@
 
 .markdown :is(ul, ol) {
   padding-left: 1.5em;
+}
+
+/* Task list items: a read-only checkbox takes the bullet's place. */
+.markdown .task-list-item {
+  list-style: none;
+}
+
+.markdown .task-list-item-checkbox {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  width: 1em;
+  height: 1em;
+  /* Its width plus margins nets to zero, so the text lines up with other items. */
+  margin: 0 0.5em 0 -1.5em;
+  vertical-align: -0.15em;
+  border: 1.5px solid var(--color-text-muted);
+  border-radius: 4px;
+}
+
+.markdown .task-list-item-checkbox:checked {
+  border-color: var(--color-accent);
+  background-color: var(--color-accent);
+}
+
+.markdown .task-list-item-checkbox:checked::before {
+  content: '';
+  width: 0.65em;
+  height: 0.65em;
+  background-color: var(--color-bg);
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0, 43% 62%);
 }
 
 .markdown blockquote {

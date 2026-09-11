@@ -89,6 +89,8 @@ export default defineConfig({
     setupFiles: ['./vitest-setup.ts'],
     // Agent worktrees live in .claude/worktrees; their tests would share this run's globals.
     exclude: [...configDefaults.exclude, '.claude/**'],
+    // Vitest empties CSS imports by default; the HTML export inlines ?raw ones.
+    css: { include: [/\.css\?raw$/] },
     projects: [
       { extends: true, test: { name: 'shared', isolate: false, exclude: mockingTests } },
       { extends: true, test: { name: 'isolated', include: mockingTests } },

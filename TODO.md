@@ -31,7 +31,8 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [x] Source syntax highlighting, including fenced code languages
 - [x] Highlight `$…$` / `$$…$$` maths in the source
   - `src/editor/math.ts` follows the preview's delimiter rules, quirks included: a `$$` block runs past blank lines to the next line containing `$$` (or the end of its container). One difference: in a blockquote the block ends with the last `>` line, where the preview also takes lazy unquoted lines.
-- [ ] Syntax highlighting for fenced code blocks in the preview
+- [x] Syntax highlighting for fenced code blocks in the preview
+  - Same Lezer parsers and `tok-*` colours as the source. Code shows unhighlighted until its language loads, then only the blocks waiting for it re-render.
 
 ## Features
 
@@ -53,7 +54,8 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [x] Cursor line and column
 - [x] Word, character, and line counts
 - [x] Incremental preview: per-block HTML cache and keyed DOM reuse
-- [ ] Skip inline parsing for unchanged blocks (the whole document is still tokenised on each change)
+- [x] Skip inline parsing for unchanged blocks
+  - The whole document is still split into blocks on each change; inline parsing and rendering only run for blocks that aren't cached.
 - [x] Find and replace (CodeMirror search panel)
 - [x] PWA: web manifest and precaching service worker
 - [x] Open `.md` files from the OS when installed (manifest `file_handlers` + `launchQueue`)
@@ -64,12 +66,16 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
   - A new service worker waits until Reload is clicked, then every open tab reloads. The documents backup syncs on `pagehide`, so unsaved edits survive. The app checks for updates hourly and when the page becomes visible, and says once when it's ready to work offline.
 - [x] Drag and drop files to open them
   - Dropped files open with their handles where the browser gives them (Chromium), so Save writes back to them. Files that aren't text, and folders, are reported instead of opened. Dragged text still drops into the editor.
-- [ ] Display checkboxes using `- [ ]` (and its checked variant)
-- [ ] Export as self-contained HTML document
+- [x] Display checkboxes using `- [ ]` (and its checked variant)
+  - Read-only (disabled); clicking them doesn't edit the source.
+- [x] Export as self-contained HTML document
+  - Inlines the tokens, syntax and preview CSS; KaTeX's CSS and WOFF2 fonts (about 400 KB) only when the document has maths. Follows `prefers-color-scheme`.
 
 ## Hardening
 
-- [ ] Sanitise preview HTML, then allow raw HTML in markdown
+- [x] Sanitise preview HTML, then allow raw HTML in markdown
+  - DOMPurify, without `<style>` and `<form>`. The preview clips raw HTML (`contain: paint`), so inline `position: fixed` can't cover the app.
+  - A raw HTML block that leaves elements open (like `<details>` around markdown) is grouped with the blocks up to the one that closes them.
 - [x] Replace `alert()` error reporting with in-app notices
   - `showNotice` in `state/notices.ts`. Info notices close after 6s (paused while hovered or focused); errors stay until dismissed. The unsaved-changes `confirm()` stays.
 - [x] Flush the pending auto-backup on `pagehide` (and when the page is hidden)

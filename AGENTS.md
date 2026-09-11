@@ -28,7 +28,7 @@ Run `npm run status` before testing with a server. Use an existing server if one
   - `layout.ts`: what the layout shows, from the settings and window width (narrow windows overlay the sidebar and have no split view). Read `viewMode()`/`sidebarOpen()` from it, not the stored settings.
   - `pane-link.ts`: scroll sync and alt-click jumps between the source and preview. Relies on the preview blocks' `data-line`/`data-end-line` attributes.
 - `src/editor/`: CodeMirror extensions/theme, plus the controller other modules use to reach the editor.
-- `src/lib/`: framework-free helpers (markdown rendering, files, storage, backup merging, scroll mapping, text stats).
+- `src/lib/`: framework-free helpers (markdown rendering, HTML sanitising, code highlighting, HTML export, files, storage, backup merging, scroll mapping, text stats).
 - `src/shortcuts.ts`: app-wide keyboard shortcuts. `src/pwa.ts`: service worker registration.
 - `src/content/welcome.md`: the document opened on first run.
 - `src/styles/`: `tokens.css` (palette, type, spacing, transitions), `base.css` (layout and controls), `editor.css` (syntax colours), `markdown.css` (preview typography).
@@ -40,7 +40,7 @@ Run `npm run status` before testing with a server. Use an existing server if one
 - Solid 2 conventions are in the cheatsheet.
 - Icons: import icon data from `lucide` and render it with `<Icon>`/`<IconButton>`.
 - CSS: use the tokens in `tokens.css` and add new ones only when needed. Prefer semantic class names; keep utility classes (like `.spacer`) for cases where they make the code simpler. Colours use `light-dark()`.
-- The preview is written with `innerHTML`. Keep markdown-it's `html` option off unless the output is sanitised.
+- The preview is written with `innerHTML` and markdown may contain raw HTML: pass rendered HTML through `sanitizeHtml` (`src/lib/sanitize.ts`) before it's shown or exported.
 - Keep `AGENTS.md` short: only include locations of important files and instructions. No extraneous information.
 
 ## Versioned skills (in node_modules; read on demand)
