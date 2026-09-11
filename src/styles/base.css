@@ -247,6 +247,18 @@ button,
   }
 }
 
+/* The input that replaces a document's name while it's renamed. */
+.document-rename {
+  font: inherit;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  border-radius: var(--radius);
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+  text-overflow: clip;
+  cursor: text;
+}
+
 /* Drop indicator: outlines the window while files are dragged over it. */
 
 .drop-indicator {

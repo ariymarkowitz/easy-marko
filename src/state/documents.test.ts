@@ -10,7 +10,9 @@ import {
   type MarkdownDocument,
   newDocument,
   openDocument,
+  renameDocument,
   saveActiveDocument,
+  selectDocument,
   updateContent,
   useDocumentsBackup,
 } from './documents';
@@ -87,6 +89,45 @@ describe('unsaved changes', () => {
     await saveActiveDocument();
     flush();
     expect(hasUnsavedChanges(doc)).toBe(true);
+  });
+});
+
+describe('renameDocument', () => {
+  test('trims the name and refuses empty names', () => {
+    const doc = addDocument();
+    expect(renameDocument(doc.id, '  Ideas.md ')).toBe(true);
+    flush();
+    expect(doc.name).toBe('Ideas.md');
+    expect(renameDocument(doc.id, '   ')).toBe(false);
+    flush();
+    expect(doc.name).toBe('Ideas.md');
+  });
+
+  test('unlinks a document from its file until it gets the file name back', async () => {
+    const handle = fakeHandle('Linked.md');
+    vi.mocked(openFile).mockResolvedValueOnce({ name: 'Linked.md', content: '', handle });
+    await openDocument();
+    flush();
+    const doc = activeDocument()!;
+
+    renameDocument(doc.id, 'Renamed.md');
+    flush();
+    vi.mocked(saveFile).mockResolvedValueOnce(undefined);
+    await saveActiveDocument();
+    expect(saveFile).toHaveBeenLastCalledWith('Renamed.md', '', undefined);
+
+    // Opening the file again opens a new document.
+    vi.mocked(openFile).mockResolvedValueOnce({ name: 'Linked.md', content: '', handle: fakeHandle('Linked.md') });
+    await openDocument();
+    flush();
+    expect(activeDocument()?.id).not.toBe(doc.id);
+
+    selectDocument(doc.id);
+    renameDocument(doc.id, 'Linked.md');
+    flush();
+    vi.mocked(saveFile).mockResolvedValueOnce(undefined);
+    await saveActiveDocument();
+    expect(saveFile).toHaveBeenLastCalledWith('Linked.md', '', handle);
   });
 });
 

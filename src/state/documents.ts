@@ -177,11 +177,23 @@ function reportFileError(action: 'open' | 'save', error: unknown): undefined {
   return undefined;
 }
 
+/**
+ * The handle of the file that `doc` was opened from or last saved to, while
+ * the document still has the file's name. Renaming a document unlinks it from
+ * its file: the next save asks where to save it under the new name, and
+ * opening the file again opens a new document. Renaming it back relinks it.
+ */
+function linkedFileHandle(doc: MarkdownDocument): FileSystemFileHandle | undefined {
+  const handle = fileHandles.get(doc.id);
+  return handle?.name === doc.name ? handle : undefined;
+}
+
 /** The id of the open document backed by the same file as `handle`, if any. */
 async function findDocumentForFile(handle: FileSystemFileHandle): Promise<string | undefined> {
   await handlesLoaded;
-  for (const [id, existing] of fileHandles) {
-    if (await existing.isSameEntry(handle)) return id;
+  for (const doc of state.documents) {
+    const existing = linkedFileHandle(doc);
+    if (existing && (await existing.isSameEntry(handle))) return doc.id;
   }
   return undefined;
 }
@@ -224,12 +236,25 @@ export async function openFiles(files: Iterable<Promise<OpenedFile>>): Promise<v
   }
 }
 
+/**
+ * Renames a document, trimming the name. Returns false, leaving the name as
+ * it was, if the name is empty. See linkedFileHandle for documents with files.
+ */
+export function renameDocument(id: string, name: string): boolean {
+  const trimmed = name.trim();
+  if (!trimmed) return false;
+  updateDocument(id, (doc) => {
+    doc.name = trimmed;
+  });
+  return true;
+}
+
 export async function saveActiveDocument(): Promise<void> {
   const doc = activeDocument();
   if (!doc) return;
   const { id, name, content } = doc;
   await handlesLoaded;
-  const handle = fileHandles.get(id);
+  const handle = linkedFileHandle(doc);
   const saved = await saveFile(name, content, handle).catch((error) =>
     reportFileError('save', error),
   );

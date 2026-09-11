@@ -40,7 +40,9 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
   - The first save to a restored handle asks for write permission, and asks where to save if it's refused. Tabs share the handles; closing a document in any tab removes its handle.
 - [x] Unsaved-changes indicator (sidebar dot); confirm before closing unsaved documents
 - [x] Avoid opening the same file twice (matched by file handle, so files opened without the File System Access API can't be matched)
-- [ ] Rename documents
+- [x] Rename documents
+  - Double-click a name in the sidebar, or press F2 on it. Enter or leaving the input renames; Escape cancels; empty names aren't allowed.
+  - A renamed document is unlinked from its file: the next Save asks where to save it under the new name, and opening the old file opens a new document. Renaming it back to the file's name links it again. This leaves files on disk alone (`FileSystemHandle.move()` isn't widely supported for local files, and a sidebar rename that moves files would be surprising).
 - [x] Sync scrolling between panes in split view, with a toggle
 - [x] Alt-click in the preview jumps to the source, and vice versa
   - Opens split view when the other pane is hidden.
