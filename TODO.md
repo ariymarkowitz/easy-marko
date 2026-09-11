@@ -40,10 +40,13 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [x] Light/dark toggle: stores an override only when it differs from the system preference
 - [x] New, open, and save (File System Access API, with file input/download fallback)
 - [x] Auto-backup of open documents to localStorage
-- [ ] Persist file handles in IndexedDB so Save writes to the same file after a reload
+- [x] Persist file handles in IndexedDB so Save writes to the same file after a reload
+  - The first save to a restored handle asks for write permission, and asks where to save if it's refused. Tabs share the handles; closing a document in any tab removes its handle.
 - [x] Unsaved-changes indicator (sidebar dot); confirm before closing unsaved documents
-- [x] Avoid opening the same file twice (only detectable while the file handle is held; see IndexedDB item)
-- [ ] Rename documents
+- [x] Avoid opening the same file twice (matched by file handle, so files opened without the File System Access API can't be matched)
+- [x] Rename documents
+  - Double-click a name in the sidebar, or press F2 on it. Enter or leaving the input renames; Escape cancels; empty names aren't allowed.
+  - A renamed document is unlinked from its file: the next Save asks where to save it under the new name, and opening the old file opens a new document. Renaming it back to the file's name links it again. This leaves files on disk alone (`FileSystemHandle.move()` isn't widely supported for local files, and a sidebar rename that moves files would be surprising).
 - [x] Sync scrolling between panes in split view, with a toggle
 - [x] Alt-click in the preview jumps to the source, and vice versa
   - Opens split view when the other pane is hidden. Narrow screens switch to the other pane instead.
@@ -53,12 +56,14 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [ ] Skip inline parsing for unchanged blocks (the whole document is still tokenised on each change)
 - [x] Find and replace (CodeMirror search panel)
 - [x] PWA: web manifest and precaching service worker
-- [ ] Open `.md` files from the OS when installed (manifest `file_handlers` + `launchQueue`)
+- [x] Open `.md` files from the OS when installed (manifest `file_handlers` + `launchQueue`)
+  - `launch_handler` is `focus-existing`, so launched files open in an open window instead of a new one. Only the manifest and a fake queue are tested; the real launch needs the installed app.
 - [x] PNG and maskable icons for wider install support
   - Generated from `public/icon.svg` by `node scripts/icons.mjs` (needs `rsvg-convert`); rerun it after changing the SVG.
 - [x] Prompt to reload when a new version is available
   - A new service worker waits until Reload is clicked, then every open tab reloads. The documents backup syncs on `pagehide`, so unsaved edits survive. The app checks for updates hourly and when the page becomes visible, and says once when it's ready to work offline.
-- [ ] Drag and drop files to open them
+- [x] Drag and drop files to open them
+  - Dropped files open with their handles where the browser gives them (Chromium), so Save writes back to them. Files that aren't text, and folders, are reported instead of opened. Dragged text still drops into the editor.
 - [ ] Display checkboxes using `- [ ]` (and its checked variant)
 - [ ] Export as self-contained HTML document
 

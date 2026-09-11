@@ -6,6 +6,7 @@ import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/sea
 import type { Extension } from '@codemirror/state';
 import { drawSelection, EditorView, highlightActiveLine, keymap } from '@codemirror/view';
 import { classHighlighter, tagHighlighter, tags } from '@lezer/highlight';
+import { carriesFiles } from '../lib/files';
 import { mathSyntax, mathTag } from './math';
 
 // classHighlighter covers code in fenced blocks; this adds classes for the
@@ -62,7 +63,14 @@ const theme = EditorView.theme({
   },
 });
 
+// Files dropped on the editor open as documents (see state/file-drop.ts), so
+// don't insert their contents too. Dragged text still drops into the editor.
+const ignoreFileDrops = EditorView.domEventHandlers({
+  drop: (event) => carriesFiles(event.dataTransfer),
+});
+
 export const editorExtensions: Extension[] = [
+  ignoreFileDrops,
   history(),
   drawSelection(),
   highlightActiveLine(),

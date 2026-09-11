@@ -10,16 +10,34 @@ import {
   type MarkdownDocument,
   newDocument,
   openDocument,
+  renameDocument,
   saveActiveDocument,
+  selectDocument,
   updateContent,
   useDocumentsBackup,
 } from './documents';
 
 vi.mock('../lib/files', () => ({ openFile: vi.fn(), saveFile: vi.fn() }));
 
+/** The handles in IndexedDB, which all tabs share. */
+const storedHandles = vi.hoisted(() => new Map<string, FileSystemFileHandle>());
+
+vi.mock('../lib/handle-store', () => ({
+  readHandles: async () => new Map(storedHandles),
+  storeHandle: async (id: string, handle: FileSystemFileHandle) => {
+    storedHandles.set(id, handle);
+  },
+  deleteHandles: async (ids: Iterable<string>) => {
+    for (const id of ids) storedHandles.delete(id);
+  },
+}));
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
+
+/** Waits for pending handle loads and writes. */
+const settle = () => new Promise((resolve) => setTimeout(resolve));
 
 function addDocument() {
   newDocument();
@@ -35,9 +53,9 @@ function edit(id: string, content: string) {
 const isOpen = (id: string) => documentsState.documents.some((doc) => doc.id === id);
 
 /** A stand-in for a file handle; handles with the same path are the same file. */
-function fakeHandle(path: string): FileSystemFileHandle {
+function fakeHandle(name: string, path = name): FileSystemFileHandle {
   return {
-    name: path,
+    name,
     path,
     isSameEntry: async (other: { path?: string }) => other.path === path,
   } as unknown as FileSystemFileHandle;
@@ -71,6 +89,45 @@ describe('unsaved changes', () => {
     await saveActiveDocument();
     flush();
     expect(hasUnsavedChanges(doc)).toBe(true);
+  });
+});
+
+describe('renameDocument', () => {
+  test('trims the name and refuses empty names', () => {
+    const doc = addDocument();
+    expect(renameDocument(doc.id, '  Ideas.md ')).toBe(true);
+    flush();
+    expect(doc.name).toBe('Ideas.md');
+    expect(renameDocument(doc.id, '   ')).toBe(false);
+    flush();
+    expect(doc.name).toBe('Ideas.md');
+  });
+
+  test('unlinks a document from its file until it gets the file name back', async () => {
+    const handle = fakeHandle('Linked.md');
+    vi.mocked(openFile).mockResolvedValueOnce({ name: 'Linked.md', content: '', handle });
+    await openDocument();
+    flush();
+    const doc = activeDocument()!;
+
+    renameDocument(doc.id, 'Renamed.md');
+    flush();
+    vi.mocked(saveFile).mockResolvedValueOnce(undefined);
+    await saveActiveDocument();
+    expect(saveFile).toHaveBeenLastCalledWith('Renamed.md', '', undefined);
+
+    // Opening the file again opens a new document.
+    vi.mocked(openFile).mockResolvedValueOnce({ name: 'Linked.md', content: '', handle: fakeHandle('Linked.md') });
+    await openDocument();
+    flush();
+    expect(activeDocument()?.id).not.toBe(doc.id);
+
+    selectDocument(doc.id);
+    renameDocument(doc.id, 'Linked.md');
+    flush();
+    vi.mocked(saveFile).mockResolvedValueOnce(undefined);
+    await saveActiveDocument();
+    expect(saveFile).toHaveBeenLastCalledWith('Linked.md', '', handle);
   });
 });
 
@@ -217,5 +274,98 @@ describe('useDocumentsBackup', () => {
     expect(backedUp(closed.id)).toBeUndefined();
     expect(backedUp(other.id)?.content).toBe('Their edit');
     dispose();
+  });
+
+  describe('file handles', () => {
+    function syncFromOtherTab() {
+      window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEYS.documents }));
+      flush();
+    }
+
+    async function openWithHandle(name: string) {
+      vi.mocked(openFile).mockResolvedValueOnce({ name, content: '', handle: fakeHandle(name) });
+      await openDocument();
+      flush();
+      return activeDocument()!;
+    }
+
+    /** Saves the active document and returns the handle it was saved to. */
+    async function saveActive() {
+      vi.mocked(saveFile).mockImplementationOnce(async (name, _content, handle) => ({ name, handle }));
+      await saveActiveDocument();
+      flush();
+      return vi.mocked(saveFile).mock.lastCall?.[2];
+    }
+
+    test('are restored at startup, and those of closed documents are removed', async () => {
+      const doc = addDocument();
+      const handle = fakeHandle(doc.name, 'Restored.md');
+      storedHandles.set(doc.id, handle);
+      storedHandles.set('closed-document', fakeHandle('Closed.md'));
+
+      const dispose = useBackup();
+      await settle();
+      expect(storedHandles.has('closed-document')).toBe(false);
+      expect(await saveActive()).toBe(handle);
+      dispose();
+    });
+
+    test('stored by another tab are used when saving', async () => {
+      const dispose = useBackup();
+      const doc = addDocument();
+      hidePage();
+
+      // The other tab saved the document to a file.
+      const handle = fakeHandle(doc.name, 'Saved in other tab.md');
+      storedHandles.set(doc.id, handle);
+      changeInOtherTab((documents) =>
+        documents.map((d) => (d.id === doc.id ? { ...d, savedHash: 'saved' } : d)),
+      );
+      syncFromOtherTab();
+      await settle();
+      expect(await saveActive()).toBe(handle);
+      dispose();
+    });
+
+    test('stored by another tab are used to find files that are already open', async () => {
+      const dispose = useBackup();
+      hidePage();
+
+      const shared = { id: 'shared-document', name: 'Shared.md', content: '', savedHash: '' };
+      changeInOtherTab((documents) => [...documents, shared]);
+      storedHandles.set(shared.id, fakeHandle('Shared.md'));
+      syncFromOtherTab();
+      await settle();
+
+      const count = documentsState.documents.length;
+      await openWithHandle('Shared.md');
+      expect(documentsState.documents).toHaveLength(count);
+      expect(activeDocument()?.id).toBe(shared.id);
+      dispose();
+    });
+
+    test('are removed when their document is closed', async () => {
+      const doc = await openWithHandle('Closing.md');
+      expect(storedHandles.has(doc.id)).toBe(true);
+      closeDocument(doc.id);
+      flush();
+      await settle();
+      expect(storedHandles.has(doc.id)).toBe(false);
+    });
+
+    test('are kept for a document closed in another tab but changed in this one', async () => {
+      const dispose = useBackup();
+      const doc = await openWithHandle('Kept.md');
+      hidePage();
+
+      edit(doc.id, 'My edit');
+      changeInOtherTab((documents) => documents.filter((d) => d.id !== doc.id));
+      storedHandles.delete(doc.id);
+      syncFromOtherTab();
+      await settle();
+      expect(isOpen(doc.id)).toBe(true);
+      expect(storedHandles.has(doc.id)).toBe(true);
+      dispose();
+    });
   });
 });

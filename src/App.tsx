@@ -5,6 +5,7 @@ import './styles/editor.css';
 import './styles/markdown.css';
 
 import { onSettled, Show } from 'solid-js';
+import DropIndicator from './components/DropIndicator';
 import Notices from './components/Notices';
 import Resizer from './components/Resizer';
 import Sidebar from './components/Sidebar';
@@ -14,6 +15,8 @@ import Workspace from './components/Workspace';
 import { registerServiceWorker } from './pwa';
 import { useShortcuts } from './shortcuts';
 import { useDocumentsBackup, useWindowTitle } from './state/documents';
+import { useFileDrop } from './state/file-drop';
+import { useLaunchQueue } from './state/launch-queue';
 import { narrowScreen, sidebarOpen, useLayout } from './state/layout';
 import { useScrollSync } from './state/pane-link';
 import {
@@ -30,6 +33,8 @@ export default function App() {
   useLayout();
   useDocumentsBackup();
   useWindowTitle();
+  useLaunchQueue();
+  useFileDrop();
   useShortcuts();
   useScrollSync();
   onSettled(registerServiceWorker);
@@ -57,6 +62,7 @@ export default function App() {
       </div>
       <StatusBar />
       <Notices />
+      <DropIndicator />
     </div>
   );
 }
