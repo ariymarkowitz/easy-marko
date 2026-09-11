@@ -15,3 +15,12 @@ interface Window {
   showOpenFilePicker?(options?: FilePickerOptions): Promise<FileSystemFileHandle[]>;
   showSaveFilePicker?(options?: FilePickerOptions): Promise<FileSystemFileHandle>;
 }
+
+interface FileSystemHandlePermissionDescriptor {
+  mode?: 'read' | 'readwrite';
+}
+
+interface FileSystemHandle {
+  queryPermission?(descriptor?: FileSystemHandlePermissionDescriptor): Promise<PermissionState>;
+  requestPermission?(descriptor?: FileSystemHandlePermissionDescriptor): Promise<PermissionState>;
+}

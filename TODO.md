@@ -36,9 +36,10 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [x] Light/dark toggle: stores an override only when it differs from the system preference
 - [x] New, open, and save (File System Access API, with file input/download fallback)
 - [x] Auto-backup of open documents to localStorage
-- [ ] Persist file handles in IndexedDB so Save writes to the same file after a reload
+- [x] Persist file handles in IndexedDB so Save writes to the same file after a reload
+  - The first save to a restored handle asks for write permission, and asks where to save if it's refused. Tabs share the handles; closing a document in any tab removes its handle.
 - [x] Unsaved-changes indicator (sidebar dot); confirm before closing unsaved documents
-- [x] Avoid opening the same file twice (only detectable while the file handle is held; see IndexedDB item)
+- [x] Avoid opening the same file twice (matched by file handle, so files opened without the File System Access API can't be matched)
 - [ ] Rename documents
 - [x] Sync scrolling between panes in split view, with a toggle
 - [x] Alt-click in the preview jumps to the source, and vice versa

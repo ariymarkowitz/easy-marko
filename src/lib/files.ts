@@ -45,15 +45,32 @@ function openWithInput(): Promise<OpenedFile | undefined> {
   });
 }
 
-/** Saves to `handle` if given, otherwise asks where to save. Resolves undefined if cancelled. */
+/**
+ * Whether the page may write to `handle`, asking the user if needed. Handles
+ * restored from IndexedDB start without permission. Asking needs a user
+ * gesture, so call this straight from one.
+ */
+async function canWrite(handle: FileSystemFileHandle): Promise<boolean> {
+  const descriptor = { mode: 'readwrite' } as const;
+  // Browsers without the permission methods grant access with the handle.
+  if (!handle.queryPermission || !handle.requestPermission) return true;
+  if ((await handle.queryPermission(descriptor)) === 'granted') return true;
+  return (await handle.requestPermission(descriptor)) === 'granted';
+}
+
+/**
+ * Saves to `handle` if given, otherwise asks where to save. Also asks if the
+ * user doesn't allow writing to `handle`. Resolves undefined if cancelled.
+ */
 export async function saveFile(
   name: string,
   content: string,
   handle?: FileSystemFileHandle,
 ): Promise<SavedFile | undefined> {
   try {
+    const permitted = handle && (await canWrite(handle)) ? handle : undefined;
     const target =
-      handle ?? (await window.showSaveFilePicker?.({ suggestedName: name, types: pickerTypes }));
+      permitted ?? (await window.showSaveFilePicker?.({ suggestedName: name, types: pickerTypes }));
     if (!target) {
       download(name, content);
       return { name };

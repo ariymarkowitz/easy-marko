@@ -1,6 +1,7 @@
-import { createEffect, createStore, deep, onSettled, reconcile, snapshot } from 'solid-js';
+import { createEffect, createStore, deep, flush, onSettled, reconcile, snapshot } from 'solid-js';
 import { clamp } from '../lib/clamp';
-import { openFile, saveFile } from '../lib/files';
+import { type OpenedFile, openFile, saveFile } from '../lib/files';
+import { deleteHandles, readHandles, storeHandle } from '../lib/handle-store';
 import { hashText } from '../lib/hash';
 import { mergeById } from '../lib/merge';
 import { parseJSON, readText, STORAGE_KEYS, writeText } from '../lib/storage';
@@ -52,8 +53,59 @@ const [state, setState] = createStore<DocumentsState>(initialState());
 
 export { state as documentsState };
 
-/** File System Access API handles. They can't be serialised, so they only last for the session. */
+/**
+ * File System Access API handles by document id: this tab's copy of the
+ * handles in IndexedDB, which all tabs share. A tab stores the handles it gets
+ * and removes the handles of the documents it closes, and reloads them when it
+ * picks up another tab's changes.
+ */
 const fileHandles = new Map<string, FileSystemFileHandle>();
+
+/** Counts this tab's handle changes, so a load can tell that its read is out of date. */
+let handleChanges = 0;
+
+/** Settles once the stored handles have loaded at startup. */
+let handlesLoaded: Promise<void> = Promise.resolve();
+
+function setFileHandle(id: string, handle: FileSystemFileHandle): void {
+  handleChanges++;
+  fileHandles.set(id, handle);
+  void storeHandle(id, handle);
+}
+
+function removeFileHandle(id: string): void {
+  handleChanges++;
+  fileHandles.delete(id);
+  void deleteHandles([id]);
+}
+
+/**
+ * Replaces the open documents' handles with the stored ones. With `prune`,
+ * also removes stored handles of documents that no tab has open, such as those
+ * of a backup that was cleared.
+ */
+async function loadFileHandles(prune = false): Promise<void> {
+  const changes = handleChanges;
+  const stored = await readHandles();
+  if (!stored) return;
+  // This tab changed a handle during the read, so read again: the new read sees the change.
+  if (changes !== handleChanges) return loadFileHandles(prune);
+
+  const openIds = new Set(state.documents.map((doc) => doc.id));
+  fileHandles.clear();
+  for (const [id, handle] of stored) {
+    if (openIds.has(id)) fileHandles.set(id, handle);
+  }
+  if (!prune) return;
+  // Other tabs back up their new documents before storing their handles (see
+  // openFileDocument), so any document with a stored handle is in the backup
+  // by now, even if this tab hasn't synced it yet.
+  for (const doc of parseBackup(readText(STORAGE_KEYS.documents))?.documents ?? []) {
+    openIds.add(doc.id);
+  }
+  const unused = [...stored.keys()].filter((id) => !openIds.has(id));
+  if (unused.length > 0) void deleteHandles(unused);
+}
 
 export const activeDocument = (): MarkdownDocument | undefined =>
   state.documents.find((doc) => doc.id === state.activeId);
@@ -106,7 +158,7 @@ export function closeDocument(id: string): void {
   ) {
     return;
   }
-  fileHandles.delete(id);
+  removeFileHandle(id);
   setState((draft) => {
     const index = draft.documents.findIndex((d) => d.id === id);
     if (index === -1) return;
@@ -127,34 +179,47 @@ function reportFileError(action: 'open' | 'save', error: unknown): undefined {
 
 /** The id of the open document backed by the same file as `handle`, if any. */
 async function findDocumentForFile(handle: FileSystemFileHandle): Promise<string | undefined> {
+  await handlesLoaded;
   for (const [id, existing] of fileHandles) {
     if (await existing.isSameEntry(handle)) return id;
   }
   return undefined;
 }
 
-export async function openDocument(): Promise<void> {
-  const file = await openFile().catch((error) => reportFileError('open', error));
-  if (!file) return;
+/** Opens `file` as a new document, or switches to its document if the file is already open. */
+async function openFileDocument(file: OpenedFile): Promise<void> {
   const openId = file.handle && (await findDocumentForFile(file.handle));
   if (openId) {
     selectDocument(openId);
     return;
   }
   const doc = createDocument(file.name, file.content);
-  if (file.handle) fileHandles.set(doc.id, file.handle);
   addDocument(doc);
+  if (file.handle) {
+    // Back up the document before storing its handle, so that a tab starting
+    // in between doesn't take the handle for a closed document's and remove it.
+    flush();
+    syncBackup();
+    setFileHandle(doc.id, file.handle);
+  }
+}
+
+export async function openDocument(): Promise<void> {
+  const file = await openFile().catch((error) => reportFileError('open', error));
+  if (file) await openFileDocument(file);
 }
 
 export async function saveActiveDocument(): Promise<void> {
   const doc = activeDocument();
   if (!doc) return;
   const { id, name, content } = doc;
-  const saved = await saveFile(name, content, fileHandles.get(id)).catch((error) =>
+  await handlesLoaded;
+  const handle = fileHandles.get(id);
+  const saved = await saveFile(name, content, handle).catch((error) =>
     reportFileError('save', error),
   );
   if (!saved) return;
-  if (saved.handle) fileHandles.set(id, saved.handle);
+  if (saved.handle && saved.handle !== handle) setFileHandle(id, saved.handle);
   updateDocument(id, (target) => {
     target.name = saved.name;
     // The content as written, so edits made while saving still count as unsaved.
@@ -187,13 +252,21 @@ function syncBackup(): void {
       : documents[clamp(activeIndex, 0, documents.length - 1)].id;
     next = { documents, activeId };
 
-    for (const id of fileHandles.keys()) {
-      if (!documents.some((doc) => doc.id === id)) fileHandles.delete(id);
+    const openIds = new Set(documents.map((doc) => doc.id));
+    const baseIds = new Set(base.map((doc) => doc.id));
+    const remoteIds = new Set(remote.documents.map((doc) => doc.id));
+    for (const [id, handle] of fileHandles) {
+      // Closed in another tab, which removed the stored handle.
+      if (!openIds.has(id)) fileHandles.delete(id);
+      // Closed in another tab too, but kept because this tab changed it.
+      else if (baseIds.has(id) && !remoteIds.has(id)) setFileHandle(id, handle);
     }
     setState((draft) => {
       reconcile(documents, 'id')(draft.documents);
       draft.activeId = activeId;
     });
+    // Pick up the handles that other tabs stored for files they opened or saved.
+    void loadFileHandles();
   }
 
   const json = JSON.stringify(next);
@@ -204,9 +277,12 @@ function syncBackup(): void {
 /**
  * Auto-backup of every open document to localStorage, shared by all tabs of
  * the app. Syncs 300ms after a change, and straight away when another tab
- * writes the backup. Call once from the app root.
+ * writes the backup. Also restores the file handles stored in IndexedDB, so
+ * saves go to the same files after a reload. Call once from the app root.
  */
 export function useDocumentsBackup(): void {
+  handlesLoaded = loadFileHandles(true);
+
   createEffect(
     () => JSON.stringify(snapshot(deep(state))),
     () => {
