@@ -50,7 +50,8 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [x] Find and replace (CodeMirror search panel)
 - [x] PWA: web manifest and precaching service worker
 - [ ] Open `.md` files from the OS when installed (manifest `file_handlers` + `launchQueue`)
-- [ ] PNG and maskable icons for wider install support
+- [x] PNG and maskable icons for wider install support
+  - Generated from `public/icon.svg` by `node scripts/icons.mjs` (needs `rsvg-convert`); rerun it after changing the SVG.
 - [x] Prompt to reload when a new version is available
   - A new service worker waits until Reload is clicked, then every open tab reloads. The documents backup syncs on `pagehide`, so unsaved edits survive. The app checks for updates hourly and when the page becomes visible, and says once when it's ready to work offline.
 - [ ] Drag and drop files to open them

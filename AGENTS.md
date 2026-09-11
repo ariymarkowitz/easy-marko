@@ -32,7 +32,7 @@ Run `npm run status` before testing with a server. Use an existing server if one
 - `src/content/welcome.md`: the document opened on first run.
 - `src/styles/`: `tokens.css` (palette, type, spacing, transitions), `base.css` (layout and controls), `editor.css` (syntax colours), `markdown.css` (preview typography).
 - `public/`: static assets.
-- `scripts/`: development scripts (`server.mjs` lists and stops this folder's local servers).
+- `scripts/`: development scripts (`server.mjs` lists and stops this folder's local servers; `icons.mjs` regenerates the PNG icons from `public/icon.svg`).
 
 ## Conventions
 
