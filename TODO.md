@@ -47,7 +47,8 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [x] Cursor line and column
 - [x] Word, character, and line counts
 - [x] Incremental preview: per-block HTML cache and keyed DOM reuse
-- [ ] Skip inline parsing for unchanged blocks (the whole document is still tokenised on each change)
+- [x] Skip inline parsing for unchanged blocks
+  - The whole document is still split into blocks on each change; inline parsing and rendering only run for blocks that aren't cached.
 - [x] Find and replace (CodeMirror search panel)
 - [x] PWA: web manifest and precaching service worker
 - [ ] Open `.md` files from the OS when installed (manifest `file_handlers` + `launchQueue`)

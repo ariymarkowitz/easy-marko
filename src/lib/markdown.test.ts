@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { createMarkdownRenderer, markdown } from './markdown';
+import { createMarkdownRenderer, markdown, type RenderedBlock } from './markdown';
+import { sanitizeHtml } from './sanitize';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -67,6 +68,70 @@ describe('createMarkdownRenderer', () => {
     const [block] = createMarkdownRenderer()('[out](https://example.com) [in](#top)');
     expect(block.html).toContain('href="https://example.com" target="_blank"');
     expect(block.html).toContain('<a href="#top">');
+  });
+});
+
+describe('incremental parsing', () => {
+  const source = [
+    '# A "quoted" title',
+    '',
+    'Some *text* -- with (c) and https://example.com',
+    '',
+    '- [x] a task',
+    '- a [reference link][ref]',
+    '',
+    '| a | b |',
+    '| - | - |',
+    '| 1 | 2 |',
+    '',
+    '> A quote with $x^2$',
+    '',
+    '$$',
+    'y',
+    '$$',
+    '',
+    '<details>',
+    '<summary>Summary</summary>',
+    '',
+    'Inside',
+    '',
+    '</details>',
+    '',
+    '```',
+    'code',
+    '```',
+    '',
+    '[ref]: https://example.com/ref',
+    '',
+  ].join('\n');
+
+  const joined = (blocks: RenderedBlock[]) => blocks.map((block) => block.html).join('');
+
+  test('renders the same HTML as a full render', () => {
+    expect(joined(createMarkdownRenderer()(source))).toBe(sanitizeHtml(markdown.render(source)));
+  });
+
+  test('renders the same HTML as a full render after an edit', () => {
+    const render = createMarkdownRenderer();
+    render(source);
+    const edited = source.replace('Some *text*', 'Some **edited** "text"').replace('A quote', 'A new quote');
+    expect(joined(render(edited))).toBe(sanitizeHtml(markdown.render(edited)));
+  });
+
+  test("doesn't parse the inline content of unchanged blocks", () => {
+    const render = createMarkdownRenderer();
+    render('# Heading\n\nFirst *paragraph*\n\n- item\n');
+    const spy = vi.spyOn(markdown.inline, 'parse');
+    render('# Heading\n\nSecond *paragraph*\n\n- item\n');
+    expect(spy.mock.calls.map(([content]) => content)).toEqual(['Second *paragraph*']);
+  });
+
+  test('parses every block again when reference definitions change', () => {
+    const render = createMarkdownRenderer();
+    render('# Heading\n\n[link][a]\n\n[a]: https://one.example');
+    const spy = vi.spyOn(markdown.inline, 'parse');
+    render('# Heading\n\n[link][a]\n\n[a]: https://two.example');
+    expect(spy.mock.calls.map(([content]) => content)).toEqual(['Heading', '[link][a]']);
   });
 });
 

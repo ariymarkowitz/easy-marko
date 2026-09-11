@@ -194,11 +194,36 @@ export interface MarkdownRendererOptions {
   onLanguageLoad?: (loaded: Promise<void>) => void;
 }
 
+interface RenderEnv extends Env {
+  /** Given the document's block tokens, returns the ones that still need parsing. */
+  selectTokens?: (tokens: Token[]) => Token[];
+}
+
+// Runs after the document is split into blocks, before their inline content
+// is parsed. createMarkdownRenderer uses it to drop the blocks it has cached
+// HTML for, so they skip inline parsing and the core rules after it
+// (linkify, typographer, task lists). Without selectTokens it does nothing.
+markdown.core.ruler.before('inline', 'select_tokens', (state) => {
+  const { selectTokens } = state.env as RenderEnv;
+  if (selectTokens) state.tokens = selectTokens(state.tokens);
+});
+
+interface Block {
+  line: number;
+  endLine: number;
+  /** The block's source, which keys the cache. Undefined if the block has no line map. */
+  text?: string;
+  tokens: Token[];
+  /** The block's cached output, if it's still valid. */
+  cached?: BlockOutput;
+}
+
 /**
  * Creates a renderer that splits a document into top-level blocks and caches
- * each block's HTML by its source text, so an edit only re-renders (and re-runs
- * KaTeX and the sanitiser for) the blocks it changed. Blocks whose code was
- * waiting for a language re-render once it loads.
+ * each block's HTML by its source text. An edit only parses the inline content
+ * of, and renders (running KaTeX and the sanitiser for), the blocks it changed.
+ * The whole document is still split into blocks each time. Blocks whose code
+ * was waiting for a language re-render once it loads.
  */
 export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
   let cache = new Map<string, BlockOutput>();
@@ -216,11 +241,10 @@ export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
     );
   };
 
-  return (source: string): RenderedBlock[] => {
-    const env: Env = {};
-    const tokens = markdown.parse(source, env);
-
-    // Reference definitions can change the links in any block.
+  /** Splits a document's block tokens into blocks, finding each one's cached output. */
+  const splitBlocks = (source: string, tokens: Token[], env: RenderEnv): Block[] => {
+    // Reference definitions can change the links in any block. Block parsing
+    // has collected them all by now.
     const nextReferences = JSON.stringify(env.references ?? {});
     if (nextReferences !== references) {
       cache.clear();
@@ -229,32 +253,49 @@ export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
 
     // CodeMirror normalises line endings to \n, so line maps index into this.
     const lines = source.split('\n');
-    const nextCache = new Map<string, BlockOutput>();
-    const occurrences = new Map<string, number>();
-    const blocks: RenderedBlock[] = [];
-
-    for (const { start, end } of topLevelBlocks(tokens)) {
-      const firstMap = tokens[start].map;
-      const lastMap = tokens.slice(start, end).findLast((token) => token.level === 0 && token.map)?.map;
+    return topLevelBlocks(tokens).map(({ start, end }) => {
+      const blockTokens = tokens.slice(start, end);
+      const firstMap = blockTokens[0].map;
+      const lastMap = blockTokens.findLast((token) => token.level === 0 && token.map)?.map;
       const line = firstMap?.[0] ?? 0;
       const endLine = lastMap?.[1] ?? firstMap?.[1] ?? 0;
       const text = firstMap ? lines.slice(line, endLine).join('\n') : undefined;
-
       // Reuse a cached block unless a language it was waiting for has loaded since.
-      const cached = text === undefined ? undefined : cache.get(text);
-      const output =
-        cached && cached.waitingFor.every((language) => !language.support)
-          ? cached
-          : renderTokens(tokens.slice(start, end), env);
-      if (text !== undefined) nextCache.set(text, output);
+      const output = text === undefined ? undefined : cache.get(text);
+      const cached = output?.waitingFor.every((language) => !language.support) ? output : undefined;
+      return { line, endLine, text, tokens: blockTokens, cached };
+    });
+  };
+
+  return (source: string): RenderedBlock[] => {
+    let documentBlocks: Block[] = [];
+    const env: RenderEnv = {
+      selectTokens: (tokens) => {
+        documentBlocks = splitBlocks(source, tokens, env);
+        // The core rules after this one edit these token objects in place,
+        // so each block's tokens are complete once parsing finishes.
+        return documentBlocks.filter((block) => !block.cached).flatMap((block) => block.tokens);
+      },
+    };
+    markdown.parse(source, env);
+
+    const nextCache = new Map<string, BlockOutput>();
+    const occurrences = new Map<string, number>();
+    const blocks = documentBlocks.map((block, index): RenderedBlock => {
+      const output = block.cached ?? renderTokens(block.tokens, env);
+      if (block.text !== undefined) nextCache.set(block.text, output);
       output.waitingFor.forEach(load);
 
-      const id = text ?? `\0token:${start}`;
+      const id = block.text ?? `\0block:${index}`;
       const seen = occurrences.get(id) ?? 0;
       occurrences.set(id, seen + 1);
-
-      blocks.push({ key: seen === 0 ? id : `${id}\0${seen}`, line, endLine, html: output.html });
-    }
+      return {
+        key: seen === 0 ? id : `${id}\0${seen}`,
+        line: block.line,
+        endLine: block.endLine,
+        html: output.html,
+      };
+    });
 
     cache = nextCache;
     return blocks;
