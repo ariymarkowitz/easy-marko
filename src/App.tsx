@@ -5,6 +5,7 @@ import './styles/editor.css';
 import './styles/markdown.css';
 
 import { onSettled, Show } from 'solid-js';
+import Notices from './components/Notices';
 import Resizer from './components/Resizer';
 import Sidebar from './components/Sidebar';
 import StatusBar from './components/StatusBar';
@@ -38,6 +39,7 @@ export default function App() {
         <Workspace />
       </div>
       <StatusBar />
+      <Notices />
     </div>
   );
 }

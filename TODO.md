@@ -59,6 +59,7 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 ## Hardening
 
 - [ ] Sanitise preview HTML, then allow raw HTML in markdown
-- [ ] Replace `alert()` error reporting with in-app notices
+- [x] Replace `alert()` error reporting with in-app notices
+  - `showNotice` in `state/notices.ts`. Info notices close after 6s (paused while hovered or focused); errors stay until dismissed. The unsaved-changes `confirm()` stays.
 - [x] Flush the pending auto-backup on `pagehide` (and when the page is hidden)
 - [x] Share the auto-backup between tabs: each sync merges this tab's documents with the stored backup (three-way, by document id, against the backup as the tab last synced it), and `storage` events and page show/hide sync straight away, so tabs pick up each other's edits instead of overwriting them
