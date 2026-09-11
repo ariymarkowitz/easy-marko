@@ -3,6 +3,7 @@ import {
   Code,
   Columns2,
   Eye,
+  FileDown,
   FilePlus,
   FolderOpen,
   Link2,
@@ -16,7 +17,12 @@ import {
   type IconNode,
 } from 'lucide';
 import { canRedo, canUndo, editorCommands } from '../editor/controller';
-import { newDocument, openDocument, saveActiveDocument } from '../state/documents';
+import {
+  exportActiveDocument,
+  newDocument,
+  openDocument,
+  saveActiveDocument,
+} from '../state/documents';
 import {
   selectViewMode,
   settings,
@@ -46,6 +52,7 @@ export default function Toolbar() {
       <IconButton icon={FilePlus} label="New document" onClick={newDocument} />
       <IconButton icon={FolderOpen} label="Open (Mod-O)" onClick={openDocument} />
       <IconButton icon={Save} label="Save (Mod-S)" onClick={saveActiveDocument} />
+      <IconButton icon={FileDown} label="Export as HTML" onClick={exportActiveDocument} />
       <div class="toolbar-divider" />
       <IconButton icon={Undo2} label="Undo" disabled={!canUndo()} onClick={editorCommands.undo} />
       <IconButton icon={Redo2} label="Redo" disabled={!canRedo()} onClick={editorCommands.redo} />

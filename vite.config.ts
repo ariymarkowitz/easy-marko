@@ -65,6 +65,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./vitest-setup.ts'],
     isolate: false,
+    // Vitest empties CSS imports by default; the HTML export inlines ?raw ones.
+    css: { include: [/\.css\?raw$/] },
   },
   build: {
     target: 'esnext',

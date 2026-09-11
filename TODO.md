@@ -57,7 +57,8 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [ ] Drag and drop files to open them
 - [x] Display checkboxes using `- [ ]` (and its checked variant)
   - Read-only (disabled); clicking them doesn't edit the source.
-- [ ] Export as self-contained HTML document
+- [x] Export as self-contained HTML document
+  - Inlines the tokens, syntax and preview CSS; KaTeX's CSS and WOFF2 fonts (about 400 KB) only when the document has maths. Follows `prefers-color-scheme`.
 
 ## Hardening
 

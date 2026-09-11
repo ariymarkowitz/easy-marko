@@ -45,21 +45,42 @@ function openWithInput(): Promise<OpenedFile | undefined> {
   });
 }
 
-/** Saves to `handle` if given, otherwise asks where to save. Resolves undefined if cancelled. */
+/** A kind of file to save: what the save dialog offers, and the download's MIME type. */
+export interface FileType {
+  description: string;
+  mimeType: string;
+  extensions: string[];
+}
+
+const markdownFile: FileType = { description: 'Markdown', mimeType: 'text/markdown', extensions };
+
+export const htmlFile: FileType = { description: 'HTML', mimeType: 'text/html', extensions: ['.html'] };
+
+/**
+ * Saves to `handle` if given, otherwise asks where to save. `content` can be a
+ * function, called once there's somewhere to save to, so slow content doesn't
+ * delay the dialog. Resolves undefined if cancelled.
+ */
 export async function saveFile(
   name: string,
-  content: string,
+  content: string | (() => Promise<string>),
   handle?: FileSystemFileHandle,
+  type: FileType = markdownFile,
 ): Promise<SavedFile | undefined> {
   try {
     const target =
-      handle ?? (await window.showSaveFilePicker?.({ suggestedName: name, types: pickerTypes }));
+      handle ??
+      (await window.showSaveFilePicker?.({
+        suggestedName: name,
+        types: [{ description: type.description, accept: { [type.mimeType]: type.extensions } }],
+      }));
+    const text = typeof content === 'string' ? content : await content();
     if (!target) {
-      download(name, content);
+      download(name, text, type.mimeType);
       return { name };
     }
     const writable = await target.createWritable();
-    await writable.write(content);
+    await writable.write(text);
     await writable.close();
     return { name: target.name, handle: target };
   } catch (error) {
@@ -68,8 +89,8 @@ export async function saveFile(
   }
 }
 
-function download(name: string, content: string): void {
-  const url = URL.createObjectURL(new Blob([content], { type: 'text/markdown' }));
+function download(name: string, content: string, mimeType: string): void {
+  const url = URL.createObjectURL(new Blob([content], { type: mimeType }));
   const link = document.createElement('a');
   link.href = url;
   link.download = name;
