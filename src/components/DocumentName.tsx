@@ -28,16 +28,8 @@ export default function DocumentName(props: { doc: MarkdownDocument; active: boo
     input.setSelectionRange(0, extension > 0 ? extension : name.length);
   }
 
-  /** Ends the rename, saving the name if `save`. Returns focus to the name if `refocus`. */
-  function finish(save: boolean, refocus: boolean) {
-    if (finished || !input) return;
-    if (save && !renameDocument(props.doc.id, input.value)) {
-      // Empty names aren't allowed: keep editing, or give up when focus has moved on.
-      if (refocus) {
-        setInvalid(true);
-        return;
-      }
-    }
+  /** Ends the rename, returning focus to the name if `refocus`. */
+  function stopEditing(refocus: boolean) {
     finished = true;
     setEditing(false);
     flush();
@@ -74,11 +66,22 @@ export default function DocumentName(props: { doc: MarkdownDocument; active: boo
         spellcheck="false"
         onInput={() => setInvalid(false)}
         onKeyDown={(event) => {
-          if (event.key !== 'Enter' && event.key !== 'Escape') return;
-          event.preventDefault();
-          finish(event.key === 'Enter', true);
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            stopEditing(true);
+          } else if (event.key === 'Enter') {
+            event.preventDefault();
+            // Empty names aren't allowed: keep editing.
+            if (renameDocument(props.doc.id, event.currentTarget.value)) stopEditing(true);
+            else setInvalid(true);
+          }
         }}
-        onBlur={() => finish(true, false)}
+        onBlur={(event) => {
+          if (finished) return;
+          // Focus has moved on, so an empty name is given up on rather than kept for editing.
+          renameDocument(props.doc.id, event.currentTarget.value);
+          stopEditing(false);
+        }}
       />
     </Show>
   );

@@ -42,15 +42,14 @@ export function useFileDrop(): void {
       void openFiles(readDroppedFiles(event.dataTransfer));
     };
 
-    window.addEventListener('dragenter', onDragEnter);
-    window.addEventListener('dragleave', onDragLeave);
-    window.addEventListener('dragover', onDragOver);
-    window.addEventListener('drop', onDrop);
+    const controller = new AbortController();
+    const { signal } = controller;
+    window.addEventListener('dragenter', onDragEnter, { signal });
+    window.addEventListener('dragleave', onDragLeave, { signal });
+    window.addEventListener('dragover', onDragOver, { signal });
+    window.addEventListener('drop', onDrop, { signal });
     return () => {
-      window.removeEventListener('dragenter', onDragEnter);
-      window.removeEventListener('dragleave', onDragLeave);
-      window.removeEventListener('dragover', onDragOver);
-      window.removeEventListener('drop', onDrop);
+      controller.abort();
       setDraggingFiles(false);
     };
   });

@@ -128,7 +128,7 @@ function blockEnd(tokens: Token[], start: number): number {
   return index + 1;
 }
 
-/** Splits a document's tokens into its top-level blocks. */
+/** Splits a document's tokens into its top-level blocks, keeping markdown wrapped in raw HTML in one block. */
 function topLevelBlocks(tokens: Token[]): BlockRange[] {
   const blocks: BlockRange[] = [];
   for (let start = 0; start < tokens.length; start = blocks[blocks.length - 1].end) {

@@ -24,14 +24,14 @@ function fakeHandle(name: string, permission: PermissionState, answer: Permissio
 describe('saveFile', () => {
   test('writes to a handle it has permission for without asking', async () => {
     const handle = fakeHandle('Notes.md', 'granted');
-    expect(await saveFile('Notes.md', 'Hello', handle)).toEqual({ name: 'Notes.md', handle });
+    expect(await saveFile('Notes.md', 'Hello', { handle })).toEqual({ name: 'Notes.md', handle });
     expect(handle.requestPermission).not.toHaveBeenCalled();
     expect(handle.written).toEqual(['Hello']);
   });
 
   test('asks for permission to write to a restored handle', async () => {
     const handle = fakeHandle('Notes.md', 'prompt', 'granted');
-    expect(await saveFile('Notes.md', 'Hello', handle)).toEqual({ name: 'Notes.md', handle });
+    expect(await saveFile('Notes.md', 'Hello', { handle })).toEqual({ name: 'Notes.md', handle });
     expect(handle.requestPermission).toHaveBeenCalledWith({ mode: 'readwrite' });
     expect(handle.written).toEqual(['Hello']);
   });
@@ -40,7 +40,7 @@ describe('saveFile', () => {
     const handle = fakeHandle('Notes.md', 'prompt', 'denied');
     const picked = fakeHandle('Copy.md', 'granted');
     window.showSaveFilePicker = vi.fn(async () => picked);
-    expect(await saveFile('Notes.md', 'Hello', handle)).toEqual({ name: 'Copy.md', handle: picked });
+    expect(await saveFile('Notes.md', 'Hello', { handle })).toEqual({ name: 'Copy.md', handle: picked });
     expect(window.showSaveFilePicker).toHaveBeenCalledWith(
       expect.objectContaining({ suggestedName: 'Notes.md' }),
     );

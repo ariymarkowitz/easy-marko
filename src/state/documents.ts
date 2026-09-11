@@ -257,7 +257,7 @@ export async function saveActiveDocument(): Promise<void> {
   const { id, name, content } = doc;
   await handlesLoaded;
   const handle = linkedFileHandle(doc);
-  const saved = await saveFile(name, content, handle).catch((error) =>
+  const saved = await saveFile(name, content, { handle }).catch((error) =>
     reportFileError('save', error),
   );
   if (!saved) return;
@@ -346,19 +346,16 @@ export function useDocumentsBackup(): void {
   // sync whenever the page is hidden. A page restored from the back/forward
   // cache missed other tabs' storage events, so sync when it's shown too.
   onSettled(() => {
+    const controller = new AbortController();
+    const { signal } = controller;
     const onStorage = (event: StorageEvent) => {
       if (event.key === STORAGE_KEYS.documents) syncBackup();
     };
-    window.addEventListener('storage', onStorage);
-    window.addEventListener('pagehide', syncBackup);
-    window.addEventListener('pageshow', syncBackup);
-    document.addEventListener('visibilitychange', syncBackup);
-    return () => {
-      window.removeEventListener('storage', onStorage);
-      window.removeEventListener('pagehide', syncBackup);
-      window.removeEventListener('pageshow', syncBackup);
-      document.removeEventListener('visibilitychange', syncBackup);
-    };
+    window.addEventListener('storage', onStorage, { signal });
+    window.addEventListener('pagehide', syncBackup, { signal });
+    window.addEventListener('pageshow', syncBackup, { signal });
+    document.addEventListener('visibilitychange', syncBackup, { signal });
+    return () => controller.abort();
   });
 }
 

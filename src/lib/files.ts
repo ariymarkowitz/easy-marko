@@ -11,12 +11,27 @@ export interface OpenedFile extends SavedFile {
   content: string;
 }
 
-const extensions = ['.md', '.markdown', '.mdown', '.txt'];
+/** A kind of file: what file dialogs offer, and a download's MIME type. */
+export interface FileType {
+  description: string;
+  mimeType: string;
+  extensions: string[];
+}
 
-/** The files the app opens, as a picker or manifest `accept` value. */
-export const fileTypes = { 'text/markdown': extensions };
+const markdownFile: FileType = {
+  description: 'Markdown',
+  mimeType: 'text/markdown',
+  extensions: ['.md', '.markdown', '.mdown', '.txt'],
+};
 
-const pickerTypes = [{ description: 'Markdown', accept: fileTypes }];
+export const htmlFile: FileType = { description: 'HTML', mimeType: 'text/html', extensions: ['.html'] };
+
+const accept = (type: FileType) => ({ [type.mimeType]: type.extensions });
+
+const pickerTypes = (type: FileType) => [{ description: type.description, accept: accept(type) }];
+
+/** The files the app opens, as a manifest `accept` value. */
+export const fileTypes = accept(markdownFile);
 
 function isAbort(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
@@ -64,10 +79,11 @@ async function readDroppedFile(
   return { name: file.name, content: await readText(file) };
 }
 
+/** Asks for a file to open. Resolves undefined if cancelled; rejects if it isn't a text file. */
 export async function openFile(): Promise<OpenedFile | undefined> {
   if (!window.showOpenFilePicker) return openWithInput();
   try {
-    const [handle] = await window.showOpenFilePicker({ types: pickerTypes });
+    const [handle] = await window.showOpenFilePicker({ types: pickerTypes(markdownFile) });
     return await readFileHandle(handle);
   } catch (error) {
     if (isAbort(error)) return undefined;
@@ -76,13 +92,14 @@ export async function openFile(): Promise<OpenedFile | undefined> {
 }
 
 function openWithInput(): Promise<OpenedFile | undefined> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = [...extensions, 'text/markdown', 'text/plain'].join(',');
-    input.addEventListener('change', async () => {
+    input.accept = [...markdownFile.extensions, markdownFile.mimeType, 'text/plain'].join(',');
+    input.addEventListener('change', () => {
       const file = input.files?.[0];
-      resolve(file ? { name: file.name, content: await file.text() } : undefined);
+      if (file) readText(file).then((content) => resolve({ name: file.name, content }), reject);
+      else resolve(undefined);
     });
     input.addEventListener('cancel', () => resolve(undefined));
     input.click();
@@ -102,37 +119,21 @@ async function canWrite(handle: FileSystemFileHandle): Promise<boolean> {
   return (await handle.requestPermission(descriptor)) === 'granted';
 }
 
-/** A kind of file to save: what the save dialog offers, and the download's MIME type. */
-export interface FileType {
-  description: string;
-  mimeType: string;
-  extensions: string[];
-}
-
-const markdownFile: FileType = { description: 'Markdown', mimeType: 'text/markdown', extensions };
-
-export const htmlFile: FileType = { description: 'HTML', mimeType: 'text/html', extensions: ['.html'] };
-
 /**
  * Saves to `handle` if given, otherwise asks where to save. Also asks if the
  * user doesn't allow writing to `handle`. `content` can be a function, called
  * once there's somewhere to save to, so slow content doesn't delay the dialog.
- * Resolves undefined if cancelled.
+ * `type` defaults to markdown. Resolves undefined if cancelled.
  */
 export async function saveFile(
   name: string,
   content: string | (() => Promise<string>),
-  handle?: FileSystemFileHandle,
-  type: FileType = markdownFile,
+  { handle, type = markdownFile }: { handle?: FileSystemFileHandle; type?: FileType } = {},
 ): Promise<SavedFile | undefined> {
   try {
     const permitted = handle && (await canWrite(handle)) ? handle : undefined;
     const target =
-      permitted ??
-      (await window.showSaveFilePicker?.({
-        suggestedName: name,
-        types: [{ description: type.description, accept: { [type.mimeType]: type.extensions } }],
-      }));
+      permitted ?? (await window.showSaveFilePicker?.({ suggestedName: name, types: pickerTypes(type) }));
     const text = typeof content === 'string' ? content : await content();
     if (!target) {
       download(name, text, type.mimeType);

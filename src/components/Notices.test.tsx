@@ -5,6 +5,9 @@ import { dismissNotice, INFO_NOTICE_TIMEOUT, notices, showNotice } from '../stat
 import Notices from './Notices';
 
 beforeEach(() => {
+  // Test files share modules, so clear the notices that other files left.
+  for (const notice of notices()) dismissNotice(notice.id);
+  flush();
   vi.useFakeTimers();
   render(() => <Notices />);
 });
@@ -12,8 +15,6 @@ beforeEach(() => {
 afterEach(() => {
   // Vitest globals are off, so the testing library can't clean up by itself.
   cleanup();
-  for (const notice of notices()) dismissNotice(notice.id);
-  flush();
   vi.useRealTimers();
 });
 

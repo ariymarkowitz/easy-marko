@@ -6,6 +6,7 @@ import katexCss from 'katex/dist/katex.min.css?raw';
 import syntaxCss from '../styles/editor.css?raw';
 import markdownCss from '../styles/markdown.css?raw';
 import tokensCss from '../styles/tokens.css?raw';
+import { escapeHtml } from './escape-html';
 import { htmlFile, saveFile } from './files';
 import { createMarkdownRenderer } from './markdown';
 
@@ -36,12 +37,6 @@ body {
   margin-top: 0;
 }
 `;
-
-const escapes: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
-
-function escapeHtml(text: string): string {
-  return text.replace(/[&<>"]/g, (char) => escapes[char]);
-}
 
 /** The document's name without its markdown extension. */
 function baseName(name: string): string {
@@ -124,5 +119,5 @@ ${body}</article>
  * built if it's cancelled.
  */
 export async function exportHtml(name: string, source: string): Promise<void> {
-  await saveFile(`${baseName(name)}.html`, () => buildHtmlDocument(name, source), undefined, htmlFile);
+  await saveFile(`${baseName(name)}.html`, () => buildHtmlDocument(name, source), { type: htmlFile });
 }
