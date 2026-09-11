@@ -1,0 +1,123 @@
+/*
+ * Preview typography. The pane is a size container, so type scales with the
+ * pane's width (not the viewport's) between 360px and 800px (22.5rem–50rem):
+ * font size 1rem → 1.125rem, line height 1.4 → 1.6.
+ */
+
+.preview-pane {
+  container-type: inline-size;
+  overflow-y: auto;
+}
+
+.markdown {
+  max-width: var(--content-width);
+  margin-inline: auto;
+  padding: var(--space-6) var(--space-4);
+  font-size: clamp(1rem, 1rem + (100cqi - 22.5rem) * 0.125 / 27.5, 1.125rem);
+  line-height: clamp(1.4rem, 1.4rem + (100cqi - 22.5rem) * 0.4 / 27.5, 1.8rem);
+  overflow-wrap: break-word;
+}
+
+.md-block:first-child > :first-child {
+  margin-top: 0;
+}
+
+.markdown :is(p, ul, ol, blockquote, pre, table) {
+  margin: 0 0 1em;
+}
+
+.markdown :is(h1, h2, h3, h4, h5, h6) {
+  margin: 1.6em 0 0.6em;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.markdown :is(h1, h2) {
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.markdown h1 {
+  font-size: 2em;
+}
+
+.markdown h2 {
+  font-size: 1.5em;
+}
+
+.markdown h3 {
+  font-size: 1.25em;
+}
+
+.markdown :is(h4, h5, h6) {
+  font-size: 1em;
+}
+
+.markdown a {
+  color: var(--color-accent);
+  text-underline-offset: 0.2em;
+}
+
+.markdown :is(ul, ol) {
+  padding-left: 1.5em;
+}
+
+.markdown blockquote {
+  margin-inline: 0;
+  padding-left: 1em;
+  border-left: 3px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.markdown code {
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background-color: var(--color-surface);
+}
+
+.markdown pre {
+  padding: var(--space-3) var(--space-4);
+  overflow-x: auto;
+  border-radius: var(--radius);
+  line-height: 1.5;
+  background-color: var(--color-surface);
+}
+
+.markdown pre code {
+  padding: 0;
+  background: none;
+}
+
+.markdown hr {
+  margin: 2em 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.markdown img {
+  max-width: 100%;
+}
+
+.markdown table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.markdown :is(th, td) {
+  padding: 0.4em 0.8em;
+  border: 1px solid var(--color-border);
+}
+
+.markdown th {
+  font-weight: 600;
+  background-color: var(--color-surface);
+}
+
+.markdown .katex-display {
+  padding-block: 0.25em;
+  overflow-x: auto;
+  overflow-y: hidden;
+}

@@ -1,0 +1,44 @@
+/*
+ * Source syntax colours, on the tok-* classes from the highlighters in
+ * editor/extensions.ts. Structural editor styles are in its EditorView.theme.
+ */
+
+.tok-heading,
+.tok-strong,
+.tok-typeName,
+.tok-className {
+  font-weight: 600;
+}
+
+.tok-emphasis {
+  font-style: italic;
+}
+
+.tok-strikethrough {
+  text-decoration: line-through;
+}
+
+.tok-link,
+.tok-url,
+.tok-keyword,
+.tok-bool,
+.tok-atom {
+  color: var(--color-accent);
+}
+
+/* Markdown punctuation and secondary code tokens recede. */
+.tok-mark,
+.tok-quote,
+.tok-meta,
+.tok-comment,
+.tok-punctuation,
+.tok-string,
+.tok-string2,
+.tok-number,
+.tok-labelName {
+  color: var(--color-text-muted);
+}
+
+.tok-comment {
+  font-style: italic;
+}

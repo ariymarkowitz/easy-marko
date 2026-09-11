@@ -1,0 +1,224 @@
+/* Reset, app layout and shared controls. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  font-size: var(--text-ui);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+body,
+button,
+.toolbar,
+.status-bar,
+.sidebar,
+.document-item,
+.resizer,
+.pane {
+  transition: var(--transition-colors);
+}
+
+/* Utilities */
+
+.spacer {
+  flex: 1;
+}
+
+/* Layout */
+
+.app {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100dvh;
+}
+
+.app-body {
+  display: flex;
+  min-height: 0;
+}
+
+.toolbar,
+.status-bar {
+  display: flex;
+  align-items: center;
+  background-color: var(--color-surface);
+}
+
+.toolbar {
+  gap: 2px;
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 1rem;
+  margin-inline: var(--space-2);
+  background-color: var(--color-border);
+}
+
+.status-bar {
+  gap: var(--space-4);
+  padding: 2px var(--space-3);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--text-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.workspace {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.pane {
+  flex: 1 1 0;
+  min-width: 0;
+  background-color: var(--color-bg);
+}
+
+.workspace[data-view='split'] .source-pane {
+  flex: 0 0 var(--split);
+}
+
+/* Bound the editor to the pane so CodeMirror's own scroller does the scrolling. */
+.editor {
+  height: 100%;
+}
+
+.resizer {
+  position: relative;
+  flex: 0 0 1px;
+  background-color: var(--color-border);
+}
+
+/* A wider invisible hit area around the 1px line. */
+.resizer::after {
+  content: '';
+  position: absolute;
+  inset: 0 -3px;
+  z-index: 1;
+  cursor: col-resize;
+}
+
+.resizer:hover,
+.resizer:active {
+  background-color: var(--color-accent);
+}
+
+/* Controls */
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background-color: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.icon-button:hover:not(:disabled) {
+  background-color: var(--color-hover);
+  color: var(--color-text);
+}
+
+.icon-button[aria-pressed='true'] {
+  background-color: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.icon-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Sidebar */
+
+.sidebar {
+  flex: 0 0 var(--sidebar-width);
+  min-width: 0;
+  overflow-y: auto;
+  background-color: var(--color-surface);
+}
+
+.sidebar-heading {
+  margin: 0;
+  padding: var(--space-3) var(--space-3) var(--space-1);
+  font-size: var(--text-small);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.document-list {
+  margin: 0;
+  padding: 0 var(--space-1) var(--space-2);
+  list-style: none;
+}
+
+.document-item {
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius);
+}
+
+.document-item:hover,
+.document-item:has([aria-current]) {
+  background-color: var(--color-hover);
+}
+
+.document-name {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  background: none;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.document-name[aria-current] {
+  color: var(--color-text);
+}
+
+.document-close {
+  opacity: 0;
+}
+
+.document-item:hover .document-close,
+.document-close:focus-visible {
+  opacity: 1;
+}
