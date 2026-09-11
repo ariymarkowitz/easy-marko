@@ -1,3 +1,5 @@
+/// <reference types="node" />
+import { globSync, readFileSync } from 'node:fs';
 import type { Plugin } from 'vite';
 import { configDefaults, defineConfig } from 'vitest/config';
 import solid from '@solidjs/vite-plugin';
@@ -26,6 +28,15 @@ function precachePrerenderedShell(): Plugin {
     },
   };
 }
+
+/**
+ * Test files that call vi.mock. Tests otherwise share one module graph
+ * (`isolate: false`), where a mock can't replace a module that an earlier test
+ * file already loaded, so these files run isolated.
+ */
+const mockingTests = globSync('src/**/*.test.{ts,tsx}').filter((file) =>
+  readFileSync(file, 'utf8').includes('vi.mock('),
+);
 
 export default defineConfig({
   plugins: [
@@ -73,7 +84,10 @@ export default defineConfig({
     setupFiles: ['./vitest-setup.ts'],
     // Agent worktrees live in .claude/worktrees; their tests would share this run's globals.
     exclude: [...configDefaults.exclude, '.claude/**'],
-    isolate: false,
+    projects: [
+      { extends: true, test: { name: 'shared', isolate: false, exclude: mockingTests } },
+      { extends: true, test: { name: 'isolated', include: mockingTests } },
+    ],
   },
   build: {
     target: 'esnext',
