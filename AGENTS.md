@@ -24,6 +24,7 @@ Run `npm run status` before testing with a server. Use an existing server if one
 - `src/Document.tsx`: the HTML shell (head tags, pre-paint theme script). Prerendered at build time; ships no JS.
 - `src/components/`: UI components.
 - `src/state/`: app state as module-level signals and stores, action functions, and `use*` hooks for their effects (persistence, cross-tab backup sync, theme sync).
+  - `notices.ts`: `showNotice()` for in-app messages and errors (no `alert()`). Rendered by `components/Notices.tsx`.
   - `pane-link.ts`: scroll sync and alt-click jumps between the source and preview. Relies on the preview blocks' `data-line`/`data-end-line` attributes.
 - `src/editor/`: CodeMirror extensions/theme, plus the controller other modules use to reach the editor.
 - `src/lib/`: framework-free helpers (markdown rendering, files, storage, backup merging, scroll mapping, text stats).
@@ -31,7 +32,7 @@ Run `npm run status` before testing with a server. Use an existing server if one
 - `src/content/welcome.md`: the document opened on first run.
 - `src/styles/`: `tokens.css` (palette, type, spacing, transitions), `base.css` (layout and controls), `editor.css` (syntax colours), `markdown.css` (preview typography).
 - `public/`: static assets.
-- `scripts/`: development scripts (`server.mjs` lists and stops this folder's local servers).
+- `scripts/`: development scripts (`server.mjs` lists and stops this folder's local servers; `icons.mjs` regenerates the PNG icons from `public/icon.svg`).
 
 ## Conventions
 

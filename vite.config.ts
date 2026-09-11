@@ -34,7 +34,8 @@ export default defineConfig({
     // and `vite build` prerenders the shell into a static dist/client.
     solid({ start: true, diagnostics: true }),
     VitePWA({
-      registerType: 'autoUpdate',
+      // A new version waits until the user chooses to reload (see src/pwa.ts).
+      registerType: 'prompt',
       // Registered from src/pwa.ts: the prerendered shell doesn't go through
       // the plugin's HTML injection, so Document.tsx links the manifest too.
       injectRegister: false,
@@ -49,10 +50,16 @@ export default defineConfig({
         display: 'standalone',
         background_color: '#fafafa',
         theme_color: '#f6f6f6',
-        icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
+        // PNGs generated from icon.svg by scripts/icons.mjs.
+        icons: [
+          { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,woff2,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],
         navigateFallback: '/index.html',
       },
     }),

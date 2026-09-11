@@ -50,8 +50,10 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [x] Find and replace (CodeMirror search panel)
 - [x] PWA: web manifest and precaching service worker
 - [ ] Open `.md` files from the OS when installed (manifest `file_handlers` + `launchQueue`)
-- [ ] PNG and maskable icons for wider install support
-- [ ] Prompt to reload when a new version is available
+- [x] PNG and maskable icons for wider install support
+  - Generated from `public/icon.svg` by `node scripts/icons.mjs` (needs `rsvg-convert`); rerun it after changing the SVG.
+- [x] Prompt to reload when a new version is available
+  - A new service worker waits until Reload is clicked, then every open tab reloads. The documents backup syncs on `pagehide`, so unsaved edits survive. The app checks for updates hourly and when the page becomes visible, and says once when it's ready to work offline.
 - [ ] Drag and drop files to open them
 - [ ] Display checkboxes using `- [ ]` (and its checked variant)
 - [ ] Export as self-contained HTML document
@@ -59,6 +61,7 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 ## Hardening
 
 - [ ] Sanitise preview HTML, then allow raw HTML in markdown
-- [ ] Replace `alert()` error reporting with in-app notices
+- [x] Replace `alert()` error reporting with in-app notices
+  - `showNotice` in `state/notices.ts`. Info notices close after 6s (paused while hovered or focused); errors stay until dismissed. The unsaved-changes `confirm()` stays.
 - [x] Flush the pending auto-backup on `pagehide` (and when the page is hidden)
 - [x] Share the auto-backup between tabs: each sync merges this tab's documents with the stored backup (three-way, by document id, against the backup as the tab last synced it), and `storage` events and page show/hide sync straight away, so tabs pick up each other's edits instead of overwriting them

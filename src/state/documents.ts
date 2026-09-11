@@ -4,6 +4,7 @@ import { openFile, saveFile } from '../lib/files';
 import { hashText } from '../lib/hash';
 import { mergeById } from '../lib/merge';
 import { parseJSON, readText, STORAGE_KEYS, writeText } from '../lib/storage';
+import { showNotice } from './notices';
 import welcome from '../content/welcome.md?raw';
 
 export interface MarkdownDocument {
@@ -121,7 +122,7 @@ export function closeDocument(id: string): void {
 function reportFileError(action: 'open' | 'save', error: unknown): undefined {
   console.error(error);
   const reason = error instanceof Error ? error.message : String(error);
-  window.alert(`Couldn't ${action} the file: ${reason}`);
+  showNotice(`Couldn't ${action} the file: ${reason}`, { tone: 'error' });
   return undefined;
 }
 
