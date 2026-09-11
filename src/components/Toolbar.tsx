@@ -5,6 +5,7 @@ import {
   Eye,
   FilePlus,
   FolderOpen,
+  Link2,
   Moon,
   PanelLeft,
   Redo2,
@@ -16,7 +17,13 @@ import {
 } from 'lucide';
 import { canRedo, canUndo, editorCommands } from '../editor/controller';
 import { newDocument, openDocument, saveActiveDocument } from '../state/documents';
-import { selectViewMode, settings, toggleSidebar, type ViewMode } from '../state/settings';
+import {
+  selectViewMode,
+  settings,
+  toggleSidebar,
+  toggleSyncScroll,
+  type ViewMode,
+} from '../state/settings';
 import { theme, toggleTheme } from '../state/theme';
 import IconButton from './IconButton';
 
@@ -46,6 +53,14 @@ export default function Toolbar() {
 
       <span class="spacer" />
 
+      <IconButton
+        icon={Link2}
+        label="Sync scrolling in side-by-side view"
+        pressed={settings.syncScroll}
+        disabled={settings.viewMode !== 'split'}
+        onClick={toggleSyncScroll}
+      />
+      <div class="toolbar-divider" />
       <For each={viewModes}>
         {(item) => (
           <IconButton

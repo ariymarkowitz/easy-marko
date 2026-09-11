@@ -40,8 +40,9 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [x] Unsaved-changes indicator (sidebar dot); confirm before closing unsaved documents
 - [x] Avoid opening the same file twice (only detectable while the file handle is held; see IndexedDB item)
 - [ ] Rename documents
-- [ ] Sync scrolling between panes in split view, with a toggle
-- [ ] Alt-click in the preview jumps to the source, and vice versa (preview blocks already carry `data-line`)
+- [x] Sync scrolling between panes in split view, with a toggle
+- [x] Alt-click in the preview jumps to the source, and vice versa
+  - Opens split view when the other pane is hidden.
 - [x] Cursor line and column
 - [x] Word, character, and line counts
 - [x] Incremental preview: per-block HTML cache and keyed DOM reuse

@@ -22,6 +22,19 @@
   margin-top: 0;
 }
 
+/* Marks the block an alt-click in the source jumped to, then fades out. */
+.md-block.flash {
+  border-radius: var(--radius);
+  animation: block-flash 1.2s ease-out;
+}
+
+@keyframes block-flash {
+  from {
+    background-color: var(--color-accent-soft);
+    box-shadow: 0 0 0 var(--space-2) var(--color-accent-soft);
+  }
+}
+
 .markdown :is(p, ul, ol, blockquote, pre, table) {
   margin: 0 0 1em;
 }

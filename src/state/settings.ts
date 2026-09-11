@@ -13,6 +13,8 @@ export interface Settings {
   sidebarWidth: number;
   /** Fraction of the workspace given to the source pane in split view. */
   splitRatio: number;
+  /** Keep the source and preview panes scrolled to the same place in split view. */
+  syncScroll: boolean;
 }
 
 const defaults: Settings = {
@@ -21,6 +23,7 @@ const defaults: Settings = {
   sidebarOpen: true,
   sidebarWidth: 220,
   splitRatio: 0.5,
+  syncScroll: true,
 };
 
 const [settings, setSettings] = createStore<Settings>({
@@ -43,6 +46,19 @@ export function selectViewMode(mode: ViewMode): void {
       draft.viewMode = draft.viewMode === mode ? 'split' : mode;
       draft.lastPanel = mode;
     }
+  });
+}
+
+/** Shows both panes. Leaving split view later returns to the last single-pane view. */
+export function openSplitView(): void {
+  setSettings((draft) => {
+    draft.viewMode = 'split';
+  });
+}
+
+export function toggleSyncScroll(): void {
+  setSettings((draft) => {
+    draft.syncScroll = !draft.syncScroll;
   });
 }
 

@@ -14,6 +14,8 @@ export interface RenderedBlock {
   key: string;
   /** Zero-based source line the block starts on. */
   line: number;
+  /** Zero-based source line just past the block's end. */
+  endLine: number;
   html: string;
 }
 
@@ -121,7 +123,12 @@ export function createMarkdownRenderer() {
       const seen = occurrences.get(id) ?? 0;
       occurrences.set(id, seen + 1);
 
-      blocks.push({ key: seen === 0 ? id : `${id}\0${seen}`, line: map?.[0] ?? 0, html });
+      blocks.push({
+        key: seen === 0 ? id : `${id}\0${seen}`,
+        line: map?.[0] ?? 0,
+        endLine: map?.[1] ?? 0,
+        html,
+      });
       start = end;
     }
 
