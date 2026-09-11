@@ -48,7 +48,7 @@ export default defineConfig({
         start_url: '/',
         display: 'standalone',
         background_color: '#fafafa',
-        theme_color: '#f1f1f1',
+        theme_color: '#f6f6f6',
         icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
       },
       workbox: {
@@ -63,7 +63,6 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
-    globals: false,
     setupFiles: ['./vitest-setup.ts'],
     isolate: false,
   },

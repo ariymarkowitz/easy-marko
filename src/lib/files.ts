@@ -2,23 +2,18 @@
 // (so saves go back to the same file) and falls back to a file input and a
 // download link elsewhere.
 
-export interface OpenedFile {
-  name: string;
-  content: string;
-  handle?: FileSystemFileHandle;
-}
-
 export interface SavedFile {
   name: string;
   handle?: FileSystemFileHandle;
 }
 
-const pickerTypes = [
-  {
-    description: 'Markdown',
-    accept: { 'text/markdown': ['.md', '.markdown', '.mdown', '.txt'] },
-  },
-];
+export interface OpenedFile extends SavedFile {
+  content: string;
+}
+
+const extensions = ['.md', '.markdown', '.mdown', '.txt'];
+
+const pickerTypes = [{ description: 'Markdown', accept: { 'text/markdown': extensions } }];
 
 function isAbort(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
@@ -40,7 +35,7 @@ function openWithInput(): Promise<OpenedFile | undefined> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.md,.markdown,.mdown,.txt,text/markdown,text/plain';
+    input.accept = [...extensions, 'text/markdown', 'text/plain'].join(',');
     input.addEventListener('change', async () => {
       const file = input.files?.[0];
       resolve(file ? { name: file.name, content: await file.text() } : undefined);

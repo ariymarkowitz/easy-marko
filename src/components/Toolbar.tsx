@@ -12,12 +12,12 @@ import {
   Search,
   Sun,
   Undo2,
+  type IconNode,
 } from 'lucide';
 import { canRedo, canUndo, editorCommands } from '../editor/controller';
 import { newDocument, openDocument, saveActiveDocument } from '../state/documents';
-import { selectViewMode, setSettings, settings, type ViewMode } from '../state/settings';
+import { selectViewMode, settings, toggleSidebar, type ViewMode } from '../state/settings';
 import { theme, toggleTheme } from '../state/theme';
-import type { IconNode } from './Icon';
 import IconButton from './IconButton';
 
 const viewModes: { mode: ViewMode; label: string; icon: IconNode }[] = [
@@ -33,11 +33,7 @@ export default function Toolbar() {
         icon={PanelLeft}
         label="Toggle sidebar"
         pressed={settings.sidebarOpen}
-        onClick={() =>
-          setSettings((draft) => {
-            draft.sidebarOpen = !draft.sidebarOpen;
-          })
-        }
+        onClick={toggleSidebar}
       />
       <div class="toolbar-divider" />
       <IconButton icon={FilePlus} label="New document" onClick={newDocument} />

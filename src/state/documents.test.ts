@@ -101,11 +101,15 @@ describe('closeDocument', () => {
 
 describe('openDocument', () => {
   test('switches to a file that is already open instead of opening it again', async () => {
-    vi.mocked(openFile).mockResolvedValueOnce({
-      name: 'Notes.md',
-      content: '# Notes',
-      handle: fakeHandle('Notes.md'),
-    });
+    // A new handle each time, so the file is matched by isSameEntry, not identity.
+    const pickNotes = () =>
+      vi.mocked(openFile).mockResolvedValueOnce({
+        name: 'Notes.md',
+        content: '# Notes',
+        handle: fakeHandle('Notes.md'),
+      });
+
+    pickNotes();
     await openDocument();
     flush();
     const notes = activeDocument()!;
@@ -113,11 +117,7 @@ describe('openDocument', () => {
 
     addDocument();
     const count = documentsState.documents.length;
-    vi.mocked(openFile).mockResolvedValueOnce({
-      name: 'Notes.md',
-      content: '# Notes',
-      handle: fakeHandle('Notes.md'),
-    });
+    pickNotes();
     await openDocument();
     flush();
     expect(documentsState.documents).toHaveLength(count);

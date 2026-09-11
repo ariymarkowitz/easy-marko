@@ -1,4 +1,5 @@
 import { createEffect, createStore, deep, snapshot } from 'solid-js';
+import { clamp } from '../lib/clamp';
 import { readJSON, STORAGE_KEYS, writeText } from '../lib/storage';
 
 export type ViewMode = 'source' | 'split' | 'preview';
@@ -22,10 +23,12 @@ const defaults: Settings = {
   splitRatio: 0.5,
 };
 
-export const [settings, setSettings] = createStore<Settings>({
+const [settings, setSettings] = createStore<Settings>({
   ...defaults,
   ...readJSON<Partial<Settings>>(STORAGE_KEYS.settings, {}),
 });
+
+export { settings };
 
 /**
  * Handles a click on a view button. Clicking the active single-pane view
@@ -40,6 +43,24 @@ export function selectViewMode(mode: ViewMode): void {
       draft.viewMode = draft.viewMode === mode ? 'split' : mode;
       draft.lastPanel = mode;
     }
+  });
+}
+
+export function toggleSidebar(): void {
+  setSettings((draft) => {
+    draft.sidebarOpen = !draft.sidebarOpen;
+  });
+}
+
+export function setSidebarWidth(width: number): void {
+  setSettings((draft) => {
+    draft.sidebarWidth = Math.round(clamp(width, 160, 480));
+  });
+}
+
+export function setSplitRatio(ratio: number): void {
+  setSettings((draft) => {
+    draft.splitRatio = clamp(ratio, 0.2, 0.8);
   });
 }
 

@@ -1,4 +1,5 @@
-import Icon, { type IconNode } from './Icon';
+import type { IconNode } from 'lucide';
+import Icon from './Icon';
 
 export default function IconButton(props: {
   icon: IconNode;

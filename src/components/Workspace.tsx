@@ -1,20 +1,15 @@
 import { Show } from 'solid-js';
-import { clamp } from '../lib/clamp';
-import { setSettings, settings } from '../state/settings';
+import { setSplitRatio, settings } from '../state/settings';
 import Editor from './Editor';
 import Preview from './Preview';
 import Resizer from './Resizer';
 
 export default function Workspace() {
-  let workspace: HTMLElement | undefined;
+  let workspace!: HTMLElement;
 
   function resize(clientX: number) {
-    if (!workspace) return;
     const bounds = workspace.getBoundingClientRect();
-    const ratio = clamp((clientX - bounds.left) / bounds.width, 0.2, 0.8);
-    setSettings((draft) => {
-      draft.splitRatio = ratio;
-    });
+    setSplitRatio((clientX - bounds.left) / bounds.width);
   }
 
   // The editor stays mounted in preview mode so its undo history survives;

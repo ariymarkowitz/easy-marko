@@ -8,13 +8,12 @@ export interface TextStats {
 const wordPattern = /[\p{L}\p{N}]+(?:['’-][\p{L}\p{N}]+)*/gu;
 const lowSurrogatePattern = /[\uDC00-\uDFFF]/g;
 
-export function textStats(text: string): TextStats {
-  let lines = 1;
-  for (let i = text.indexOf('\n'); i !== -1; i = text.indexOf('\n', i + 1)) lines++;
+const count = (text: string, pattern: RegExp): number => text.match(pattern)?.length ?? 0;
 
+export function textStats(text: string): TextStats {
   return {
-    words: text.match(wordPattern)?.length ?? 0,
-    characters: text.length - (text.match(lowSurrogatePattern)?.length ?? 0),
-    lines,
+    words: count(text, wordPattern),
+    characters: text.length - count(text, lowSurrogatePattern),
+    lines: count(text, /\n/g) + 1,
   };
 }

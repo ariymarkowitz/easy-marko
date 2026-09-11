@@ -54,18 +54,28 @@ export function selectDocument(id: string): void {
   });
 }
 
-export function newDocument(): void {
-  const doc = createDocument();
+function addDocument(doc: MarkdownDocument): void {
   setState((draft) => {
     draft.documents.push(doc);
     draft.activeId = doc.id;
   });
 }
 
-export function updateContent(id: string, content: string): void {
+/** Applies `change` to the document with `id`, if it's still open. */
+function updateDocument(id: string, change: (doc: MarkdownDocument) => void): void {
   setState((draft) => {
     const doc = draft.documents.find((d) => d.id === id);
-    if (doc) doc.content = content;
+    if (doc) change(doc);
+  });
+}
+
+export function newDocument(): void {
+  addDocument(createDocument());
+}
+
+export function updateContent(id: string, content: string): void {
+  updateDocument(id, (doc) => {
+    doc.content = content;
   });
 }
 
@@ -119,10 +129,7 @@ export async function openDocument(): Promise<void> {
   }
   const doc = createDocument(file.name, file.content);
   if (file.handle) fileHandles.set(doc.id, file.handle);
-  setState((draft) => {
-    draft.documents.push(doc);
-    draft.activeId = doc.id;
-  });
+  addDocument(doc);
 }
 
 export async function saveActiveDocument(): Promise<void> {
@@ -134,9 +141,7 @@ export async function saveActiveDocument(): Promise<void> {
   );
   if (!saved) return;
   if (saved.handle) fileHandles.set(id, saved.handle);
-  setState((draft) => {
-    const target = draft.documents.find((d) => d.id === id);
-    if (!target) return;
+  updateDocument(id, (target) => {
     target.name = saved.name;
     // The content as written, so edits made while saving still count as unsaved.
     target.savedHash = hashText(content);

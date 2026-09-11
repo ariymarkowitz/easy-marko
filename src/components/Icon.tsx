@@ -1,7 +1,7 @@
 // Renders Lucide icon data. The official lucide-solid package only supports
 // Solid 1.x, so this uses the framework-agnostic `lucide` package instead.
 
-export type IconNode = [tag: string, attrs: Record<string, string | number | undefined>][];
+import type { IconNode } from 'lucide';
 
 function toMarkup(node: IconNode): string {
   return node
@@ -15,13 +15,13 @@ function toMarkup(node: IconNode): string {
     .join('');
 }
 
-export default function Icon(props: { icon: IconNode; size?: number }) {
+export default function Icon(props: { icon: IconNode }) {
   return (
     <svg
       class="icon"
       xmlns="http://www.w3.org/2000/svg"
-      width={props.size ?? 16}
-      height={props.size ?? 16}
+      width="16"
+      height="16"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

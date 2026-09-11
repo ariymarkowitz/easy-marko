@@ -16,7 +16,7 @@ export default function Document(props: ParentProps) {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="description" content="A minimal markdown editor that works offline." />
-        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f1f1" />
+        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f6f6" />
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1e1e1e" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="manifest" href="/manifest.webmanifest" />

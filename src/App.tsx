@@ -10,11 +10,10 @@ import Sidebar from './components/Sidebar';
 import StatusBar from './components/StatusBar';
 import Toolbar from './components/Toolbar';
 import Workspace from './components/Workspace';
-import { clamp } from './lib/clamp';
 import { registerServiceWorker } from './pwa';
 import { useShortcuts } from './shortcuts';
 import { useDocumentsBackup, useWindowTitle } from './state/documents';
-import { setSettings, settings, useSettingsPersistence } from './state/settings';
+import { setSidebarWidth, settings, useSettingsPersistence } from './state/settings';
 import { useTheme } from './state/theme';
 
 export default function App() {
@@ -25,19 +24,14 @@ export default function App() {
   useShortcuts();
   onSettled(registerServiceWorker);
 
-  function resizeSidebar(clientX: number) {
-    setSettings((draft) => {
-      draft.sidebarWidth = Math.round(clamp(clientX, 160, 480));
-    });
-  }
-
   return (
     <div class="app" style={{ '--sidebar-width': `${settings.sidebarWidth}px` }}>
       <Toolbar />
       <div class="app-body">
         <Show when={settings.sidebarOpen}>
           <Sidebar />
-          <Resizer label="Resize sidebar" onResize={resizeSidebar} />
+          {/* The sidebar starts at the window's left edge, so the pointer's x is its width. */}
+          <Resizer label="Resize sidebar" onResize={setSidebarWidth} />
         </Show>
         <Workspace />
       </div>

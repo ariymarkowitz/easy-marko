@@ -15,9 +15,12 @@ const [canRedo, setCanRedo] = createSignal(false);
 
 export { canRedo, canUndo, cursor };
 
-export function attachEditor(next: EditorView | undefined): void {
+export function attachEditor(next: EditorView): void {
   view = next;
-  if (next) syncEditorState(next.state);
+}
+
+export function detachEditor(): void {
+  view = undefined;
 }
 
 /** Publishes cursor position and undo/redo availability. Call when the editor state changes. */

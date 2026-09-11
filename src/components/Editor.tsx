@@ -1,7 +1,7 @@
 import { createEffect, onSettled, untrack } from 'solid-js';
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
-import { attachEditor, syncEditorState } from '../editor/controller';
+import { attachEditor, detachEditor, syncEditorState } from '../editor/controller';
 import { editorExtensions } from '../editor/extensions';
 import { activeDocument, documentsState, updateContent } from '../state/documents';
 
@@ -21,9 +21,12 @@ export default function Editor() {
   ];
 
   const view = new EditorView();
-  onSettled(() => () => {
-    attachEditor(undefined);
-    view.destroy();
+  onSettled(() => {
+    attachEditor(view);
+    return () => {
+      detachEditor();
+      view.destroy();
+    };
   });
 
   createEffect(
@@ -37,14 +40,14 @@ export default function Editor() {
       };
     },
     ({ ids, id, content }) => {
-      if (documentId && ids.includes(documentId)) states.set(documentId, view.state);
       for (const key of states.keys()) {
         if (!ids.includes(key)) states.delete(key);
       }
       if (!id || id === documentId) return;
+      if (documentId && ids.includes(documentId)) states.set(documentId, view.state);
       view.setState(states.get(id) ?? EditorState.create({ doc: content, extensions }));
       documentId = id;
-      attachEditor(view);
+      syncEditorState(view.state);
     },
   );
 
