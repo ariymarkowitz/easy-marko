@@ -2,6 +2,7 @@ import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 import solid from '@solidjs/vite-plugin';
 import { VitePWA, type VitePluginPWAAPI } from 'vite-plugin-pwa';
+import { fileTypes } from './src/lib/files.ts';
 
 /**
  * Regenerates the service worker after the Solid plugin prerenders
@@ -50,6 +51,10 @@ export default defineConfig({
         background_color: '#fafafa',
         theme_color: '#f6f6f6',
         icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
+        // Open markdown files from the OS once installed; see state/launch-queue.ts.
+        file_handlers: [{ action: '/', accept: fileTypes }],
+        // Every window shows every document, so open launched files in an existing window.
+        launch_handler: { client_mode: 'focus-existing' },
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,woff2,webmanifest}'],

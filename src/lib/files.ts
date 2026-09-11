@@ -13,18 +13,26 @@ export interface OpenedFile extends SavedFile {
 
 const extensions = ['.md', '.markdown', '.mdown', '.txt'];
 
-const pickerTypes = [{ description: 'Markdown', accept: { 'text/markdown': extensions } }];
+/** The files the app opens, as a picker or manifest `accept` value. */
+export const fileTypes = { 'text/markdown': extensions };
+
+const pickerTypes = [{ description: 'Markdown', accept: fileTypes }];
 
 function isAbort(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
+}
+
+/** Reads the file behind `handle`. */
+export async function readFileHandle(handle: FileSystemFileHandle): Promise<OpenedFile> {
+  const file = await handle.getFile();
+  return { name: file.name, content: await file.text(), handle };
 }
 
 export async function openFile(): Promise<OpenedFile | undefined> {
   if (!window.showOpenFilePicker) return openWithInput();
   try {
     const [handle] = await window.showOpenFilePicker({ types: pickerTypes });
-    const file = await handle.getFile();
-    return { name: file.name, content: await file.text(), handle };
+    return await readFileHandle(handle);
   } catch (error) {
     if (isAbort(error)) return undefined;
     throw error;

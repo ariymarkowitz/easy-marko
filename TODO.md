@@ -50,7 +50,8 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [ ] Skip inline parsing for unchanged blocks (the whole document is still tokenised on each change)
 - [x] Find and replace (CodeMirror search panel)
 - [x] PWA: web manifest and precaching service worker
-- [ ] Open `.md` files from the OS when installed (manifest `file_handlers` + `launchQueue`)
+- [x] Open `.md` files from the OS when installed (manifest `file_handlers` + `launchQueue`)
+  - `launch_handler` is `focus-existing`, so launched files open in an open window instead of a new one. Only the manifest and a fake queue are tested; the real launch needs the installed app.
 - [ ] PNG and maskable icons for wider install support
 - [ ] Prompt to reload when a new version is available
 - [ ] Drag and drop files to open them

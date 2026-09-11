@@ -209,6 +209,21 @@ export async function openDocument(): Promise<void> {
   if (file) await openFileDocument(file);
 }
 
+/**
+ * Opens files that are being read, such as files the app was launched with,
+ * in the order given. Reports each file that couldn't be read.
+ */
+export async function openFiles(files: Iterable<Promise<OpenedFile>>): Promise<void> {
+  // Handle every failure straight away, so none goes unhandled while an earlier file opens.
+  const results = Array.from(files, (file) =>
+    file.catch((error: unknown) => reportFileError('open', error)),
+  );
+  for (const result of results) {
+    const file = await result;
+    if (file) await openFileDocument(file);
+  }
+}
+
 export async function saveActiveDocument(): Promise<void> {
   const doc = activeDocument();
   if (!doc) return;

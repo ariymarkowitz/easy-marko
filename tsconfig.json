@@ -12,6 +12,8 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "noEmit": true,
+    // Vite's native config loader needs extensions on vite.config.ts's local imports.
+    "allowImportingTsExtensions": true,
 
     // Type Checking & Safety
     "strict": true,

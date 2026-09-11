@@ -1,5 +1,6 @@
-// The parts of the File System Access API that TypeScript's DOM lib doesn't
-// declare yet. Optional, because only Chromium-based browsers implement them.
+// The parts of the File System Access and File Handling APIs that TypeScript's
+// DOM lib doesn't declare yet. Optional, because only Chromium-based browsers
+// implement them.
 
 interface FilePickerAcceptType {
   description?: string;
@@ -11,11 +12,6 @@ interface FilePickerOptions {
   suggestedName?: string;
 }
 
-interface Window {
-  showOpenFilePicker?(options?: FilePickerOptions): Promise<FileSystemFileHandle[]>;
-  showSaveFilePicker?(options?: FilePickerOptions): Promise<FileSystemFileHandle>;
-}
-
 interface FileSystemHandlePermissionDescriptor {
   mode?: 'read' | 'readwrite';
 }
@@ -23,4 +19,21 @@ interface FileSystemHandlePermissionDescriptor {
 interface FileSystemHandle {
   queryPermission?(descriptor?: FileSystemHandlePermissionDescriptor): Promise<PermissionState>;
   requestPermission?(descriptor?: FileSystemHandlePermissionDescriptor): Promise<PermissionState>;
+}
+
+/** The files the installed app was opened with (manifest `file_handlers`). */
+interface LaunchParams {
+  readonly targetURL?: string;
+  readonly files: readonly FileSystemHandle[];
+}
+
+interface LaunchQueue {
+  /** Calls `consumer` with each launch, including any that happened before it was set. */
+  setConsumer(consumer: (params: LaunchParams) => void): void;
+}
+
+interface Window {
+  showOpenFilePicker?(options?: FilePickerOptions): Promise<FileSystemFileHandle[]>;
+  showSaveFilePicker?(options?: FilePickerOptions): Promise<FileSystemFileHandle>;
+  launchQueue?: LaunchQueue;
 }
