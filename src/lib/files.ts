@@ -22,10 +22,46 @@ function isAbort(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
 }
 
-/** Reads the file behind `handle`. */
+/** Reads `file` as text. Rejects if it isn't a text file. */
+async function readText(file: Pick<File, 'name' | 'text'>): Promise<string> {
+  const content = await file.text();
+  // Runs of control characters mean binary data (the same test CodeMirror uses for drops).
+  // eslint-disable-next-line no-control-regex -- matching control characters is the point
+  if (/[\0-\x08\x0e-\x1f]{2}/.test(content)) throw new Error(`${file.name} isn't a text file.`);
+  return content;
+}
+
+/** Reads the file behind `handle`. Rejects if it isn't a text file. */
 export async function readFileHandle(handle: FileSystemFileHandle): Promise<OpenedFile> {
   const file = await handle.getFile();
-  return { name: file.name, content: await file.text(), handle };
+  return { name: file.name, content: await readText(file), handle };
+}
+
+/** Whether a drag carries files, rather than text or a link. */
+export function carriesFiles(data: DataTransfer | null): boolean {
+  return data?.types.includes('Files') ?? false;
+}
+
+/**
+ * Starts reading the files dropped with `data`, with their handles where the
+ * browser gives them. Call during the drop event: `data` is emptied after it.
+ * Each result rejects if its item is a folder or isn't a text file.
+ */
+export function readDroppedFiles(data: DataTransfer): Promise<OpenedFile>[] {
+  return Array.from(data.items)
+    .filter((item) => item.kind === 'file')
+    .map((item) => readDroppedFile(item.getAsFile(), item.getAsFileSystemHandle?.()));
+}
+
+async function readDroppedFile(
+  file: File | null,
+  handle: Promise<FileSystemHandle | null> | undefined,
+): Promise<OpenedFile> {
+  const entry = await handle?.catch(() => null);
+  if (entry?.kind === 'directory') throw new Error(`${entry.name} is a folder.`);
+  if (entry) return readFileHandle(entry as FileSystemFileHandle);
+  if (!file) throw new Error("The dropped item isn't a file.");
+  return { name: file.name, content: await readText(file) };
 }
 
 export async function openFile(): Promise<OpenedFile | undefined> {

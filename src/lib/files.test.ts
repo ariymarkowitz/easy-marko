@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { saveFile } from './files';
+import { readDroppedFiles, saveFile } from './files';
 
 afterEach(() => {
   delete window.showSaveFilePicker;
@@ -46,5 +46,36 @@ describe('saveFile', () => {
     );
     expect(handle.written).toEqual([]);
     expect(picked.written).toEqual(['Hello']);
+  });
+});
+
+describe('readDroppedFiles', () => {
+  const dropped = (...items: object[]) => ({ items }) as unknown as DataTransfer;
+  const file = (name: string, content: string) => ({ name, text: async () => content });
+
+  test('reads the dropped files, with handles where the browser gives them', async () => {
+    const handle = { kind: 'file', name: 'Notes.md', getFile: async () => file('Notes.md', '# Notes') };
+    const results = readDroppedFiles(
+      dropped(
+        { kind: 'file', getAsFile: () => file('Notes.md', ''), getAsFileSystemHandle: async () => handle },
+        { kind: 'file', getAsFile: () => file('Plain.md', '# Plain') },
+        { kind: 'string', getAsFile: () => null },
+      ),
+    );
+    expect(results).toHaveLength(2);
+    expect(await results[0]).toEqual({ name: 'Notes.md', content: '# Notes', handle });
+    expect(await results[1]).toEqual({ name: 'Plain.md', content: '# Plain' });
+  });
+
+  test('rejects folders and files that are not text', async () => {
+    const folder = { kind: 'directory', name: 'Folder' };
+    const [folderResult, imageResult] = readDroppedFiles(
+      dropped(
+        { kind: 'file', getAsFile: () => file('Folder', ''), getAsFileSystemHandle: async () => folder },
+        { kind: 'file', getAsFile: () => file('Image.png', '\x89PNG\r\n\x1a\n\0\0\0\r') },
+      ),
+    );
+    await expect(folderResult).rejects.toThrow('Folder');
+    await expect(imageResult).rejects.toThrow('Image.png');
   });
 });

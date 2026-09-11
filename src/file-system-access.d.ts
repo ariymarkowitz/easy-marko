@@ -21,6 +21,11 @@ interface FileSystemHandle {
   requestPermission?(descriptor?: FileSystemHandlePermissionDescriptor): Promise<PermissionState>;
 }
 
+interface DataTransferItem {
+  /** A handle for a dropped file or folder, or null if the item isn't one. */
+  getAsFileSystemHandle?(): Promise<FileSystemHandle | null>;
+}
+
 /** The files the installed app was opened with (manifest `file_handlers`). */
 interface LaunchParams {
   readonly targetURL?: string;

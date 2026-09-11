@@ -246,3 +246,24 @@ button,
     background-color: currentColor;
   }
 }
+
+/* Drop indicator: outlines the window while files are dragged over it. */
+
+.drop-indicator {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--color-accent);
+  background-color: var(--color-accent-soft);
+  /* Stays out of the drag's way, so the elements under it still get the drag events. */
+  pointer-events: none;
+}
+
+.drop-indicator-label {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}

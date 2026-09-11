@@ -54,7 +54,8 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
   - `launch_handler` is `focus-existing`, so launched files open in an open window instead of a new one. Only the manifest and a fake queue are tested; the real launch needs the installed app.
 - [ ] PNG and maskable icons for wider install support
 - [ ] Prompt to reload when a new version is available
-- [ ] Drag and drop files to open them
+- [x] Drag and drop files to open them
+  - Dropped files open with their handles where the browser gives them (Chromium), so Save writes back to them. Files that aren't text, and folders, are reported instead of opened. Dragged text still drops into the editor.
 - [ ] Display checkboxes using `- [ ]` (and its checked variant)
 - [ ] Export as self-contained HTML document
 
