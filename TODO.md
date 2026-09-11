@@ -26,7 +26,8 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [x] Fluid preview type between 360px and 800px pane width (line height 1.4 → 1.6)
   - Font size range isn't given in the spec; using 1rem → 1.125rem. **Confirm.**
 - [x] Source syntax highlighting, including fenced code languages
-- [ ] Highlight `$…$` / `$$…$$` maths in the source
+- [x] Highlight `$…$` / `$$…$$` maths in the source
+  - `src/editor/math.ts` follows the preview's delimiter rules, quirks included: a `$$` block runs past blank lines to the next line containing `$$` (or the end of its container). One difference: in a blockquote the block ends with the last `>` line, where the preview also takes lazy unquoted lines.
 - [ ] Syntax highlighting for fenced code blocks in the preview
 
 ## Features
