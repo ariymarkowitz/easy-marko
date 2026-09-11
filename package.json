@@ -10,7 +10,9 @@
     "serve": "vite preview",
     "test": "vitest",
     "lint": "oxlint src",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "server:status": "node scripts/server.mjs status",
+    "server:stop": "node scripts/server.mjs stop"
   },
   "license": "MIT",
   "devDependencies": {

@@ -12,6 +12,17 @@ This is a SolidJS 2.x project. Solid is not React: components run once (there is
 - `npm run build`: static build in `dist/client`; `npm run serve` previews it
 - `npm test`: vitest (jsdom)
 - `npm run typecheck`, `npm run lint`
+- `npm run server:status -- [dev|preview] [--wait]`, `npm run server:stop -- [dev|preview|<pid>]`: list or stop the servers running from this folder (see below)
+
+## Testing in the browser
+
+Other agents may be working in this folder with a server already running, so reuse one before starting your own:
+
+1. Run `npm run server:status -- dev`. It prints each dev server running from this folder as `dev server at <url> (pid <pid>)`, and exits 1 if there are none. Use the URL it prints: Vite takes the next free port when 3000 is busy.
+2. If none is running, start `npm run dev` as a background process, then run `npm run server:status -- dev --wait` to get its URL and pid once it's listening.
+3. When you've finished testing, stop the server you started with `npm run server:stop -- <pid>`. Leave any server you didn't start running.
+
+To test the production build, run `npm run build` and follow the same steps with `npm run serve` and `preview` in place of `dev`. The build registers a service worker that can keep serving the previous build after a rebuild, so unregister it and clear its caches before testing.
 
 ## Structure
 
@@ -23,6 +34,7 @@ This is a SolidJS 2.x project. Solid is not React: components run once (there is
 - `src/lib/`: framework-free helpers (markdown rendering, files, storage, text stats). Unit tests sit beside them.
 - `src/styles/`: `tokens.css` (palette, type, spacing, transitions), `base.css` (layout and controls), `editor.css` (syntax colours), `markdown.css` (preview typography).
 - `public/`: static assets.
+- `scripts/`: development scripts (`server.mjs` lists and stops this folder's local servers).
 
 ## Conventions
 
