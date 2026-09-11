@@ -18,6 +18,8 @@
   text-decoration: line-through;
 }
 
+/* Maths content; its $ delimiters are marks. */
+.tok-math,
 .tok-link,
 .tok-url,
 .tok-keyword,

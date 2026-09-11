@@ -6,11 +6,13 @@ import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/sea
 import type { Extension } from '@codemirror/state';
 import { drawSelection, EditorView, highlightActiveLine, keymap } from '@codemirror/view';
 import { classHighlighter, tagHighlighter, tags } from '@lezer/highlight';
+import { mathSyntax, mathTag } from './math';
 
 // classHighlighter covers code in fenced blocks; this adds classes for the
 // markdown syntax it doesn't know about. Colours live in styles/editor.css.
 const markdownHighlighter = tagHighlighter([
   { tag: tags.processingInstruction, class: 'tok-mark' },
+  { tag: mathTag, class: 'tok-math' },
   { tag: tags.monospace, class: 'tok-code' },
   { tag: tags.quote, class: 'tok-quote' },
   { tag: tags.strikethrough, class: 'tok-strikethrough' },
@@ -68,7 +70,7 @@ export const editorExtensions: Extension[] = [
   bracketMatching(),
   highlightSelectionMatches(),
   search({ top: true }),
-  markdown({ base: markdownLanguage, codeLanguages: languages }),
+  markdown({ base: markdownLanguage, codeLanguages: languages, extensions: mathSyntax }),
   syntaxHighlighting(classHighlighter),
   syntaxHighlighting(markdownHighlighter),
   EditorView.lineWrapping,
