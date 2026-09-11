@@ -9,8 +9,8 @@
   color-scheme: light dark;
 
   --color-bg: light-dark(#fafafa, #161616);
-  --color-surface: light-dark(#f1f1f1, #1e1e1e);
-  --color-hover: light-dark(#e4e4e4, #2c2c2c);
+  --color-surface: light-dark(#f6f6f6, #1e1e1e);
+  --color-hover: light-dark(#e6e6e6, #2c2c2c);
   --color-hover-soft: light-dark(rgb(0 0 0 / 3%), rgb(255 255 255 / 3%));
   --color-border: light-dark(#e1e1e1, #2e2e2e);
   --color-text: light-dark(#2a2a2a, #e8e8e8);
