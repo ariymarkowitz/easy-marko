@@ -1,5 +1,5 @@
 import type { Plugin } from 'vite';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 import solid from '@solidjs/vite-plugin';
 import { VitePWA, type VitePluginPWAAPI } from 'vite-plugin-pwa';
 
@@ -71,6 +71,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./vitest-setup.ts'],
+    // Agent worktrees live in .claude/worktrees; their tests would share this run's globals.
+    exclude: [...configDefaults.exclude, '.claude/**'],
     isolate: false,
   },
   build: {
