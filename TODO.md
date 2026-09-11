@@ -53,7 +53,8 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [ ] PNG and maskable icons for wider install support
 - [ ] Prompt to reload when a new version is available
 - [ ] Drag and drop files to open them
-- [ ] Display checkboxes using `- [ ]` (and its checked variant)
+- [x] Display checkboxes using `- [ ]` (and its checked variant)
+  - Read-only (disabled); clicking them doesn't edit the source.
 - [ ] Export as self-contained HTML document
 
 ## Hardening

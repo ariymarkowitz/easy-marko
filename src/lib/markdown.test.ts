@@ -70,6 +70,42 @@ describe('createMarkdownRenderer', () => {
   });
 });
 
+describe('task lists', () => {
+  const render = (source: string) =>
+    parse(
+      createMarkdownRenderer()(source)
+        .map((block) => block.html)
+        .join(''),
+    );
+
+  test('renders read-only checkboxes for [ ] and [x] items', () => {
+    const root = render('- [ ] todo\n- [x] done\n- [X] also done\n- plain\n');
+    const items = root.querySelectorAll('li');
+    const checkboxes = root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
+    expect(checkboxes).toHaveLength(3);
+    expect([...checkboxes].map((box) => box.checked)).toEqual([false, true, true]);
+    expect([...checkboxes].every((box) => box.disabled)).toBe(true);
+    expect(items[0]).toHaveClass('task-list-item');
+    expect(items[0]).toHaveTextContent(/^todo$/);
+    expect(items[3]).not.toHaveClass('task-list-item');
+  });
+
+  test('works in ordered, loose and nested lists', () => {
+    const root = render('1. [x] first\n\n2. [ ] second\n   - [x] nested\n');
+    expect(root.querySelectorAll('.task-list-item')).toHaveLength(3);
+    expect(root.querySelector('ol > li > p > input')).toBeChecked();
+  });
+
+  test.each([
+    ['an escaped marker', '- \\[ ] text'],
+    ['a marker without text', '- [ ]'],
+    ['a marker outside a list', '[x] text'],
+    ['a marker later in the item', '- text [x] text'],
+  ])('leaves %s as text', (_, source) => {
+    expect(render(source).querySelector('input')).toBeNull();
+  });
+});
+
 /** Parses rendered HTML the way the preview's innerHTML does. */
 function parse(html: string): HTMLElement {
   const container = document.createElement('div');
