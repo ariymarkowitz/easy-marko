@@ -18,12 +18,13 @@ import {
 import { canRedo, canUndo, editorCommands } from '../editor/controller';
 import { newDocument, openDocument, saveActiveDocument } from '../state/documents';
 import {
+  narrowScreen,
   selectViewMode,
-  settings,
+  sidebarOpen,
   toggleSidebar,
-  toggleSyncScroll,
-  type ViewMode,
-} from '../state/settings';
+  viewMode,
+} from '../state/layout';
+import { settings, toggleSyncScroll, type ViewMode } from '../state/settings';
 import { theme, toggleTheme } from '../state/theme';
 import IconButton from './IconButton';
 
@@ -39,7 +40,8 @@ export default function Toolbar() {
       <IconButton
         icon={PanelLeft}
         label="Toggle sidebar"
-        pressed={settings.sidebarOpen}
+        pressed={sidebarOpen()}
+        controls="sidebar"
         onClick={toggleSidebar}
       />
       <div class="toolbar-divider" />
@@ -57,7 +59,7 @@ export default function Toolbar() {
         icon={Link2}
         label="Sync scrolling in side-by-side view"
         pressed={settings.syncScroll}
-        disabled={settings.viewMode !== 'split'}
+        disabled={viewMode() !== 'split'}
         onClick={toggleSyncScroll}
       />
       <div class="toolbar-divider" />
@@ -66,7 +68,8 @@ export default function Toolbar() {
           <IconButton
             icon={item.icon}
             label={item.label}
-            pressed={settings.viewMode === item.mode}
+            pressed={viewMode() === item.mode}
+            disabled={item.mode === 'split' && narrowScreen()}
             onClick={() => selectViewMode(item.mode)}
           />
         )}

@@ -10,7 +10,7 @@ import IconButton from './IconButton';
 
 export default function Sidebar() {
   return (
-    <aside class="sidebar" aria-label="Documents">
+    <aside id="sidebar" class="sidebar" aria-label="Documents">
       <h2 class="sidebar-heading">Documents</h2>
       <ul class="document-list">
         <For each={documentsState.documents}>

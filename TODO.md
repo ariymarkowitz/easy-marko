@@ -14,8 +14,10 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [x] Source, preview, and side-by-side views
 - [x] Resizable sidebar and split panes
 - [x] Small toolbar and status bar; editor/preview fill the rest
-- [ ] Keyboard-accessible resizers (arrow keys)
-- [ ] Narrow screens: sidebar as an overlay, no split view below ~700px
+- [x] Keyboard-accessible resizers (arrow keys)
+  - Focusable separators: Left/Right move a step, Shift+Left/Right a larger step, Home/End jump to the limits.
+- [x] Narrow screens: sidebar as an overlay, no split view below ~700px
+  - The sidebar opens over the workspace and closes on Escape, a click outside, or selecting a document. A stored split view shows the last single pane, and choosing a pane there keeps split view stored, so widening the window restores it.
 
 ## Presentation and style
 
@@ -42,7 +44,7 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 - [ ] Rename documents
 - [x] Sync scrolling between panes in split view, with a toggle
 - [x] Alt-click in the preview jumps to the source, and vice versa
-  - Opens split view when the other pane is hidden.
+  - Opens split view when the other pane is hidden. Narrow screens switch to the other pane instead.
 - [x] Cursor line and column
 - [x] Word, character, and line counts
 - [x] Incremental preview: per-block HTML cache and keyed DOM reuse

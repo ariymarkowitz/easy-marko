@@ -8,6 +8,8 @@ export default function IconButton(props: {
   /** Set for toggle buttons; leave undefined for plain actions. */
   pressed?: boolean;
   disabled?: boolean;
+  /** The id of the element the button shows or hides. */
+  controls?: string;
   class?: string;
 }) {
   return (
@@ -17,6 +19,7 @@ export default function IconButton(props: {
       title={props.label}
       aria-label={props.label}
       aria-pressed={props.pressed === undefined ? undefined : props.pressed ? 'true' : 'false'}
+      aria-controls={props.controls}
       disabled={props.disabled}
       onClick={() => props.onClick()}
     >
