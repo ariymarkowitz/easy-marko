@@ -11,8 +11,8 @@
     "test": "vitest",
     "lint": "oxlint src",
     "typecheck": "tsc --noEmit",
-    "server:status": "node scripts/server.mjs status",
-    "server:stop": "node scripts/server.mjs stop"
+    "status": "node scripts/server.mjs status",
+    "stop": "node scripts/server.mjs stop"
   },
   "license": "MIT",
   "devDependencies": {

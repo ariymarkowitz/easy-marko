@@ -2,8 +2,8 @@
 // from this folder. Several agents can work here at once, so they check for a
 // running server before starting one, and stop only the server they started.
 //
-//   npm run server:status -- [dev|preview] [--wait]
-//   npm run server:stop -- [dev|preview|<pid>]
+//   npm run status -- [dev|preview] [--wait]
+//   npm run stop -- [dev|preview|<pid>]
 //
 // Needs lsof and ps (macOS and Linux).
 
@@ -108,8 +108,8 @@ if (command === 'status') {
   }
 } else {
   console.error(
-    'Usage: npm run server:status -- [dev|preview] [--wait]\n' +
-      '       npm run server:stop -- [dev|preview|<pid>]',
+    'Usage: npm run status -- [dev|preview] [--wait]\n' +
+      '       npm run stop -- [dev|preview|<pid>]',
   );
   process.exitCode = 2;
 }
