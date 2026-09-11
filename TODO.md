@@ -6,7 +6,8 @@ Feature checklist from `spec.md`. Ticked items are in the MVP.
 
 - [x] Scaffold with the Solid CLI (`basic` template; router, meta and demo routes removed)
 - [x] `.gitignore`, `AGENTS.md`, `CLAUDE.md` → `AGENTS.md`
-- [ ] Component tests for the editor/preview wiring
+- [x] Component tests for the editor/preview wiring
+  - `src/App.test.tsx`. jsdom can't drive contenteditable input, so typing dispatches the transaction CodeMirror's input handling would; `vitest-setup.ts` stubs the layout APIs jsdom lacks.
 
 ## Layout
 
