@@ -30,14 +30,22 @@ button {
   outline-offset: -2px;
 }
 
-body,
+/* Hover and pressed states on controls. */
 button,
-.toolbar,
-.status-bar,
-.sidebar,
 .document-item,
-.resizer,
-.pane {
+.resizer {
+  transition: var(--transition-colors);
+}
+
+/*
+ * state/theme.ts adds this class for a moment while the theme changes, so
+ * every element eases to its new colours, including CodeMirror's and the
+ * preview's. It isn't left on permanently because colour changes while
+ * typing (syntax highlighting, the active line) should stay instant.
+ */
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
   transition: var(--transition-colors);
 }
 

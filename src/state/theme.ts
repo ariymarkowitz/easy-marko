@@ -34,9 +34,10 @@ export function toggleTheme(): void {
 }
 
 /**
- * Tracks the system preference and mirrors the override onto
- * `<html data-theme>`. Call once from the app root. The inline script in
- * Document.tsx applies the saved override before first paint.
+ * Tracks the system preference, mirrors the override onto
+ * `<html data-theme>`, and eases colours over when the theme changes. Call
+ * once from the app root. The inline script in Document.tsx applies the saved
+ * override before first paint.
  */
 export function useTheme(): void {
   onSettled(() => {
@@ -50,4 +51,20 @@ export function useTheme(): void {
     if (value) document.documentElement.dataset.theme = value;
     else delete document.documentElement.dataset.theme;
   });
+
+  // Covers switches from the toggle and from the system; see .theme-transition in base.css.
+  // Longer than the slowest colour transition (0.25s) so none is cut short.
+  createEffect(
+    theme,
+    () => {
+      const root = document.documentElement;
+      root.classList.add('theme-transition');
+      const timer = setTimeout(() => root.classList.remove('theme-transition'), 300);
+      return () => {
+        clearTimeout(timer);
+        root.classList.remove('theme-transition');
+      };
+    },
+    { defer: true },
+  );
 }
