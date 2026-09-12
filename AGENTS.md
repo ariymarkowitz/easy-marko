@@ -1,6 +1,6 @@
 # Agent Guide
 
-Easy Marko is a single-page, client-only markdown editor that works offline and installs as a PWA. The product spec is in `spec.md`; feature status is tracked in `TODO.md`.
+Easy Marko is a single-page, client-only markdown editor that works offline and installs as a PWA. `TODO.md` records what's built and the behaviour decisions behind each feature.
 
 This is a SolidJS 2.x project. Solid is not React: components run once (there is no re-render), reactivity is fine-grained through signals, and effects/memos have Solid-specific semantics. Do not port React patterns.
 
@@ -43,6 +43,7 @@ Apply a fast-forward instead of a merge commit if possible.
 
 - Solid 2 conventions are in the cheatsheet.
 - Icons: import icon data from `lucide` and render it with `<Icon>`/`<IconButton>`.
+- The UI is minimalist: greyscale plus one accent colour, and a small toolbar and status bar so the editor and preview are nearly fullscreen.
 - CSS: use the tokens in `tokens.css` and add new ones only when needed. Prefer semantic class names; keep utility classes (like `.spacer`) for cases where they make the code simpler. Colours use `light-dark()`.
 - The preview is written with `innerHTML` and markdown may contain raw HTML: pass rendered HTML through `sanitizeHtml` (`src/lib/sanitize.ts`) before it's shown or exported.
 - Keep `AGENTS.md` short: only include locations of important files and instructions. No extraneous information.

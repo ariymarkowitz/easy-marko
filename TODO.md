@@ -1,6 +1,6 @@
 # TODO
 
-Feature checklist from `spec.md`. Ticked items are in the MVP.
+What's built, and the behaviour decisions behind each item.
 
 ## Project setup
 
