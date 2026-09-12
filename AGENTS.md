@@ -14,13 +14,10 @@ This is a SolidJS 2.x project. Solid is not React: components run once (there is
 - `npm run typecheck`, `npm run lint`
 - `npm run status -- [dev|preview] [--wait]`, `npm run stop -- [dev|preview|<pid>]`: list or stop the servers running from this folder (see below)
 
-## Testing in the browser
+## Tool conventions
 
-Run `npm run status` before testing with a server. Use an existing server if one exists. Otherwise start your own server, and stop it after testing with `npm run stop -- <pid>`.
-
-## Merging
-
-Apply a fast-forward instead of a merge commit if possible.
+- Run `npm run status` before testing with a server. Use an existing server if one exists. Otherwise start your own server, and stop it after testing with `npm run stop -- <pid>`.
+- When merging, fast-forward if possible.
 
 ## Structure
 
@@ -40,7 +37,7 @@ Apply a fast-forward instead of a merge commit if possible.
 - `public/`: static assets.
 - `scripts/`: development scripts (`server.mjs` lists and stops this folder's local servers; `icons.mjs` regenerates the PNG icons from `public/icon.svg`).
 
-## Conventions
+## Code conventions
 
 - Solid 2 conventions are in the cheatsheet.
 - Icons: import icon data from `lucide` and render it with `<Icon>`/`<IconButton>`.
