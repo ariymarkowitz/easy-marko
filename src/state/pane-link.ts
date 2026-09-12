@@ -3,7 +3,7 @@
 // Preview blocks carry the source lines they came from (data-line and
 // data-end-line), which is what lines the two panes up.
 
-import { createEffect, flush } from 'solid-js';
+import { createEffect, flush, onSettled } from 'solid-js';
 import { EditorView } from '@codemirror/view';
 import { editorView } from '../editor/controller';
 import { listen } from '../lib/events';
@@ -102,14 +102,21 @@ function previewLineAt(pane: HTMLElement, clientY: number): number | undefined {
   return Math.min(line, Math.max(block.line, block.endLine - 1));
 }
 
-/** Registers the mounted preview pane. Call from the preview's onSettled and return the result. */
-export function attachPreview(pane: HTMLElement): () => void {
-  const detach = attachPane(pane);
-  if (pendingPreviewJump) {
-    scrollPreviewToLine(pane, pendingPreviewJump.line, pendingPreviewJump.offset);
-    pendingPreviewJump = undefined;
-  }
-  return detach;
+/** Directive that attaches a preview pane to this model. */
+export function previewPaneRef(): (pane: HTMLElement) => void {
+  let pane: HTMLElement | undefined;
+  onSettled(() => {
+    if (!pane) return;
+    const detach = attachPane(pane);
+    if (pendingPreviewJump) {
+      scrollPreviewToLine(pane, pendingPreviewJump.line, pendingPreviewJump.offset);
+      pendingPreviewJump = undefined;
+    }
+    return detach;
+  });
+  return (element) => {
+    pane = element;
+  };
 }
 
 /**

@@ -1,7 +1,7 @@
-import { createMemo, createSignal, For, onSettled } from 'solid-js';
+import { createMemo, createSignal, For } from 'solid-js';
 import { createMarkdownRenderer } from '../lib/markdown';
 import { activeDocument } from '../state/documents';
-import { attachPreview, jumpToSource } from '../state/pane-link';
+import { jumpToSource, previewPaneRef } from '../state/pane-link';
 
 export default function Preview() {
   // Counts loaded code languages, so blocks rendered before theirs loaded re-render highlighted.
@@ -13,14 +13,10 @@ export default function Preview() {
     languagesLoaded();
     return render(activeDocument()?.content ?? '');
   });
-  let pane!: HTMLElement;
-
-  onSettled(() => attachPreview(pane));
-
   // Keyed by source text, so unchanged blocks keep their DOM nodes between edits.
   return (
     <section
-      ref={(element) => (pane = element)}
+      ref={previewPaneRef()}
       class="pane preview-pane"
       aria-label="Preview"
       onClick={jumpToSource}
