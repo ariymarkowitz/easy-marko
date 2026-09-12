@@ -18,6 +18,10 @@ This is a SolidJS 2.x project. Solid is not React: components run once (there is
 
 Run `npm run status` before testing with a server. Use an existing server if one exists. Otherwise start your own server, and stop it after testing with `npm run stop -- <pid>`.
 
+## Merging
+
+Apply a fast-forward instead of a merge commit if possible.
+
 ## Structure
 
 - `src/App.tsx`: layout root. Calls each app-wide `use*` hook once.
