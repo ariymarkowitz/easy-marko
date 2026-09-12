@@ -32,7 +32,8 @@ Apply a fast-forward instead of a merge commit if possible.
   - `layout.ts`: what the layout shows, from the settings and window width (narrow windows overlay the sidebar and have no split view). Read `viewMode()`/`sidebarOpen()` from it, not the stored settings.
   - `pane-link.ts`: scroll sync and alt-click jumps between the source and preview. Relies on the preview blocks' `data-line`/`data-end-line` attributes.
 - `src/editor/`: CodeMirror extensions/theme, plus the controller other modules use to reach the editor.
-- `src/lib/`: framework-free helpers (markdown rendering, HTML sanitising, code highlighting, HTML export, files, storage, backup merging, scroll mapping, text stats).
+- `src/lib/`: framework-free helpers (markdown rendering, HTML sanitising, code highlighting, HTML export, files, storage, backup merging, scroll mapping, text stats, `events.ts` for adding and removing a group of DOM listeners together).
+- `src/reactive.ts`: Solid primitives with no app knowledge: `createMediaQuery` for a media query as a signal, `createAttachment` for publishing something a component mounts.
 - `src/shortcuts.ts`: app-wide keyboard shortcuts. `src/pwa.ts`: service worker registration.
 - `src/content/welcome.md`: the document opened on first run.
 - `src/styles/`: `tokens.css` (palette, type, spacing, transitions), `base.css` (layout and controls), `editor.css` (syntax colours), `markdown.css` (preview typography).

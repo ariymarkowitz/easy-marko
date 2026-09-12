@@ -1,7 +1,7 @@
 import { createEffect, onSettled } from 'solid-js';
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
-import { attachEditor, detachEditor, syncEditorState } from '../editor/controller';
+import { attachEditor, syncEditorState } from '../editor/controller';
 import { editorExtensions } from '../editor/extensions';
 import { textChange } from '../lib/text-change';
 import { activeDocument, documentsState, updateContent } from '../state/documents';
@@ -34,9 +34,9 @@ export default function Editor() {
 
   const view = new EditorView();
   onSettled(() => {
-    attachEditor(view);
+    const detach = attachEditor(view);
     return () => {
-      detachEditor();
+      detach();
       view.destroy();
     };
   });

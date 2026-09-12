@@ -1,4 +1,5 @@
 import { createSignal, onSettled } from 'solid-js';
+import { listen } from '../lib/events';
 import { carriesFiles, readDroppedFiles } from '../lib/files';
 import { openFiles } from './documents';
 
@@ -42,14 +43,14 @@ export function useFileDrop(): void {
       void openFiles(readDroppedFiles(event.dataTransfer));
     };
 
-    const controller = new AbortController();
-    const { signal } = controller;
-    window.addEventListener('dragenter', onDragEnter, { signal });
-    window.addEventListener('dragleave', onDragLeave, { signal });
-    window.addEventListener('dragover', onDragOver, { signal });
-    window.addEventListener('drop', onDrop, { signal });
+    const unlisten = listen(window, {
+      dragenter: onDragEnter,
+      dragleave: onDragLeave,
+      dragover: onDragOver,
+      drop: onDrop,
+    });
     return () => {
-      controller.abort();
+      unlisten();
       setDraggingFiles(false);
     };
   });

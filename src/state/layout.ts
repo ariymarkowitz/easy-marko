@@ -4,7 +4,9 @@
 // at a time. The stored settings are left as they are, so widening the window
 // brings back the user's choices.
 
-import { createEffect, createSignal, onSettled } from 'solid-js';
+import { createEffect, createSignal } from 'solid-js';
+import { listen } from '../lib/events';
+import { createMediaQuery } from '../reactive';
 import { documentsState } from './documents';
 import {
   type PanelMode,
@@ -18,13 +20,10 @@ import {
 /** Windows narrower than this, in CSS pixels, get the narrow layout. */
 export const NARROW_WIDTH = 700;
 
-const narrowMedia = window.matchMedia(`(width < ${NARROW_WIDTH}px)`);
-const [narrowScreen, setNarrowScreen] = createSignal(narrowMedia.matches);
+export const narrowScreen = createMediaQuery(`(width < ${NARROW_WIDTH}px)`);
 
 /** Whether the sidebar is open over the workspace on a narrow screen. Starts closed. */
 const [overlayOpen, setOverlayOpen] = createSignal(false);
-
-export { narrowScreen };
 
 /** The panes shown. Narrow screens show the last single-pane view instead of split view. */
 export const viewMode = (): ViewMode =>
@@ -65,18 +64,17 @@ export function revealPane(pane: PanelMode): void {
 }
 
 /**
- * Follows the window width, and closes the sidebar overlay on Escape, on a
- * click outside it, and when a document is selected. Call once from the app root.
+ * Closes the sidebar overlay on Escape, on a click outside it, when the window
+ * is resized, and when a document is selected. Call once from the app root.
  */
 export function useLayout(): void {
-  onSettled(() => {
-    const update = () => {
-      setNarrowScreen(narrowMedia.matches);
+  createEffect(
+    narrowScreen,
+    () => {
       setOverlayOpen(false);
-    };
-    narrowMedia.addEventListener('change', update);
-    return () => narrowMedia.removeEventListener('change', update);
-  });
+    },
+    { defer: true, name: 'closeOverlayOnResize' },
+  );
 
   createEffect(
     () => narrowScreen() && overlayOpen(),
@@ -95,10 +93,7 @@ export function useLayout(): void {
         const target = event.target instanceof Element ? event.target : undefined;
         if (!target?.closest('#sidebar, [aria-controls="sidebar"]')) setOverlayOpen(false);
       };
-      const controller = new AbortController();
-      document.addEventListener('keydown', onKeyDown, { signal: controller.signal });
-      document.addEventListener('pointerdown', onPointerDown, { signal: controller.signal });
-      return () => controller.abort();
+      return listen(document, { keydown: onKeyDown, pointerdown: onPointerDown });
     },
     { name: 'sidebarOverlay' },
   );

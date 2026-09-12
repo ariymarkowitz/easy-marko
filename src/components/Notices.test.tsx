@@ -51,12 +51,15 @@ describe('Notices', () => {
   test('closes info notices after the timeout, but not while hovered', () => {
     show('Saved');
     const notice = screen.getByRole('status');
+    // Pausing takes effect on the flush, which in a browser runs as soon as
+    // the handler returns, before any timer.
     fireEvent.pointerEnter(notice);
-    vi.advanceTimersByTime(INFO_NOTICE_TIMEOUT * 2);
     flush();
+    vi.advanceTimersByTime(INFO_NOTICE_TIMEOUT * 2);
     expect(screen.queryByRole('status')).not.toBeNull();
 
     fireEvent.pointerLeave(notice);
+    flush();
     vi.advanceTimersByTime(INFO_NOTICE_TIMEOUT);
     flush();
     expect(screen.queryByRole('status')).toBeNull();

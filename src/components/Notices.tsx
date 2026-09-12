@@ -1,4 +1,4 @@
-import { For, onSettled } from 'solid-js';
+import { createEffect, createSignal, For } from 'solid-js';
 import { CircleAlert, Info, X } from 'lucide';
 import { dismissNotice, type Notice, notices } from '../state/notices';
 import Icon from './Icon';
@@ -19,40 +19,26 @@ function NoticeItem(props: { notice: Notice }) {
   // The auto-close timer is paused while the pointer is over the notice or
   // focus is inside it, so it doesn't close while someone is reading or
   // reaching for a button. It starts again from the full timeout.
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  let hovered = false;
-  let focused = false;
-  const updateTimer = () => {
-    clearTimeout(timer);
-    if (props.notice.timeout > 0 && !hovered && !focused) {
-      timer = setTimeout(dismiss, props.notice.timeout);
-    }
-  };
-  onSettled(() => {
-    updateTimer();
-    return () => clearTimeout(timer);
-  });
+  const [hovered, setHovered] = createSignal(false);
+  const [focused, setFocused] = createSignal(false);
+  createEffect(
+    () => (hovered() || focused() ? 0 : props.notice.timeout),
+    (timeout) => {
+      if (timeout <= 0) return;
+      const timer = setTimeout(dismiss, timeout);
+      return () => clearTimeout(timer);
+    },
+    { name: 'noticeTimeout' },
+  );
 
   return (
     <div
       class={['notice', `notice-${props.notice.tone}`]}
       role={props.notice.tone === 'error' ? 'alert' : 'status'}
-      onPointerEnter={() => {
-        hovered = true;
-        updateTimer();
-      }}
-      onPointerLeave={() => {
-        hovered = false;
-        updateTimer();
-      }}
-      onFocusIn={() => {
-        focused = true;
-        updateTimer();
-      }}
-      onFocusOut={(event) => {
-        focused = event.currentTarget.contains(event.relatedTarget as Node | null);
-        updateTimer();
-      }}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+      onFocusIn={() => setFocused(true)}
+      onFocusOut={(event) => setFocused(event.currentTarget.contains(event.relatedTarget as Node | null))}
       onKeyDown={(event) => {
         if (event.key === 'Escape') dismiss();
       }}

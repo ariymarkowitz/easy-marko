@@ -6,21 +6,15 @@ import { redo, redoDepth, undo, undoDepth } from '@codemirror/commands';
 import { openSearchPanel } from '@codemirror/search';
 import type { EditorState } from '@codemirror/state';
 import type { EditorView } from '@codemirror/view';
+import { createAttachment } from '../reactive';
 
-const [editorView, setEditorView] = createSignal<EditorView>();
+/** The mounted editor. `attachEditor` returns the detach for <Editor>'s cleanup. */
+const [editorView, attachEditor] = createAttachment<EditorView>();
 const [cursor, setCursor] = createSignal({ line: 1, column: 1 });
 const [canUndo, setCanUndo] = createSignal(false);
 const [canRedo, setCanRedo] = createSignal(false);
 
-export { canRedo, canUndo, cursor, editorView };
-
-export function attachEditor(next: EditorView): void {
-  setEditorView(next);
-}
-
-export function detachEditor(): void {
-  setEditorView(undefined);
-}
+export { attachEditor, canRedo, canUndo, cursor, editorView };
 
 /** Publishes cursor position and undo/redo availability. Call when the editor state changes. */
 export function syncEditorState(state: EditorState): void {

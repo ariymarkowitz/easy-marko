@@ -1,5 +1,6 @@
 import { createEffect, createStore, deep, flush, onSettled, reconcile, snapshot } from 'solid-js';
 import { clamp } from '../lib/clamp';
+import { listen } from '../lib/events';
 import { exportHtml } from '../lib/export-html';
 import { type OpenedFile, openFile, saveFile } from '../lib/files';
 import { deleteHandles, readHandles, storeHandle } from '../lib/handle-store';
@@ -346,16 +347,18 @@ export function useDocumentsBackup(): void {
   // sync whenever the page is hidden. A page restored from the back/forward
   // cache missed other tabs' storage events, so sync when it's shown too.
   onSettled(() => {
-    const controller = new AbortController();
-    const { signal } = controller;
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === STORAGE_KEYS.documents) syncBackup();
+    const unlistenWindow = listen(window, {
+      storage: (event) => {
+        if (event.key === STORAGE_KEYS.documents) syncBackup();
+      },
+      pagehide: syncBackup,
+      pageshow: syncBackup,
+    });
+    const unlistenDocument = listen(document, { visibilitychange: syncBackup });
+    return () => {
+      unlistenWindow();
+      unlistenDocument();
     };
-    window.addEventListener('storage', onStorage, { signal });
-    window.addEventListener('pagehide', syncBackup, { signal });
-    window.addEventListener('pageshow', syncBackup, { signal });
-    document.addEventListener('visibilitychange', syncBackup, { signal });
-    return () => controller.abort();
   });
 }
 

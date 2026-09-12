@@ -1,17 +1,17 @@
-import { createEffect, createSignal, onSettled } from 'solid-js';
+import { createEffect, createSignal } from 'solid-js';
 import { readText, removeKey, STORAGE_KEYS, writeText } from '../lib/storage';
+import { createMediaQuery } from '../reactive';
 
 export type Theme = 'light' | 'dark';
 
-const darkMedia = window.matchMedia('(prefers-color-scheme: dark)');
-const systemPreference = (): Theme => (darkMedia.matches ? 'dark' : 'light');
+const prefersDark = createMediaQuery('(prefers-color-scheme: dark)');
+const systemTheme = (): Theme => (prefersDark() ? 'dark' : 'light');
 
 function readOverride(): Theme | undefined {
   const saved = readText(STORAGE_KEYS.theme);
   return saved === 'light' || saved === 'dark' ? saved : undefined;
 }
 
-const [systemTheme, setSystemTheme] = createSignal<Theme>(systemPreference());
 const [override, setOverride] = createSignal<Theme | undefined>(readOverride());
 
 export const theme = (): Theme => override() ?? systemTheme();
@@ -26,18 +26,11 @@ export function toggleTheme(): void {
 }
 
 /**
- * Tracks the system preference, mirrors the override onto
- * `<html data-theme>`, and eases colours over when the theme changes. Call
- * once from the app root. The inline script in Document.tsx applies the saved
- * override before first paint.
+ * Mirrors the override onto `<html data-theme>`, and eases colours over when
+ * the theme changes. Call once from the app root. The inline script in
+ * Document.tsx applies the saved override before first paint.
  */
 export function useTheme(): void {
-  onSettled(() => {
-    const update = () => setSystemTheme(systemPreference());
-    darkMedia.addEventListener('change', update);
-    return () => darkMedia.removeEventListener('change', update);
-  });
-
   createEffect(override, (value) => {
     if (value) document.documentElement.dataset.theme = value;
     else delete document.documentElement.dataset.theme;

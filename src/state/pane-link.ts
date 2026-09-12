@@ -3,14 +3,16 @@
 // Preview blocks carry the source lines they came from (data-line and
 // data-end-line), which is what lines the two panes up.
 
-import { createEffect, createSignal, flush } from 'solid-js';
+import { createEffect, flush } from 'solid-js';
 import { EditorView } from '@codemirror/view';
 import { editorView } from '../editor/controller';
+import { listen } from '../lib/events';
 import { createScrollMap, mapOffset } from '../lib/scroll-map';
+import { createAttachment } from '../reactive';
 import { revealPane, viewMode } from './layout';
 import { settings } from './settings';
 
-const [previewPane, setPreviewPane] = createSignal<HTMLElement>();
+const [previewPane, attachPane] = createAttachment<HTMLElement>();
 
 /** A jump into the preview that has to wait for the preview to mount. */
 let pendingPreviewJump: { line: number; offset: number } | undefined;
@@ -102,12 +104,12 @@ function previewLineAt(pane: HTMLElement, clientY: number): number | undefined {
 
 /** Registers the mounted preview pane. Call from the preview's onSettled and return the result. */
 export function attachPreview(pane: HTMLElement): () => void {
-  setPreviewPane(pane);
+  const detach = attachPane(pane);
   if (pendingPreviewJump) {
     scrollPreviewToLine(pane, pendingPreviewJump.line, pendingPreviewJump.offset);
     pendingPreviewJump = undefined;
   }
-  return () => setPreviewPane(undefined);
+  return detach;
 }
 
 /**
@@ -192,13 +194,14 @@ function linkScrolling(view: EditorView, pane: HTMLElement): () => void {
   const resizeObserver = new ResizeObserver(() => sync());
   resizeObserver.observe(view.contentDOM);
   resizeObserver.observe(pane.querySelector('.markdown') ?? pane);
-  source.addEventListener('scroll', onScroll, { passive: true });
-  pane.addEventListener('scroll', onScroll, { passive: true });
+  const unlisten = [
+    listen(source, { scroll: onScroll }, { passive: true }),
+    listen(pane, { scroll: onScroll }, { passive: true }),
+  ];
 
   return () => {
     resizeObserver.disconnect();
-    source.removeEventListener('scroll', onScroll);
-    pane.removeEventListener('scroll', onScroll);
+    for (const stop of unlisten) stop();
   };
 }
 
