@@ -24,7 +24,6 @@ function NoticeItem(props: { notice: Notice }) {
   let focused = false;
   const updateTimer = () => {
     clearTimeout(timer);
-    timer = undefined;
     if (props.notice.timeout > 0 && !hovered && !focused) {
       timer = setTimeout(dismiss, props.notice.timeout);
     }

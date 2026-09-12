@@ -6,6 +6,15 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+const joined = (blocks: RenderedBlock[]) => blocks.map((block) => block.html).join('');
+
+/** Parses rendered HTML the way the preview's innerHTML does. */
+function parse(html: string): HTMLElement {
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  return container;
+}
+
 describe('createMarkdownRenderer', () => {
   test('splits top-level blocks and records their source line', () => {
     const blocks = createMarkdownRenderer()('# Title\n\nSome *text*\n\n- a\n- b\n');
@@ -105,8 +114,6 @@ describe('incremental parsing', () => {
     '',
   ].join('\n');
 
-  const joined = (blocks: RenderedBlock[]) => blocks.map((block) => block.html).join('');
-
   test('renders the same HTML as a full render', () => {
     expect(joined(createMarkdownRenderer()(source))).toBe(sanitizeHtml(markdown.render(source)));
   });
@@ -180,12 +187,7 @@ describe('code highlighting', () => {
 });
 
 describe('task lists', () => {
-  const render = (source: string) =>
-    parse(
-      createMarkdownRenderer()(source)
-        .map((block) => block.html)
-        .join(''),
-    );
+  const render = (source: string) => parse(joined(createMarkdownRenderer()(source)));
 
   test('renders read-only checkboxes for [ ] and [x] items', () => {
     const root = render('- [ ] todo\n- [x] done\n- [X] also done\n- plain\n');
@@ -214,13 +216,6 @@ describe('task lists', () => {
     expect(render(source).querySelector('input')).toBeNull();
   });
 });
-
-/** Parses rendered HTML the way the preview's innerHTML does. */
-function parse(html: string): HTMLElement {
-  const container = document.createElement('div');
-  container.innerHTML = html;
-  return container;
-}
 
 describe('raw HTML', () => {
   test('renders HTML blocks and inline HTML with their source lines', () => {
@@ -276,10 +271,7 @@ describe('raw HTML', () => {
     ['a form', '<form action="https://example.com"><button>Go</button></form>'],
     ['a meta refresh', '<meta http-equiv="refresh" content="0;url=https://example.com">'],
   ])('removes %s', (_, source) => {
-    const html = createMarkdownRenderer()(source)
-      .map((block) => block.html)
-      .join('');
-    const root = parse(html);
+    const root = parse(joined(createMarkdownRenderer()(source)));
     expect(root.querySelector('script, iframe, object, style, form, meta')).toBeNull();
     for (const element of root.querySelectorAll('*')) {
       for (const { name, value } of element.attributes) {

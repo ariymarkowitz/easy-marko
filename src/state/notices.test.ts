@@ -1,8 +1,9 @@
 import { flush } from 'solid-js';
-import { afterEach, describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 import { dismissNotice, INFO_NOTICE_TIMEOUT, notices, showNotice } from './notices';
 
-afterEach(() => {
+// Test files share modules, so clear the notices that other files left.
+beforeEach(() => {
   for (const notice of notices()) dismissNotice(notice.id);
   flush();
 });

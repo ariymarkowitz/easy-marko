@@ -13,6 +13,8 @@ const STORE = 'file-handles';
 let database: Promise<IDBDatabase> | undefined;
 
 function openDatabase(): Promise<IDBDatabase> {
+  // indexedDB is first read inside the executor, so a missing or blocked
+  // global rejects like any other failure.
   database ??= new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(DATABASE, 1);
     request.onupgradeneeded = () => request.result.createObjectStore(STORE);
@@ -49,17 +51,8 @@ async function transaction<T>(
   });
 }
 
-function hasIndexedDB(): boolean {
-  try {
-    return typeof indexedDB !== 'undefined';
-  } catch {
-    return false;
-  }
-}
-
 /** Every stored handle by document id, or undefined if IndexedDB can't be read. */
 export async function readHandles(): Promise<Map<string, FileSystemFileHandle> | undefined> {
-  if (!hasIndexedDB()) return undefined;
   try {
     const handles = new Map<string, FileSystemFileHandle>();
     await transaction('readonly', (store) => {
@@ -78,7 +71,6 @@ export async function readHandles(): Promise<Map<string, FileSystemFileHandle> |
 }
 
 export async function storeHandle(id: string, handle: FileSystemFileHandle): Promise<void> {
-  if (!hasIndexedDB()) return;
   try {
     await transaction('readwrite', (store) => store.put(handle, id));
   } catch {
@@ -87,7 +79,6 @@ export async function storeHandle(id: string, handle: FileSystemFileHandle): Pro
 }
 
 export async function deleteHandles(ids: Iterable<string>): Promise<void> {
-  if (!hasIndexedDB()) return;
   try {
     await transaction('readwrite', (store) => {
       for (const id of ids) store.delete(id);

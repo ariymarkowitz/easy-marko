@@ -5,17 +5,12 @@
 import { LanguageDescription } from '@codemirror/language';
 import { languages } from '@codemirror/language-data';
 import { classHighlighter, highlightCode } from '@lezer/highlight';
+import { escapeHtml } from './escape-html';
 
 /** The language a fence names. Matches fuzzily, like the source pane, so `js` finds JavaScript. */
 export function findLanguage(name: string): LanguageDescription | undefined {
   if (!name) return undefined;
   return LanguageDescription.matchLanguageName(languages, name, true) ?? undefined;
-}
-
-const escapes: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
-
-function escapeHtml(text: string): string {
-  return text.replace(/[&<>]/g, (char) => escapes[char]);
 }
 
 /** `code` as highlighted HTML, or undefined if its language hasn't loaded yet. */

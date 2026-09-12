@@ -77,7 +77,7 @@ describe('unsaved changes', () => {
     vi.mocked(saveFile).mockResolvedValueOnce({ name: 'Draft.md' });
     await saveActiveDocument();
     flush();
-    expect(saveFile).toHaveBeenLastCalledWith('Untitled.md', 'Draft', undefined);
+    expect(saveFile).toHaveBeenLastCalledWith('Untitled.md', 'Draft', { handle: undefined });
     expect(doc.name).toBe('Draft.md');
     expect(hasUnsavedChanges(doc)).toBe(false);
   });
@@ -114,7 +114,7 @@ describe('renameDocument', () => {
     flush();
     vi.mocked(saveFile).mockResolvedValueOnce(undefined);
     await saveActiveDocument();
-    expect(saveFile).toHaveBeenLastCalledWith('Renamed.md', '', undefined);
+    expect(saveFile).toHaveBeenLastCalledWith('Renamed.md', '', { handle: undefined });
 
     // Opening the file again opens a new document.
     vi.mocked(openFile).mockResolvedValueOnce({ name: 'Linked.md', content: '', handle: fakeHandle('Linked.md') });
@@ -127,7 +127,7 @@ describe('renameDocument', () => {
     flush();
     vi.mocked(saveFile).mockResolvedValueOnce(undefined);
     await saveActiveDocument();
-    expect(saveFile).toHaveBeenLastCalledWith('Linked.md', '', handle);
+    expect(saveFile).toHaveBeenLastCalledWith('Linked.md', '', { handle });
   });
 });
 
@@ -216,6 +216,12 @@ describe('useDocumentsBackup', () => {
     flush();
   }
 
+  /** Fires the storage event another tab's backup write causes. */
+  function syncFromOtherTab() {
+    window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEYS.documents }));
+    flush();
+  }
+
   test('writes the pending backup when the page is hidden', () => {
     localStorage.removeItem(STORAGE_KEYS.documents);
     const dispose = useBackup();
@@ -252,8 +258,7 @@ describe('useDocumentsBackup', () => {
     changeInOtherTab((documents) =>
       editIn(edited.id, 'Their edit')(documents).filter((doc) => doc.id !== closed.id),
     );
-    window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEYS.documents }));
-    flush();
+    syncFromOtherTab();
     expect(edited.content).toBe('Their edit');
     expect(isOpen(closed.id)).toBe(false);
     expect(activeDocument()?.id).toBe(edited.id);
@@ -277,11 +282,6 @@ describe('useDocumentsBackup', () => {
   });
 
   describe('file handles', () => {
-    function syncFromOtherTab() {
-      window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEYS.documents }));
-      flush();
-    }
-
     async function openWithHandle(name: string) {
       vi.mocked(openFile).mockResolvedValueOnce({ name, content: '', handle: fakeHandle(name) });
       await openDocument();
@@ -291,10 +291,13 @@ describe('useDocumentsBackup', () => {
 
     /** Saves the active document and returns the handle it was saved to. */
     async function saveActive() {
-      vi.mocked(saveFile).mockImplementationOnce(async (name, _content, handle) => ({ name, handle }));
+      vi.mocked(saveFile).mockImplementationOnce(async (name, _content, options) => ({
+        name,
+        handle: options?.handle,
+      }));
       await saveActiveDocument();
       flush();
-      return vi.mocked(saveFile).mock.lastCall?.[2];
+      return vi.mocked(saveFile).mock.lastCall?.[2]?.handle;
     }
 
     test('are restored at startup, and those of closed documents are removed', async () => {

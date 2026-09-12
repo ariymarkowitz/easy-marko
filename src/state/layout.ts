@@ -95,12 +95,10 @@ export function useLayout(): void {
         const target = event.target instanceof Element ? event.target : undefined;
         if (!target?.closest('#sidebar, [aria-controls="sidebar"]')) setOverlayOpen(false);
       };
-      document.addEventListener('keydown', onKeyDown);
-      document.addEventListener('pointerdown', onPointerDown);
-      return () => {
-        document.removeEventListener('keydown', onKeyDown);
-        document.removeEventListener('pointerdown', onPointerDown);
-      };
+      const controller = new AbortController();
+      document.addEventListener('keydown', onKeyDown, { signal: controller.signal });
+      document.addEventListener('pointerdown', onPointerDown, { signal: controller.signal });
+      return () => controller.abort();
     },
     { name: 'sidebarOverlay' },
   );
