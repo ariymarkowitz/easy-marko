@@ -2,6 +2,10 @@
 
 # Welcome to <span style="color: #4c7bf4">Easy Marko!</span>
 
+> Markdown’s syntax is intended for one purpose: to be used as a format for *writing* for the web.
+>
+> *--- John Grube, Introducing Markdown*
+
 Easy Marko is a markdown editor. It runs in the browser or on your device as a Progressive Web App. This page is an ordinary document. Edit it, break it, or close it from the sidebar when you're done. You can bring it back by clicking the About button in the toolbar.
 
 The first half shows the markdown features Easy Marko supports. The second half covers the parts of the app that are easy to miss. Jump to [the guide](#using-the-app) if you already know markdown.

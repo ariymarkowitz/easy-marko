@@ -46,7 +46,7 @@
   --content-width: 800px;
 
   /* Rendered markdown (markdown.css). Em sizes follow the element's own font size. */
-  --md-block-gap: 1em;
+  --md-block-gap: calc(1cap + 0.5lh);
   --md-heading-margin: 1.7em;
   /* Above a heading that starts the document. */
   --md-heading-margin-first: 0.3em;
