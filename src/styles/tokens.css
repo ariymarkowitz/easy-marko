@@ -17,6 +17,8 @@
   --color-hover-soft: light-dark(rgb(0 0 0 / 3%), rgb(255 255 255 / 3%));
   --color-border: light-dark(#e1e1e1, #2e2e2e);
   --color-text: light-dark(#2a2a2a, #e8e8e8);
+  /* Headings and bold text in rendered markdown. */
+  --color-text-strong: light-dark(#161616, #f3f3f3);
   --color-text-muted: light-dark(#6e6e6e, #9a9a9a);
   --color-accent: light-dark(#3464e0, #7a9ff7);
   --color-accent-soft: light-dark(rgb(52 100 224 / 12%), rgb(122 159 247 / 16%));

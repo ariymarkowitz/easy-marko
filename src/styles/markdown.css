@@ -31,6 +31,7 @@
   margin: var(--md-heading-margin) 0;
   font-weight: 800;
   line-height: 1.4;
+  color: var(--color-text-strong);
   /* Trims the box to the cap height and baseline, so margins set the spacing. */
   text-box: trim-both cap alphabetic;
 }
@@ -53,6 +54,15 @@
 
 .markdown :is(h4, h5, h6) {
   font-size: 1em;
+}
+
+.markdown :is(strong, b) {
+  color: var(--color-text-strong);
+}
+
+/* Bold link text keeps the link colour. */
+.markdown a :is(strong, b) {
+  color: inherit;
 }
 
 .markdown a {
