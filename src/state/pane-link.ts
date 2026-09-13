@@ -104,9 +104,8 @@ function previewLineAt(pane: HTMLElement, clientY: number): number | undefined {
 
 /** Directive that attaches a preview pane to this model. */
 export function previewPaneRef(): (pane: HTMLElement) => void {
-  let pane: HTMLElement | undefined;
+  let pane: HTMLElement;
   onSettled(() => {
-    if (!pane) return;
     const detach = attachPane(pane);
     if (pendingPreviewJump) {
       scrollPreviewToLine(pane, pendingPreviewJump.line, pendingPreviewJump.offset);

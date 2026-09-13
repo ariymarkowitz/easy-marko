@@ -21,9 +21,8 @@ export function createMediaQuery(query: string): () => boolean {
 }
 
 /**
- * A signal holding something a component mounts — a DOM element, an editor
- * view — for the rest of the app to read. `attach` publishes the value and
- * returns the cleanup that clears it.
+ * A signal holding something a component mounts, that needs to be cleared when
+ * it unmounts. `attach` assigns the provided value and returns its disposal.
  */
 export function createAttachment<T>(): [value: () => T | undefined, attach: (value: T) => () => void] {
   const [value, setValue] = createSignal<T>();
