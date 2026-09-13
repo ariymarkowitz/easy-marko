@@ -59,7 +59,65 @@
 }
 
 .markdown :is(ul, ol) {
-  padding-left: 1.5em;
+  padding-left: 1.25em;
+}
+
+/* Markers sit outside the item's padding, so this widens the gap after them. */
+.markdown li {
+  padding-left: 0.25em;
+}
+
+.markdown li > :is(ul, ol) {
+  margin-bottom: 0;
+}
+
+.markdown :is(li + li, li > ul, li > ol) {
+  margin-top: 0.3em;
+}
+
+/*
+ * Drawn bullets, since native ones can't be restyled and the hollow circle's
+ * hairline stroke is hard to see in dark mode. They sit where native bullets
+ * do: centred 0.54em left of the text and just below the middle of the first
+ * line. The style follows the depth among bullet lists only.
+ */
+.markdown ul > li {
+  position: relative;
+  /* Native markers give an empty item a line; drawn ones don't. */
+  min-height: 1lh;
+  list-style: none;
+}
+
+.markdown ul > li:not(.task-list-item)::before {
+  content: '';
+  position: absolute;
+  top: calc(0.5lh - 0.11em);
+  left: -0.715em;
+  width: 0.35em;
+  height: 0.35em;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+/* Half a stroke (0.5px) bigger than the others, with the same centre. */
+.markdown ul ul > li:not(.task-list-item)::before {
+  top: calc(0.5lh - 0.11em - 0.25px);
+  left: calc(-0.715em - 0.25px);
+  width: calc(0.35em + 0.5px);
+  height: calc(0.35em + 0.5px);
+  border: 1px solid currentColor;
+  background-color: transparent;
+}
+
+.markdown ul ul ul > li:not(.task-list-item)::before {
+  top: calc(0.5lh - 0.11em);
+  left: -0.715em;
+  width: 0.35em;
+  height: 0.35em;
+  border: none;
+  border-radius: 0;
+  background-color: currentColor;
 }
 
 /* Task list items: a read-only checkbox takes the bullet's place. */
@@ -69,13 +127,17 @@
 
 .markdown .task-list-item-checkbox {
   appearance: none;
-  display: inline-grid;
-  place-content: center;
-  width: 1em;
-  height: 1em;
+  position: relative;
+  /* An inline-block with no content has its bottom edge as its baseline. */
+  display: inline-block;
+  /* Inputs don't inherit the font, which would shrink the em sizes here. */
+  font: inherit;
+  width: 0.9em;
+  height: 0.9em;
   /* Its width plus margins nets to zero, so the text lines up with other items. */
-  margin: 0 0.5em 0 -1.5em;
-  vertical-align: -0.15em;
+  margin: 0 0.5em 0 -1.4em;
+  /* Centred on the capital letters (about 0.7em tall). */
+  vertical-align: -0.1em;
   border: 1.5px solid var(--color-text-muted);
   border-radius: 4px;
 }
@@ -87,10 +149,16 @@
 
 .markdown .task-list-item-checkbox:checked::before {
   content: '';
-  width: 0.65em;
-  height: 0.65em;
+  position: absolute;
+  /* Covers the border too, so the icon's square lines up with the box's border. */
+  inset: -1.5px;
   background-color: var(--color-bg);
-  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0, 43% 62%);
+  /*
+   * The tick from Lucide's square-check. The viewBox is cropped closer than the
+   * square's outer edge (2 2 20 20), which scales the tick up.
+   */
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='6 6 12 12' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E")
+    center / 100% 100% no-repeat;
 }
 
 .markdown blockquote {
