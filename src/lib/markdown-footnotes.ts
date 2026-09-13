@@ -1,7 +1,8 @@
 // Footnote syntax: `[^label]` references and `[^label]: text` definitions,
-// whose indented continuation lines belong to the note. This only parses and
-// renders the pieces. Numbering depends on the whole document, so the
-// renderer in markdown.ts assigns it and gathers the notes into a list.
+// whose indented continuation lines belong to the note. This parses and
+// renders the pieces, and takes a block's notes out for the footnotes list.
+// Numbering depends on the whole document, so the renderer in markdown.ts
+// assigns it and gathers every block's notes into the list.
 
 import type { MarkdownIt, StateBlock, StateInline, Token } from 'markdown-it';
 
@@ -25,17 +26,17 @@ export interface FootnoteDefMeta {
   references?: number;
 }
 
-/** Meta on `footnote_backrefs` tokens, set by the renderer: links back to each of the note's references. */
-export interface FootnoteBackrefsMeta {
+/** Meta on `footnote_backrefs` tokens, set when the note is extracted: links back to each of the note's references. */
+interface FootnoteBackrefsMeta {
   number: number;
   count: number;
 }
 
 export const footnoteMeta = <Meta extends FootnoteRefMeta | FootnoteDefMeta | FootnoteBackrefsMeta>(token: Token) =>
-  token.meta as unknown as Meta;
+  token.meta as Meta;
 
 /** The id of note `number` in the footnotes list. */
-export const footnoteId = (number: number) => `fn-${number}`;
+const footnoteId = (number: number) => `fn-${number}`;
 
 /** The id of the `occurrence`th (from 1) reference to note `number`. */
 export const footnoteRefId = (number: number, occurrence: number) =>
@@ -97,7 +98,7 @@ function footnoteDef(state: StateBlock, startLine: number, endLine: number, sile
   // Links back to the note's references go at the end of its last paragraph,
   // or in a paragraph of their own.
   const last = state.tokens.at(-1)!;
-  if (last.type === 'paragraph_close' && last !== open) {
+  if (last.type === 'paragraph_close') {
     const backrefs = new state.Token('footnote_backrefs', '', 0);
     backrefs.level = last.level + 1;
     state.tokens.splice(-1, 0, backrefs);
@@ -151,4 +152,52 @@ export function footnotes(md: MarkdownIt): void {
     }
     return html;
   };
+}
+
+export interface ExtractedNote {
+  number: number;
+  content: Token[];
+}
+
+/**
+ * Removes footnote definitions (nested ones too) from a block's tokens, which
+ * must have their ids applied. Returns the rest, and the content of the notes
+ * that are shown, in no particular order.
+ */
+export function extractFootnotes(tokens: Token[]): { body: Token[]; notes: ExtractedNote[] } {
+  const notes: ExtractedNote[] = [];
+  const extract = (part: Token[]): Token[] => {
+    const body: Token[] = [];
+    for (let i = 0; i < part.length; i++) {
+      const open = part[i];
+      if (open.type !== 'footnote_def_open') {
+        body.push(open);
+        continue;
+      }
+      let close = i + 1;
+      for (let depth = 1; ; close++) {
+        if (part[close].type === 'footnote_def_open') depth++;
+        else if (part[close].type === 'footnote_def_close' && --depth === 0) break;
+      }
+      const { number = 0, references = 0 } = footnoteMeta<FootnoteDefMeta>(open);
+      const content = extract(part.slice(i + 1, close));
+      if (number > 0) {
+        const backrefs = content.find((token) => token.type === 'footnote_backrefs');
+        if (backrefs) backrefs.meta = { number, count: references } satisfies FootnoteBackrefsMeta;
+        notes.push({ number, content });
+      }
+      i = close;
+    }
+    return body;
+  };
+  return { body: extract(tokens), notes };
+}
+
+/** The footnotes list, from notes rendered to sanitised HTML. */
+export function footnotesListHtml(notes: { number: number; html: string }[]): string {
+  const items = notes
+    .toSorted((a, b) => a.number - b.number)
+    .map((note) => `<li id="${footnoteId(note.number)}">${note.html}</li>`)
+    .join('');
+  return `<section class="footnotes" aria-label="Footnotes"><ol>${items}</ol></section>`;
 }

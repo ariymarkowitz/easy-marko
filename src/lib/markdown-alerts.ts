@@ -5,7 +5,7 @@
 
 import type { MarkdownIt, StateCore } from 'markdown-it';
 import { Info, Lightbulb, MessageSquareWarning, OctagonAlert, TriangleAlert, type IconNode } from 'lucide';
-import { iconMarkup } from './icon-markup';
+import { iconSvg } from './icon-markup';
 
 const alertTypes: Record<string, { title: string; icon: IconNode }> = {
   note: { title: 'Note', icon: Info },
@@ -15,14 +15,14 @@ const alertTypes: Record<string, { title: string; icon: IconNode }> = {
   caution: { title: 'Caution', icon: OctagonAlert },
 };
 
-const alertMarker = /^\[!(note|tip|important|warning|caution)\][ \t]*(?:\n|$)/i;
+const alertMarker = new RegExp(`^\\[!(${Object.keys(alertTypes).join('|')})\\][ \\t]*(?:\\n|$)`, 'i');
 
 function alerts(state: StateCore): void {
   const { tokens } = state;
   for (let i = 0; i < tokens.length; i++) {
     const open = tokens[i];
-    const inline = tokens[i + 2];
     if (open.type !== 'blockquote_open' || open.level !== 0) continue;
+    const inline = tokens[i + 2];
     if (tokens[i + 1]?.type !== 'paragraph_open' || inline?.type !== 'inline') continue;
     const marker = alertMarker.exec(inline.content);
     if (!marker) continue;
@@ -49,7 +49,6 @@ export function githubAlerts(md: MarkdownIt): void {
   md.core.ruler.after('block', 'github_alerts', alerts);
   md.renderer.rules.alert_title = (tokens, idx) => {
     const { title, icon } = alertTypes[tokens[idx].meta!.type as string];
-    const svg = `<svg class="markdown-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${iconMarkup(icon)}</svg>`;
-    return `<p class="markdown-alert-title">${svg}${title}</p>\n`;
+    return `<p class="markdown-alert-title">${iconSvg(icon, 'markdown-alert-icon')}${title}</p>\n`;
   };
 }

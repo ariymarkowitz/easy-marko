@@ -3,9 +3,11 @@
  * inside the preview go in base.css, whose classes and ids markdown can't use
  * (lib/sanitize.ts).
  *
- * The pane is a size container, so type scales with the
- * pane's width (not the viewport's) between 360px and 800px (22.5rem–50rem):
- * font size 1rem → 1.125rem, line height 1.4 → 1.6.
+ * The pane is a size container, so type scales with the pane's width (not
+ * the viewport's) between 360px and 800px (22.5rem–50rem): font size 1rem →
+ * 1.125rem, line height 1.4 → 1.6 times the font size. The line height is a
+ * length (1.4rem → 1.8rem) because clamp() can't give a unitless ratio, so
+ * children inherit the length, not the ratio.
  */
 
 .markdown {
@@ -109,7 +111,6 @@
   left: calc(-0.54em - var(--size) / 2);
   width: var(--size);
   height: var(--size);
-  box-sizing: border-box;
   border-radius: 50%;
   background-color: currentColor;
 }
@@ -242,7 +243,7 @@
  */
 .markdown .markdown-alert {
   --alert-color: var(--color-accent);
-  margin: 0 0 1em;
+  margin: 0 0 var(--md-block-gap);
   padding: 0.5em 1em;
   border-left: 3px solid var(--alert-color);
 }
@@ -264,19 +265,19 @@
   color: var(--alert-color);
 }
 
-.markdown-alert-icon {
+.markdown .markdown-alert-icon {
   flex: none;
   width: 1em;
   height: 1em;
 }
 
-/* Footnotes */
+/* Footnote references, and the list of notes at the end. */
 .markdown .footnote-ref {
   font-size: 0.75em;
   line-height: 0;
 }
 
-.markdown .footnote-ref a {
+.markdown :is(.footnote-ref a, .footnote-backref) {
   text-decoration: none;
 }
 
@@ -291,8 +292,4 @@
 
 .markdown .footnotes li > :last-child {
   margin-bottom: 0.5em;
-}
-
-.markdown .footnote-backref {
-  text-decoration: none;
 }

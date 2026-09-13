@@ -51,27 +51,22 @@ function baseName(name: string): string {
 /** Sanitised HTML for the whole document, once the languages of its code have loaded. */
 async function renderMarkdown(source: string): Promise<string> {
   const loads: Promise<void>[] = [];
-  const render = createMarkdownRenderer({ onLanguageLoad: (loaded) => loads.push(loaded) });
-  const html = () =>
-    render(source)
+  const renderer = createMarkdownRenderer({ onLanguageLoad: (loaded) => loads.push(loaded) });
+  const render = () =>
+    renderer(source)
       .map((block) => block.html)
       .join('');
-  const unhighlighted = html();
-  if (loads.length === 0) return unhighlighted;
+  const html = render();
+  if (loads.length === 0) return html;
   await Promise.all(loads);
-  return html();
+  return render();
 }
 
 async function fetchDataUrl(url: string, type: string): Promise<string> {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Couldn't load ${url} (${response.status})`);
   const bytes = new Uint8Array(await response.arrayBuffer());
-  let binary = '';
-  // In chunks: spreading a whole font into one call can overflow the stack.
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  }
-  return `data:${type};base64,${btoa(binary)}`;
+  return `data:${type};base64,${bytes.toBase64()}`;
 }
 
 /** KaTeX's stylesheet with its fonts embedded, so maths renders offline. */
