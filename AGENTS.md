@@ -14,10 +14,11 @@ This is a SolidJS 2.x project. Solid is not React: components run once (there is
 - `npm run typecheck`, `npm run lint`
 - `npm run status -- [dev|preview] [--wait]`, `npm run stop -- [dev|preview|<pid>]`: list or stop the servers running from this folder (see below)
 
-## Tool conventions
+## Instructions
 
 - Run `npm run status` before testing with a server. Use an existing server if one exists. Otherwise start your own server, and stop it after testing with `npm run stop -- <pid>`.
 - When merging, fast-forward if possible.
+- Update FEATURES.md when adding or modify features. Keep the document concise but comprehensive.
 
 ## Structure
 
