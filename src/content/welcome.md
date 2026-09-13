@@ -28,7 +28,7 @@ Straight quotes turn "curly" in the preview, and `--` becomes an en dash, as in 
 
 ### Tables
 
-| Shortcut      | Does          |
+| Shortcut      | Effect        |
 | ------------- | ------------- |
 | `Mod-B`       | Bold          |
 | `Mod-I`       | Italic        |
@@ -65,14 +65,14 @@ $$
 ```markdown
   You can create footnotes[^label]. Define it anyware in the document, and it is added to the bottom of the page.
 
-  [^label]: Like this. There's also a handly link back to the source.
+  [^label]: Like this. There's also a handy link back to the source.
 ```
 
 **Result**
 
 You can create footnotes[^label]. Define it anyware in the document, and it is added to the bottom of the page.
 
-[^label]: Like this. There's also a handly link back to the source.
+[^label]: Like this. There's also a handy link back to the source.
 
 ### Alerts
 
