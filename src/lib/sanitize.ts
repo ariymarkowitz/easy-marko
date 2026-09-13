@@ -27,6 +27,14 @@ purifier.addHook('afterSanitizeAttributes', (node) => {
   node.setAttribute('rel', 'noopener noreferrer');
 });
 
+// Heading ids are link targets. DOMPurify drops any id that names a document
+// property (a heading "Title" or "Links"), in case it clobbers it. Only
+// forms, images, embeds, iframes and objects show up on `document` by name,
+// so headings can keep theirs.
+purifier.addHook('uponSanitizeAttribute', (node, data) => {
+  if (data.attrName === 'id' && /^h[1-6]$/.test(node.localName)) data.forceKeepAttr = true;
+});
+
 export function sanitizeHtml(html: string): string {
   return purifier.sanitize(html, config);
 }

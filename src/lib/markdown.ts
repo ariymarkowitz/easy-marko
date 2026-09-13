@@ -2,7 +2,19 @@ import type { LanguageDescription } from '@codemirror/language';
 import MarkdownIt from 'markdown-it';
 import katexModule from '@vscode/markdown-it-katex';
 import { findLanguage, highlight } from './highlight';
+import { githubAlerts } from './markdown-alerts';
+import {
+  footnoteId,
+  footnoteMeta,
+  footnoteRefId,
+  footnotes,
+  type FootnoteBackrefsMeta,
+  type FootnoteDefMeta,
+  type FootnoteEnv,
+  type FootnoteRefMeta,
+} from './markdown-footnotes';
 import { sanitizeHtml } from './sanitize';
+import { createSlugger, slugify } from './slug';
 
 // The plugin is CommonJS with `exports.default`. Node unwraps that for a
 // default import but Vite's dev pre-bundle doesn't, so accept either shape.
@@ -24,10 +36,10 @@ export interface RenderedBlock {
 }
 
 // Raw HTML is allowed because every rendered block goes through sanitizeHtml.
-export const markdown = new MarkdownIt({ html: true, linkify: true, typographer: true }).use(
-  markdownItKatex,
-  { throwOnError: false },
-);
+export const markdown = new MarkdownIt({ html: true, linkify: true, typographer: true })
+  .use(markdownItKatex, { throwOnError: false })
+  .use(footnotes)
+  .use(githubAlerts);
 
 type InlineRule = Parameters<typeof markdown.inline.ruler.at>[1];
 
@@ -162,14 +174,162 @@ function mergeOpenHtml(tokens: Token[], blocks: BlockRange[]): BlockRange[] {
   return merged;
 }
 
-interface BlockOutput {
-  html: string;
-  /** Languages of fenced code left unhighlighted because they hadn't loaded. */
-  waitingFor: LanguageDescription[];
+/** What a block adds to the document's anchors. It depends only on the block's source. */
+interface BlockAnchors {
+  /** Slugs of its headings, before repeats are made unique. Empty for a heading with no slug. */
+  headings: string[];
+  /** Labels of its footnote references. */
+  refs: string[];
+  /** Labels of its footnote definitions. */
+  defs: string[];
 }
 
-/** Renders tokens to sanitised HTML, highlighting code whose language has loaded. */
-function renderTokens(tokens: Token[], env: Env): BlockOutput {
+/** The document-wide ids a block renders with, in the order of its BlockAnchors. */
+interface BlockIds {
+  headings: string[];
+  refs: [number: number, occurrence: number][];
+  /** Each definition's note number (0 if the note isn't shown) and how many references it has. */
+  defs: [number: number, references: number][];
+}
+
+interface AnchorVisitor {
+  heading: (open: Token, inline: Token) => void;
+  ref: (token: Token) => void;
+  def: (open: Token) => void;
+}
+
+/** Visits a block's headings, footnote references and footnote definitions, each kind in source order. */
+function visitAnchors(tokens: Token[], visit: AnchorVisitor): void {
+  tokens.forEach((token, index) => {
+    if (token.type === 'heading_open') visit.heading(token, tokens[index + 1]);
+    else if (token.type === 'footnote_def_open') visit.def(token);
+    else if (token.type === 'inline') {
+      for (const child of token.children ?? []) if (child.type === 'footnote_ref') visit.ref(child);
+    }
+  });
+}
+
+/** The text a heading's slug comes from: markup is dropped, code and maths keep their source. */
+function plainText(tokens: Token[]): string {
+  return tokens
+    .map((token) => (['text', 'code_inline', 'math_inline'].includes(token.type) ? token.content : ''))
+    .join('');
+}
+
+function collectAnchors(tokens: Token[]): BlockAnchors {
+  const anchors: BlockAnchors = { headings: [], refs: [], defs: [] };
+  visitAnchors(tokens, {
+    heading: (_, inline) => anchors.headings.push(slugify(plainText(inline.children ?? []))),
+    ref: (token) => anchors.refs.push(footnoteMeta<FootnoteRefMeta>(token).label),
+    def: (open) => anchors.defs.push(footnoteMeta<FootnoteDefMeta>(open).label),
+  });
+  return anchors;
+}
+
+/**
+ * Gives each block's anchors their ids. Repeated heading slugs get GitHub's
+ * numbered suffixes. Notes are numbered in the order they're first referenced,
+ * and only a note's first definition is shown, only if it's referenced.
+ */
+function assignIds(blocks: BlockAnchors[]): BlockIds[] {
+  const slug = createSlugger();
+  const numbers = new Map<string, number>();
+  const references = new Map<string, number>();
+  const ids = blocks.map(
+    (block): BlockIds => ({
+      headings: block.headings.map((heading) => (heading ? slug(heading) : '')),
+      refs: block.refs.map((label) => {
+        if (!numbers.has(label)) numbers.set(label, numbers.size + 1);
+        const occurrence = (references.get(label) ?? 0) + 1;
+        references.set(label, occurrence);
+        return [numbers.get(label)!, occurrence];
+      }),
+      defs: [],
+    }),
+  );
+  const shown = new Set<string>();
+  blocks.forEach((block, index) => {
+    ids[index].defs = block.defs.map((label) => {
+      const number = numbers.get(label);
+      if (number === undefined || shown.has(label)) return [0, 0];
+      shown.add(label);
+      return [number, references.get(label)!];
+    });
+  });
+  return ids;
+}
+
+/** Sets a block's ids on its tokens for rendering. */
+function applyIds(tokens: Token[], ids: BlockIds): void {
+  let heading = 0;
+  let ref = 0;
+  let def = 0;
+  visitAnchors(tokens, {
+    heading: (open) => {
+      const id = ids.headings[heading++];
+      if (id) open.attrSet('id', id);
+    },
+    ref: (token) => {
+      const [number, occurrence] = ids.refs[ref++];
+      Object.assign(footnoteMeta<FootnoteRefMeta>(token), { number, id: footnoteRefId(number, occurrence) });
+    },
+    def: (open) => {
+      const [number, references] = ids.defs[def++];
+      Object.assign(footnoteMeta<FootnoteDefMeta>(open), { number, references });
+    },
+  });
+}
+
+interface FootnoteDefinition {
+  number: number;
+  content: Token[];
+}
+
+/** Removes footnote definitions (including ones nested in them) from `tokens`, adding them to `definitions`. */
+function extractFootnotes(tokens: Token[], definitions: FootnoteDefinition[]): Token[] {
+  const body: Token[] = [];
+  for (let i = 0; i < tokens.length; i++) {
+    const open = tokens[i];
+    if (open.type !== 'footnote_def_open') {
+      body.push(open);
+      continue;
+    }
+    let close = i + 1;
+    for (let depth = 1; ; close++) {
+      if (tokens[close].type === 'footnote_def_open') depth++;
+      else if (tokens[close].type === 'footnote_def_close' && --depth === 0) break;
+    }
+    const { number = 0, references = 0 } = footnoteMeta<FootnoteDefMeta>(open);
+    const definition: FootnoteDefinition = { number, content: [] };
+    definitions.push(definition);
+    definition.content = extractFootnotes(tokens.slice(i + 1, close), definitions);
+    const backrefs = definition.content.find((token) => token.type === 'footnote_backrefs');
+    if (backrefs) backrefs.meta = { number, count: references } satisfies FootnoteBackrefsMeta;
+    i = close;
+  }
+  return body;
+}
+
+interface RenderedFootnote {
+  number: number;
+  /** Sanitised HTML of the note's content. */
+  html: string;
+}
+
+interface BlockOutput {
+  html: string;
+  /** The notes the block defines that are shown, for the footnotes list. */
+  footnotes: RenderedFootnote[];
+  /** Languages of fenced code left unhighlighted because they hadn't loaded. */
+  waitingFor: LanguageDescription[];
+  anchors: BlockAnchors;
+  /** The ids the block was rendered with, serialised. */
+  ids: string;
+}
+
+/** Renders a block's tokens to sanitised HTML, highlighting code whose language has loaded. */
+function renderBlock(tokens: Token[], env: Env, ids: BlockIds): Pick<BlockOutput, 'html' | 'footnotes' | 'waitingFor'> {
+  applyIds(tokens, ids);
   const waitingFor = new Set<LanguageDescription>();
   const options = {
     ...markdown.options,
@@ -181,8 +341,29 @@ function renderTokens(tokens: Token[], env: Env): BlockOutput {
       return highlight(code, language) ?? '';
     },
   };
-  const html = sanitizeHtml(markdown.renderer.render(tokens, options, env));
-  return { html, waitingFor: [...waitingFor] };
+  const render = (part: Token[]) => sanitizeHtml(markdown.renderer.render(part, options, env));
+
+  // Notes render in the footnotes list at the end, not where they're defined.
+  const definitions: FootnoteDefinition[] = [];
+  const body = extractFootnotes(tokens, definitions);
+  const footnotes = definitions
+    .filter((definition) => definition.number > 0)
+    .map((definition) => ({ number: definition.number, html: render(definition.content) }));
+  return { html: render(body), footnotes, waitingFor: [...waitingFor] };
+}
+
+/** The footnotes list, placed after the last block. */
+function footnotesBlock(footnotes: RenderedFootnote[], line: number): RenderedBlock {
+  const items = footnotes
+    .sort((a, b) => a.number - b.number)
+    .map((note) => `<li id="${footnoteId(note.number)}">${note.html}</li>`)
+    .join('');
+  return {
+    key: '\0footnotes',
+    line,
+    endLine: line,
+    html: `<section class="footnotes" aria-label="Footnotes"><ol>${items}</ol></section>`,
+  };
 }
 
 export interface MarkdownRendererOptions {
@@ -194,7 +375,7 @@ export interface MarkdownRendererOptions {
   onLanguageLoad?: (loaded: Promise<void>) => void;
 }
 
-interface RenderEnv extends Env {
+interface RenderEnv extends Env, FootnoteEnv {
   /** Given the document's block tokens, returns the ones that still need parsing. */
   selectTokens?: (tokens: Token[]) => Token[];
 }
@@ -214,8 +395,8 @@ interface Block {
   /** The block's source, which keys the cache. Undefined if the block has no line map. */
   text?: string;
   tokens: Token[];
-  /** The block's cached output, if it's still valid. */
-  cached?: BlockOutput;
+  /** Valid cached outputs for the block's source, one for each set of ids it has rendered with. Empty if it was parsed. */
+  cached: BlockOutput[];
 }
 
 /**
@@ -224,10 +405,16 @@ interface Block {
  * of, and renders (running KaTeX and the sanitiser for), the blocks it changed.
  * The whole document is still split into blocks each time. Blocks whose code
  * was waiting for a language re-render once it loads.
+ *
+ * Heading ids and footnote numbers depend on the blocks before them, so a
+ * cached block also re-renders when its ids change. Each block's output
+ * records its slugs and footnote labels, so ids can be assigned without
+ * parsing cached blocks. The rare block whose ids changed is parsed in a
+ * second pass.
  */
 export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
-  let cache = new Map<string, BlockOutput>();
-  let references = '';
+  let cache = new Map<string, BlockOutput[]>();
+  let definitions = '';
   const requested = new Set<LanguageDescription>();
 
   const load = (language: LanguageDescription) => {
@@ -241,50 +428,78 @@ export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
     );
   };
 
-  /** Splits a document's block tokens into blocks, finding each one's cached output. */
-  const splitBlocks = (source: string, tokens: Token[], env: RenderEnv): Block[] => {
-    // Reference definitions can change the links in any block. Block parsing
-    // has collected them all by now.
-    const nextReferences = JSON.stringify(env.references ?? {});
-    if (nextReferences !== references) {
+  /** Splits a document's block tokens into blocks, finding each one's cached outputs unless it's in `reparse`. */
+  const splitBlocks = (source: string, tokens: Token[], env: RenderEnv, reparse: Set<number>): Block[] => {
+    // Reference and footnote definitions can change the links in any block.
+    // Block parsing has collected them all by now.
+    const nextDefinitions = JSON.stringify([env.references ?? {}, [...(env.footnotes ?? [])]]);
+    if (nextDefinitions !== definitions) {
       cache.clear();
-      references = nextReferences;
+      definitions = nextDefinitions;
     }
 
     // CodeMirror normalises line endings to \n, so line maps index into this.
     const lines = source.split('\n');
-    return topLevelBlocks(tokens).map(({ start, end }) => {
+    return topLevelBlocks(tokens).map(({ start, end }, index) => {
       const blockTokens = tokens.slice(start, end);
       const firstMap = blockTokens[0].map;
       const lastMap = blockTokens.findLast((token) => token.level === 0 && token.map)?.map;
       const line = firstMap?.[0] ?? 0;
       const endLine = lastMap?.[1] ?? firstMap?.[1] ?? 0;
       const text = firstMap ? lines.slice(line, endLine).join('\n') : undefined;
-      // Reuse a cached block unless a language it was waiting for has loaded since.
-      const output = text === undefined ? undefined : cache.get(text);
-      const cached = output?.waitingFor.every((language) => !language.support) ? output : undefined;
+      // Skip cached outputs waiting for a language that has loaded since.
+      const outputs = text === undefined || reparse.has(index) ? [] : (cache.get(text) ?? []);
+      const cached = outputs.filter((output) => output.waitingFor.every((language) => !language.support));
       return { line, endLine, text, tokens: blockTokens, cached };
     });
   };
 
-  return (source: string): RenderedBlock[] => {
-    let documentBlocks: Block[] = [];
+  /** Parses a document, skipping the inline content of blocks with cached output. */
+  const parse = (source: string, reparse: Set<number>) => {
+    let blocks: Block[] = [];
     const env: RenderEnv = {
       selectTokens: (tokens) => {
-        documentBlocks = splitBlocks(source, tokens, env);
+        blocks = splitBlocks(source, tokens, env, reparse);
         // The core rules after this one edit these token objects in place,
         // so each block's tokens are complete once parsing finishes.
-        return documentBlocks.filter((block) => !block.cached).flatMap((block) => block.tokens);
+        return blocks.filter((block) => block.cached.length === 0).flatMap((block) => block.tokens);
       },
     };
     markdown.parse(source, env);
+    return { blocks, env };
+  };
 
-    const nextCache = new Map<string, BlockOutput>();
+  return (source: string): RenderedBlock[] => {
+    let parsed = parse(source, new Set());
+    let anchors = parsed.blocks.map((block) => block.cached[0]?.anchors ?? collectAnchors(block.tokens));
+    const ids = assignIds(anchors).map((blockIds) => ({ ids: blockIds, key: JSON.stringify(blockIds) }));
+    const stale = new Set(
+      parsed.blocks.flatMap((block, index) =>
+        block.cached.length > 0 && !block.cached.some((output) => output.ids === ids[index].key) ? [index] : [],
+      ),
+    );
+    if (stale.size > 0) {
+      // Anchors come from the source alone, so the ids stay the same.
+      parsed = parse(source, stale);
+      anchors = parsed.blocks.map((block) => block.cached[0]?.anchors ?? collectAnchors(block.tokens));
+    }
+    const { blocks, env } = parsed;
+
+    const nextCache = new Map<string, BlockOutput[]>();
     const occurrences = new Map<string, number>();
-    const blocks = documentBlocks.map((block, index): RenderedBlock => {
-      const output = block.cached ?? renderTokens(block.tokens, env);
-      if (block.text !== undefined) nextCache.set(block.text, output);
+    const footnotes: RenderedFootnote[] = [];
+    const rendered = blocks.map((block, index): RenderedBlock => {
+      const { ids: blockIds, key } = ids[index];
+      const output =
+        block.cached.find((cached) => cached.ids === key) ??
+        ({ ...renderBlock(block.tokens, env, blockIds), anchors: anchors[index], ids: key } satisfies BlockOutput);
+      if (block.text !== undefined) {
+        const outputs = nextCache.get(block.text) ?? [];
+        if (!outputs.includes(output)) outputs.push(output);
+        nextCache.set(block.text, outputs);
+      }
       output.waitingFor.forEach(load);
+      footnotes.push(...output.footnotes);
 
       const id = block.text ?? `\0block:${index}`;
       const seen = occurrences.get(id) ?? 0;
@@ -298,6 +513,7 @@ export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
     });
 
     cache = nextCache;
-    return blocks;
+    if (footnotes.length > 0) rendered.push(footnotesBlock(footnotes, blocks.at(-1)!.endLine));
+    return rendered;
   };
 }

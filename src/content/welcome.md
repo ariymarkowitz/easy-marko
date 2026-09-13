@@ -20,4 +20,5 @@ $$
 const greeting = (name: string) => `Hello, ${name}!`;
 ```
 
-> Tip: press `Mod-F` in the editor to find and replace.
+> [!TIP]
+> Press `Mod-F` in the editor to find and replace.

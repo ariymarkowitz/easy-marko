@@ -76,7 +76,7 @@ describe('exportHtml', () => {
       suggestedName: 'Notes.html',
       types: [{ description: 'HTML', accept: { 'text/html': ['.html'] } }],
     });
-    expect(written).toContain('<h1>Notes</h1>');
+    expect(written).toContain('<h1 id="notes">Notes</h1>');
   });
 
   test("doesn't render anything when the save dialog is cancelled", async () => {

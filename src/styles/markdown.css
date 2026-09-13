@@ -171,3 +171,69 @@
   overflow-x: auto;
   overflow-y: hidden;
 }
+
+/* Heading and footnote link targets stop a little below the pane's top. */
+.markdown [id] {
+  scroll-margin-top: var(--space-4);
+}
+
+/*
+ * GitHub-style alerts. Notes, tips and important points use the accent;
+ * warnings and cautions use the danger colour.
+ */
+.markdown .markdown-alert {
+  --alert-color: var(--color-accent);
+  margin: 0 0 1em;
+  padding: 0.5em 1em;
+  border-left: 3px solid var(--alert-color);
+}
+
+.markdown :is(.markdown-alert-warning, .markdown-alert-caution) {
+  --alert-color: var(--color-danger);
+}
+
+.markdown .markdown-alert > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown .markdown-alert-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-bottom: 0.25em;
+  font-weight: 600;
+  color: var(--alert-color);
+}
+
+.markdown-alert-icon {
+  flex: none;
+  width: 1em;
+  height: 1em;
+}
+
+/* Footnotes */
+.markdown .footnote-ref {
+  font-size: 0.75em;
+  line-height: 0;
+}
+
+.markdown .footnote-ref a {
+  text-decoration: none;
+}
+
+.markdown .footnotes {
+  margin-top: 2em;
+  padding-top: 1em;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.875em;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.markdown .footnotes li > :last-child {
+  margin-bottom: 0.5em;
+}
+
+.markdown .footnote-backref {
+  text-decoration: none;
+}

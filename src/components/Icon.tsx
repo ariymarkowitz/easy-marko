@@ -2,18 +2,7 @@
 // Solid 1.x, so this uses the framework-agnostic `lucide` package instead.
 
 import type { IconNode } from 'lucide';
-
-function toMarkup(node: IconNode): string {
-  return node
-    .map(([tag, attrs]) => {
-      const attributes = Object.entries(attrs)
-        .filter(([, value]) => value !== undefined)
-        .map(([name, value]) => `${name}="${value}"`)
-        .join(' ');
-      return `<${tag} ${attributes}/>`;
-    })
-    .join('');
-}
+import { iconMarkup } from '../lib/icon-markup';
 
 export default function Icon(props: { icon: IconNode }) {
   return (
@@ -30,7 +19,7 @@ export default function Icon(props: { icon: IconNode }) {
       stroke-linejoin="round"
       aria-hidden="true"
       // eslint-disable-next-line solid/no-innerhtml -- markup is built from Lucide's bundled icon data
-      innerHTML={toMarkup(props.icon)}
+      innerHTML={iconMarkup(props.icon)}
     />
   );
 }

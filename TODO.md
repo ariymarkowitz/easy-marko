@@ -80,9 +80,14 @@ What's built, and the behaviour decisions behind each item.
   - Only `(`, `[` and `{` close in markdown text, so apostrophes don't; fenced code uses its language's brackets. Markers only wrap a non-empty selection outside code, so list items and emphasis type as usual. A code span gets a backtick run longer than any in the selection.
 - [x] Pasting a URL over selected text makes a link
   - The pasted text is trimmed and must be a single `http(s)` or `mailto` URL. The selection must be on one line, outside code, and not a URL itself. A URL with unbalanced parentheses goes in `<…>`. Replaces lang-markdown's `pasteURLAsLink`, which doesn't trim or check the URL.
-- [ ] Heading anchors, so `[text](#heading)` links work in the preview and exported HTML
-- [ ] Footnotes
-- [ ] GitHub-style alerts (`> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`)
+- [x] Heading anchors, so `[text](#heading)` links work in the preview and exported HTML
+  - GitHub's ids: lowercased, punctuation dropped, spaces to hyphens, and repeats numbered (`notes`, `notes-1`). Headings in raw HTML don't get one. The sanitiser keeps heading ids that name `document` properties (like `title`), which it would otherwise drop.
+  - Clicking a fragment link in the preview scrolls the preview (and, with scroll sync, the source) instead of changing the URL. `#` and `#top` go to the top.
+- [x] Footnotes
+  - `[^label]` references and `[^label]: text` definitions, with indented lines continuing the note. Labels match case-insensitively and can't contain spaces; a reference to an undefined note stays text. Notes are numbered by first reference and listed after the last block, with a link back to each reference. Unreferenced notes and repeated definitions aren't shown.
+  - Heading ids and note numbers depend on earlier blocks. Cached blocks keep their slugs and labels, so ids are assigned without parsing them, and a cached block whose ids changed is parsed again in a second pass.
+- [x] GitHub-style alerts (`> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`)
+  - The marker must be alone on a top-level blockquote's first line (any case), with content after it; otherwise it stays a blockquote. Lucide icons; notes, tips and important use the accent, warnings and cautions the danger colour.
 - [ ] Notice when an open file changes on disk, and offer to reload it
 - [ ] Recent files
 - [ ] Show local images with relative paths, once the file's folder is granted

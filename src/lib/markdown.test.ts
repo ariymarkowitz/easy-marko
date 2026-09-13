@@ -23,7 +23,7 @@ describe('createMarkdownRenderer', () => {
       [2, 3],
       [4, 6],
     ]);
-    expect(blocks[0].html).toContain('<h1>Title</h1>');
+    expect(blocks[0].html).toContain('<h1 id="title">Title</h1>');
     expect(blocks[1].html).toContain('<em>text</em>');
     expect(blocks[2].html).toContain('<ul>');
   });
@@ -114,15 +114,16 @@ describe('incremental parsing', () => {
     '',
   ].join('\n');
 
-  test('renders the same HTML as a full render', () => {
-    expect(joined(createMarkdownRenderer()(source))).toBe(sanitizeHtml(markdown.render(source)));
+  test('renders the same HTML as markdown-it, with heading ids', () => {
+    const full = sanitizeHtml(markdown.render(source)).replace('<h1>', '<h1 id="a-quoted-title">');
+    expect(joined(createMarkdownRenderer()(source))).toBe(full);
   });
 
   test('renders the same HTML as a full render after an edit', () => {
     const render = createMarkdownRenderer();
     render(source);
     const edited = source.replace('Some *text*', 'Some **edited** "text"').replace('A quote', 'A new quote');
-    expect(joined(render(edited))).toBe(sanitizeHtml(markdown.render(edited)));
+    expect(joined(render(edited))).toBe(joined(createMarkdownRenderer()(edited)));
   });
 
   test("doesn't parse the inline content of unchanged blocks", () => {
@@ -302,5 +303,162 @@ describe('raw HTML', () => {
     expect(root.querySelector('math semantics annotation')).toHaveTextContent('\\sqrt{x^2}');
     expect(root.querySelector('.katex-html [style]')).not.toBeNull();
     expect(root.querySelector('.katex-html svg path')).not.toBeNull();
+  });
+});
+
+describe('heading anchors', () => {
+  const render = (source: string) => parse(joined(createMarkdownRenderer()(source)));
+  const ids = (root: HTMLElement) => [...root.querySelectorAll('h1, h2, h3, h4, h5, h6')].map((heading) => heading.id);
+
+  test('gives headings GitHub-style ids from their text', () => {
+    const root = render('# Getting *started*\n\n## Use `npm` & $x$\n\nSetext\n---\n\n> ### Quoted\n');
+    expect(ids(root)).toEqual(['getting-started', 'use-npm--x', 'setext', 'quoted']);
+  });
+
+  test('numbers repeated headings', () => {
+    expect(ids(render('# Notes\n\n## Notes\n\n### Notes'))).toEqual(['notes', 'notes-1', 'notes-2']);
+  });
+
+  test('keeps ids that name document properties', () => {
+    expect(ids(render('# Title\n\n## Links\n\n## Cookie'))).toEqual(['title', 'links', 'cookie']);
+  });
+
+  test('leaves a heading with no slug without an id', () => {
+    expect(render('# ?!').querySelector('h1')).not.toHaveAttribute('id');
+  });
+
+  test('updates later ids when an earlier heading is added, without reparsing unchanged blocks', () => {
+    const renderer = createMarkdownRenderer();
+    renderer('Intro\n\n# Notes\n\nText');
+    const spy = vi.spyOn(markdown.inline, 'parse');
+    const edited = '# Notes\n\nIntro\n\n# Notes\n\nText';
+    const html = joined(renderer(edited));
+    // The new heading reuses the cached `# Notes`, so only the one whose id changed is parsed.
+    expect(spy.mock.calls.map(([content]) => content)).toEqual(['Notes']);
+    expect(ids(parse(html))).toEqual(['notes', 'notes-1']);
+    expect(html).toBe(joined(createMarkdownRenderer()(edited)));
+  });
+
+  test('reuses repeated blocks with different ids', () => {
+    const renderer = createMarkdownRenderer();
+    const source = '# Notes\n\nText\n\n# Notes';
+    renderer(source);
+    const spy = vi.spyOn(markdown.inline, 'parse');
+    expect(ids(parse(joined(renderer(source))))).toEqual(['notes', 'notes-1']);
+    expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+describe('footnotes', () => {
+  const render = (source: string) => parse(joined(createMarkdownRenderer()(source)));
+
+  test('links references and notes both ways, numbering notes by first reference', () => {
+    const root = render('First[^b], second[^a], again[^b].\n\n[^a]: Note A.\n[^b]: Note B.\n');
+    const refs = [...root.querySelectorAll('sup.footnote-ref a')];
+    expect(refs.map((ref) => [ref.textContent, ref.getAttribute('href'), ref.id])).toEqual([
+      ['1', '#fn-1', 'fnref-1'],
+      ['2', '#fn-2', 'fnref-2'],
+      ['1', '#fn-1', 'fnref-1-2'],
+    ]);
+    const notes = [...root.querySelectorAll('section.footnotes li')];
+    expect(notes.map((note) => note.id)).toEqual(['fn-1', 'fn-2']);
+    expect(notes[0].querySelector('p')).toHaveTextContent('Note B.');
+    expect([...notes[0].querySelectorAll('.footnote-backref')].map((link) => link.getAttribute('href'))).toEqual([
+      '#fnref-1',
+      '#fnref-1-2',
+    ]);
+  });
+
+  test('puts the list after the last block, and definitions render nothing in place', () => {
+    const blocks = createMarkdownRenderer()('Text[^1]\n\n[^1]: Note\n\nAfter\n');
+    expect(blocks.map((block) => [block.html.slice(0, 8), block.line, block.endLine])).toEqual([
+      ['<p>Text<', 0, 1],
+      ['', 2, 4],
+      ['<p>After', 4, 5],
+      ['<section', 5, 5],
+    ]);
+  });
+
+  test('parses indented lines as part of the note', () => {
+    const note = render('Text[^note]\n\n[^note]: First paragraph\n    continued.\n\n    - a list\n\nNot in the note\n')
+      .querySelector('.footnotes li');
+    expect(note?.querySelectorAll('p')[0]).toHaveTextContent('First paragraph continued.');
+    expect(note?.querySelector('ul')).toHaveTextContent('a list');
+    expect(note).not.toHaveTextContent('Not in the note');
+    // A note that doesn't end in a paragraph gets its backlink in one.
+    expect(note?.lastElementChild?.matches('p')).toBe(true);
+    expect(note?.lastElementChild?.querySelector('.footnote-backref')).not.toBeNull();
+  });
+
+  test('matches labels case-insensitively and uses the first definition', () => {
+    const root = render('Text[^Note]\n\n[^note]: One\n\n[^NOTE]: Two\n');
+    expect(root.querySelectorAll('.footnotes li')).toHaveLength(1);
+    expect(root.querySelector('.footnotes li')).toHaveTextContent('One');
+  });
+
+  test.each([
+    ['an undefined note', 'Text[^missing]'],
+    ['a label with a space', 'Text[^a b]\n\n[^a b]: Note'],
+    ['a reference in code', '`[^1]`\n\n[^1]: Note'],
+    ['an escaped reference', '\\[^1]\n\n[^1]: Note'],
+  ])('leaves %s as text', (_, source) => {
+    const root = render(source);
+    expect(root.querySelector('.footnote-ref, .footnotes')).toBeNull();
+  });
+
+  test("doesn't show notes that aren't referenced", () => {
+    expect(render('Text\n\n[^1]: Note').querySelector('.footnotes')).toBeNull();
+  });
+
+  test('renumbers notes when a reference is added before them, matching a full render', () => {
+    const renderer = createMarkdownRenderer();
+    renderer('Intro\n\nLater[^b]\n\n[^a]: A\n\n[^b]: B');
+    const edited = 'Intro[^a]\n\nLater[^b]\n\n[^a]: A\n\n[^b]: B';
+    const html = joined(renderer(edited));
+    expect(html).toBe(joined(createMarkdownRenderer()(edited)));
+    expect(parse(html).querySelector('.footnotes li:last-child')).toHaveTextContent('B');
+    expect(parse(html).querySelectorAll('.footnote-ref a')[1]).toHaveTextContent('2');
+  });
+
+  test('renders references again when a definition is added', () => {
+    const renderer = createMarkdownRenderer();
+    renderer('Text[^1]');
+    expect(parse(joined(renderer('Text[^1]\n\n[^1]: Note'))).querySelector('.footnote-ref')).not.toBeNull();
+  });
+});
+
+describe('GitHub alerts', () => {
+  const render = (source: string) => parse(joined(createMarkdownRenderer()(source)));
+
+  test.each(['note', 'tip', 'important', 'warning', 'caution'])('renders a %s alert', (type) => {
+    const alert = render(`> [!${type.toUpperCase()}]\n> Some *text*`).querySelector(`.markdown-alert-${type}`);
+    expect(alert?.matches('div.markdown-alert')).toBe(true);
+    expect(alert?.querySelector('.markdown-alert-title svg')).not.toBeNull();
+    expect(alert?.querySelector('.markdown-alert-title')).toHaveTextContent(new RegExp(`^${type}$`, 'i'));
+    expect(alert?.querySelector('p:not(.markdown-alert-title) em')).toHaveTextContent('text');
+    expect(alert?.querySelector('blockquote')).toBeNull();
+  });
+
+  test('accepts any case and content that starts after a blank line', () => {
+    const alert = render('> [!Tip]\n>\n> Paragraph\n>\n> - list').querySelector('.markdown-alert-tip');
+    expect(alert?.children).toHaveLength(3);
+    expect(alert?.querySelector('ul')).not.toBeNull();
+  });
+
+  test('keeps nested blockquotes', () => {
+    const alert = render('> [!NOTE]\n> Text\n> > Quoted').querySelector('.markdown-alert');
+    expect(alert?.querySelector('blockquote')).toHaveTextContent('Quoted');
+  });
+
+  test.each([
+    ['a marker with nothing after it', '> [!NOTE]'],
+    ['text on the marker line', '> [!NOTE] Text'],
+    ['an unknown type', '> [!DANGER]\n> Text'],
+    ['a marker after other text', '> Text\n> [!NOTE]'],
+    ['a nested blockquote', '- > [!NOTE]\n  > Text'],
+  ])('leaves %s as a blockquote', (_, source) => {
+    const root = render(source);
+    expect(root.querySelector('.markdown-alert')).toBeNull();
+    expect(root.querySelector('blockquote')).not.toBeNull();
   });
 });

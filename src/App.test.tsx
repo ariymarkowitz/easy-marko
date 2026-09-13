@@ -170,3 +170,31 @@ describe('view modes', () => {
     expect(activeDocument()?.content).toBe('');
   });
 });
+
+describe('fragment links in the preview', () => {
+  test('scroll the preview to their target without changing the URL', () => {
+    const view = renderApp();
+    showView('Preview');
+    type(view, '[Go](#details) [Missing](#nowhere)\n\n# Details\n\nText[^1]\n\n[^1]: Note');
+    const pane = preview()!;
+    // jsdom does no layout or scrolling.
+    let scrollTop = 0;
+    Object.defineProperty(pane, 'scrollTop', { get: () => scrollTop, set: (value: number) => (scrollTop = value) });
+    const heading = within(pane).getByRole('heading', { name: 'Details' });
+    vi.spyOn(heading, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 300, 0, 0));
+
+    const hash = location.hash;
+    const link = within(pane).getByRole('link', { name: 'Go' });
+    expect(fireEvent.click(link)).toBe(false);
+    expect(scrollTop).toBe(300);
+    expect(location.hash).toBe(hash);
+
+    fireEvent.click(within(pane).getByRole('link', { name: 'Missing' }));
+    expect(scrollTop).toBe(300);
+
+    const note = pane.querySelector<HTMLElement>('#fn-1')!;
+    vi.spyOn(note, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 100, 0, 0));
+    fireEvent.click(within(pane).getByRole('link', { name: '1' }));
+    expect(scrollTop).toBe(400);
+  });
+});
