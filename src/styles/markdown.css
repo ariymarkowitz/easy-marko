@@ -23,7 +23,7 @@
   contain: paint;
 }
 
-.markdown :is(p, ul, ol, blockquote, pre, table) {
+.markdown :is(p, ul, ol, dl, blockquote, pre, table, details, figure) {
   margin: 0 0 1em;
 }
 
