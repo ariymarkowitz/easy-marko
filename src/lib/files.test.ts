@@ -3,6 +3,7 @@ import { readDroppedFiles, saveFile } from './files';
 
 afterEach(() => {
   delete window.showSaveFilePicker;
+  vi.restoreAllMocks();
 });
 
 /** A stand-in for a file handle whose readwrite permission starts as `permission`. */
@@ -46,6 +47,14 @@ describe('saveFile', () => {
     );
     expect(handle.written).toEqual([]);
     expect(picked.written).toEqual(['Hello']);
+  });
+
+  test('downloads when showSaveFilePicker is an element that markdown put on window', async () => {
+    // Browsers without the API expose an element with id="showSaveFilePicker" as window.showSaveFilePicker.
+    window.showSaveFilePicker = document.createElement('div') as unknown as typeof window.showSaveFilePicker;
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    expect(await saveFile('Notes.md', 'Hello')).toEqual({ name: 'Notes.md' });
+    expect(click).toHaveBeenCalled();
   });
 });
 

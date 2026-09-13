@@ -44,6 +44,7 @@ This is a SolidJS 2.x project. Solid is not React: components run once (there is
 - The UI is minimalist: greyscale plus one accent colour, and a small toolbar and status bar so the editor and preview are nearly fullscreen.
 - CSS: use the tokens in `tokens.css` and add new ones only when needed. `markdown.css` is only for rendered markdown (it's also used in exported HTML); app UI in or around the preview goes in `base.css`, and the sanitiser strips `base.css` classes and ids from markdown. Prefer semantic class names; keep utility classes (like `.spacer`) for cases where they make the code simpler. Colours use `light-dark()`.
 - The preview is written with `innerHTML` and markdown may contain raw HTML: pass rendered HTML through `sanitizeHtml` (`src/lib/sanitize.ts`) before it's shown or exported.
+- Feature-detect optional browser APIs by type (`typeof window.showOpenFilePicker === 'function'`), not truthiness: where a browser lacks one, an element in the preview with that id or name appears as `window.<name>`.
 - Keep `AGENTS.md` short: only include locations of important files and instructions. No extraneous information.
 
 ## Versioned skills (in node_modules; read on demand)

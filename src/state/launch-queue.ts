@@ -9,7 +9,8 @@ import { openFiles } from './documents';
  */
 export function useLaunchQueue(): void {
   onSettled(() => {
-    window.launchQueue?.setConsumer((params) => {
+    if (typeof window.launchQueue?.setConsumer !== 'function') return;
+    window.launchQueue.setConsumer((params) => {
       const handles = params.files.filter(
         (handle): handle is FileSystemFileHandle => handle.kind === 'file',
       );

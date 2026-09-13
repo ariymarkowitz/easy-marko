@@ -60,7 +60,8 @@ let refreshes = 0;
 
 async function refresh(documentId: string | undefined): Promise<void> {
   const run = ++refreshes;
-  const file = documentId && window.showDirectoryPicker ? await loadDocumentFile(documentId) : undefined;
+  const supported = typeof window.showDirectoryPicker === 'function';
+  const file = documentId && supported ? await loadDocumentFile(documentId) : undefined;
   let next: Access = { status: 'unavailable' };
   if (file) {
     const location = await locateFile(await storedFolders(), file);

@@ -81,7 +81,7 @@ async function readDroppedFile(
 
 /** Asks for a file to open. Resolves undefined if cancelled; rejects if it isn't a text file. */
 export async function openFile(): Promise<OpenedFile | undefined> {
-  if (!window.showOpenFilePicker) return openWithInput();
+  if (typeof window.showOpenFilePicker !== 'function') return openWithInput();
   try {
     const [handle] = await window.showOpenFilePicker({ types: pickerTypes(markdownFile) });
     return await readFileHandle(handle);
@@ -136,7 +136,10 @@ export async function saveFile(
   try {
     const permitted = handle && (await requestAccess(handle, 'readwrite')) ? handle : undefined;
     const target =
-      permitted ?? (await window.showSaveFilePicker?.({ suggestedName: name, types: pickerTypes(type) }));
+      permitted ??
+      (typeof window.showSaveFilePicker === 'function'
+        ? await window.showSaveFilePicker({ suggestedName: name, types: pickerTypes(type) })
+        : undefined);
     const text = typeof content === 'string' ? content : await content();
     if (!target) {
       download(name, text, type.mimeType);
