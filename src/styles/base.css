@@ -136,6 +136,11 @@ button,
   margin-top: 0;
 }
 
+/* Headings are trimmed to their cap height, so they keep a little space. */
+.md-block:first-child > :is(h1, h2, h3, h4, h5, h6):first-child {
+  margin-top: 0.3em;
+}
+
 /* Marks the block an alt-click in the source jumped to, then fades out. */
 .md-block.flash {
   border-radius: var(--radius);
