@@ -201,6 +201,20 @@ describe('task lists', () => {
     expect(items[3]).not.toHaveClass('task-list-item');
   });
 
+  test.each([
+    ['nothing after it', '- [ ]'],
+    ['a trailing space', '- [ ] '],
+    ['a checked marker', '- [x]'],
+  ])('renders a checkbox with no text for a marker with %s', (_, source) => {
+    const item = render(source).querySelector('li');
+    expect(item?.querySelector('input[type="checkbox"]')).not.toBeNull();
+    expect(item).toHaveTextContent(/^$/);
+  });
+
+  test('leaves a marker followed by other text as text', () => {
+    expect(render('- [ ]x').querySelector('input')).toBeNull();
+  });
+
   test('works in ordered, loose and nested lists', () => {
     const root = render('1. [x] first\n\n2. [ ] second\n   - [x] nested\n');
     expect(root.querySelectorAll('.task-list-item')).toHaveLength(3);
@@ -209,7 +223,6 @@ describe('task lists', () => {
 
   test.each([
     ['an escaped marker', '- \\[ ] text'],
-    ['a marker without text', '- [ ]'],
     ['a marker outside a list', '[x] text'],
     ['a marker later in the item', '- text [x] text'],
   ])('leaves %s as text', (_, source) => {

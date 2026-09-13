@@ -69,7 +69,7 @@ What's built, and the behaviour decisions behind each item.
 - [x] Drag and drop files to open them
   - Dropped files open with their handles where the browser gives them (Chromium), so Save writes back to them. Files that aren't text, and folders, are reported instead of opened. Dragged text still drops into the editor.
 - [x] Display checkboxes using `- [ ]` (and its checked variant)
-  - Read-only (disabled); clicking them doesn't edit the source.
+  - Read-only (disabled); clicking them doesn't edit the source. An item with only a marker (`- [ ]`) shows just the checkbox.
 - [x] Export as self-contained HTML document
   - Inlines the tokens, syntax and preview CSS; KaTeX's CSS and WOFF2 fonts (about 400 KB) only when the document has maths. Follows `prefers-color-scheme`.
 - [x] Formatting shortcuts: Cmd/Ctrl+B bold, +I italic, +K link, +Shift+X strikethrough

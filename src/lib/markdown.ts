@@ -66,11 +66,11 @@ markdown.inline.ruler.at('math_inline', inlineMath);
 
 type CoreRule = Parameters<typeof markdown.core.ruler.push>[1];
 
-const taskMarker = /^\[([ xX])\][ \t]/;
+const taskMarker = /^\[([ xX])\](?:[ \t]|$)/;
 
 /**
  * GitHub-style task lists: a list item starting with `[ ]` or `[x]` gets a
- * read-only checkbox in place of the marker. The raw content is checked as
+ * read-only checkbox in place of the marker, including an item with no text. The raw content is checked as
  * well as the parsed text, so an escaped `\[ ]` stays text.
  */
 const taskLists: CoreRule = (state) => {
