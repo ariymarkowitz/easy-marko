@@ -1,4 +1,4 @@
-<p><img src="/welcome-banner.svg" alt="A tiling of the Easy Marko E and M at different rotations" width="720" height="144"></p>
+![Banner](https://ariymarkowitz.github.io/easy-marko/welcome-banner.svg)
 
 # Welcome to <span style="color: #4c7bf4">Easy Marko!</span>
 
@@ -6,7 +6,7 @@
 >
 > *--- John Grube, Introducing Markdown*
 
-Easy Marko is a markdown editor. It runs in the browser or on your device as a Progressive Web App. This page is an ordinary document. Edit it, break it, or close it from the sidebar when you're done. You can bring it back by clicking the About button in the toolbar.
+Easy Marko is a simple markdown editor and viewer. It runs in the browser or on your device as a Progressive Web App. This page is an ordinary document. Edit it, break it, or close it from the sidebar when you're done. You can bring it back by clicking the About button in the toolbar.
 
 The first half shows the markdown features Easy Marko supports. The second half covers the parts of the app that are easy to miss. Jump to [the guide](#using-the-app) if you already know markdown.
 
