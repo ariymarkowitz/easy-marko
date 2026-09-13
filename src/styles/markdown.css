@@ -179,7 +179,7 @@
 
 .markdown code {
   padding: 0.15em 0.35em;
-  border-radius: 4px;
+  border-radius: 0.3em;
   font-family: var(--font-mono);
   font-size: 0.875em;
   background-color: var(--color-code-inline-bg);
