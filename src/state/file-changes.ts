@@ -1,4 +1,4 @@
-import { createEffect } from 'solid-js';
+import { createEffect, untrack } from 'solid-js';
 import { hashText } from '../lib/hash';
 import { useListeners } from '../reactive';
 import {
@@ -115,7 +115,8 @@ export function useFileChanges(): void {
   createEffect(
     () => documentsState.documents.map((doc) => `${doc.id}\n${doc.name}`).join('\n'),
     () => {
-      check();
+      // The document list is tracked above; this reads it once.
+      untrack(check);
       const timer = setInterval(check, FILE_CHECK_INTERVAL);
       return () => clearInterval(timer);
     },
