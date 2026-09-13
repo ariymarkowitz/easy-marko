@@ -1,5 +1,6 @@
 import type { ParentProps } from 'solid-js';
 import { HydrationScript } from '@solidjs/web';
+import { APP_COLORS, APP_DESCRIPTION, APP_NAME } from './app-info';
 import { STORAGE_KEYS } from './lib/storage';
 
 // Applies a saved theme override before first paint, so there's no flash of
@@ -15,13 +16,13 @@ export default function Document(props: ParentProps) {
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="description" content="A minimal markdown editor that works offline." />
-        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f6f6" />
-        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1e1e1e" />
+        <meta name="description" content={APP_DESCRIPTION} />
+        <meta name="theme-color" media="(prefers-color-scheme: light)" content={APP_COLORS.surface.light} />
+        <meta name="theme-color" media="(prefers-color-scheme: dark)" content={APP_COLORS.surface.dark} />
         <link rel="icon" href={`${import.meta.env.BASE_URL}icon.svg`} type="image/svg+xml" />
         <link rel="apple-touch-icon" href={`${import.meta.env.BASE_URL}apple-touch-icon.png`} />
         <link rel="manifest" href={`${import.meta.env.BASE_URL}manifest.webmanifest`} />
-        <title>Easy Marko</title>
+        <title>{APP_NAME}</title>
         {/* eslint-disable-next-line solid/no-innerhtml -- constant script defined above */}
         <script innerHTML={themeScript} />
         <HydrationScript />

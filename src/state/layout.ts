@@ -37,7 +37,7 @@ export const viewMode = (): ViewMode =>
 export const sidebarOpen = (): boolean => (narrowScreen() ? overlayOpen() : settings.sidebarOpen);
 
 export function toggleSidebar(): void {
-  if (narrowScreen()) setOverlayOpen(!overlayOpen());
+  if (narrowScreen()) setOverlayOpen((open) => !open);
   else setSidebarOpen(!settings.sidebarOpen);
 }
 
@@ -48,14 +48,15 @@ export function toggleSidebar(): void {
  * there keeps a stored split view for when the window widens.
  */
 export function selectViewMode(mode: ViewMode): void {
-  const narrow = narrowScreen();
-  if (mode === 'split') {
-    if (!narrow) setViewMode(settings.viewMode === 'split' ? settings.lastPanel : 'split');
-    return;
+  if (mode !== 'split') setLastPanel(mode);
+  if (narrowScreen()) {
+    // A stored split view is kept, and shows lastPanel.
+    if (mode !== 'split' && settings.viewMode !== 'split') setViewMode(mode);
+  } else if (settings.viewMode !== mode) {
+    setViewMode(mode);
+  } else {
+    setViewMode(mode === 'split' ? settings.lastPanel : 'split');
   }
-  setLastPanel(mode);
-  if (!narrow) setViewMode(settings.viewMode === mode ? 'split' : mode);
-  else if (settings.viewMode !== 'split') setViewMode(mode);
 }
 
 /**

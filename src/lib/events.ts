@@ -38,19 +38,3 @@ export function listen<T extends EventTarget>(
   }
   return () => controller.abort();
 }
-
-/** The arguments to `listen`, for passing a group of them to `listenAll`. */
-export type ListenArgs<T extends EventTarget> = [target: T, listeners: Listeners<T>, options?: ListenOptions];
-
-/**
- * Calls `listen` with each set of arguments and returns a function removing
- * every listener, for listening to several targets with one teardown.
- */
-export function listenAll<Targets extends EventTarget[]>(
-  ...groups: { [I in keyof Targets]: ListenArgs<Targets[I]> }
-): () => void {
-  const unlisten = groups.map((args) => listen(...(args as ListenArgs<EventTarget>)));
-  return () => {
-    for (const stop of unlisten) stop();
-  };
-}

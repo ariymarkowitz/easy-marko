@@ -26,7 +26,8 @@ import { useRecentFiles } from './state/recent-files';
 import { setSidebarWidth, settings, SIDEBAR_WIDTH, useSettingsPersistence } from './state/settings';
 import { useTheme } from './state/theme';
 
-const sourceHidden = () => viewMode() === 'preview';
+/** The button that sidebar edges carry while the source is hidden. */
+const showSourceActions = () => (viewMode() === 'preview' ? [edgeActions.showSource] : []);
 
 export default function App() {
   useTheme();
@@ -53,17 +54,11 @@ export default function App() {
         <Show
           when={sidebarOpen()}
           fallback={
-            <PanelEdge
-              position="start"
-              after={[edgeActions.showSidebar, ...(sourceHidden() ? [edgeActions.showSource] : [])]}
-            />
+            <PanelEdge position="start" after={[edgeActions.showSidebar, ...showSourceActions()]} />
           }
         >
           <Sidebar />
-          <PanelEdge
-            before={[edgeActions.hideSidebar]}
-            after={sourceHidden() ? [edgeActions.showSource] : []}
-          >
+          <PanelEdge before={[edgeActions.hideSidebar]} after={showSourceActions()}>
             <Resizer
               label="Resize sidebar"
               controls="sidebar"

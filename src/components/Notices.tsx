@@ -51,7 +51,7 @@ function NoticeItem(props: { notice: Notice }) {
         {(action) => (
           <button
             type="button"
-            class="notice-action"
+            class="text-button notice-action"
             onClick={() => {
               dismiss();
               action.run();

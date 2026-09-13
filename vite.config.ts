@@ -4,6 +4,7 @@ import type { Plugin } from 'vite';
 import { configDefaults, defineConfig } from 'vitest/config';
 import solid from '@solidjs/vite-plugin';
 import { VitePWA, type VitePluginPWAAPI } from 'vite-plugin-pwa';
+import { APP_COLORS, APP_DESCRIPTION, APP_NAME } from './src/app-info.ts';
 import { fileTypes } from './src/lib/files.ts';
 
 /**
@@ -62,15 +63,14 @@ export default defineConfig(({ mode }) => {
         // (the top-level build.outDir, `dist`) would precache `client/…` URLs.
         outDir: 'dist/client',
         manifest: {
-          name: 'Easy Marko',
-          short_name: 'Easy Marko',
-          description: 'A minimal markdown editor that works offline.',
-            display: 'standalone',
-          background_color: '#fafafa',
-          theme_color: '#f6f6f6',
-          // Icon paths are relative to the manifest, and start_url and scope
-          // default to the base.
-          // PNGs generated from icon.svg by scripts/icons.mjs.
+          name: APP_NAME,
+          short_name: APP_NAME,
+          description: APP_DESCRIPTION,
+          display: 'standalone',
+          background_color: APP_COLORS.background.light,
+          theme_color: APP_COLORS.surface.light,
+          // Paths are relative to the manifest (start_url and scope default to
+          // the base). The PNGs are generated from icon.svg by scripts/icons.mjs.
           icons: [
             { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
             { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },

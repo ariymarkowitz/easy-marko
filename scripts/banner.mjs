@@ -20,19 +20,23 @@ const opacity = { e: 0.45, m: 0.3 };
 const seed = 7;
 
 const round = (value) => +value.toFixed(1);
+/** Scales a letter from its 192-unit box to the glyph size. */
+const scale = +(glyph / 192).toFixed(4);
 
 // The letters are drawn in a 192-unit box centred on the origin.
-const gap = (192 - 3 * stroke) / 2;
+const gap = round((192 - 3 * stroke) / 2);
 const e = [
-  `M-96-96H96v${stroke}H${-96 + stroke}v${round(gap)}`,
+  `M-96-96H96v${stroke}H${-96 + stroke}v${gap}`,
   `H${round(40 - stroke / 2)}l${stroke / 2} ${stroke / 2} ${-stroke / 2} ${stroke / 2}`,
-  `H${-96 + stroke}v${round(gap)}H96v${stroke}H-96z`,
+  `H${-96 + stroke}v${gap}H96v${stroke}H-96z`,
 ].join('');
 
 // The M's diagonals keep a 1.25 slope and are a little thicker than its legs.
 const slope = 1.25;
 const outerPoint = -96 + (96 - stroke) * slope;
-const innerPoint = outerPoint + (stroke * 50) / 48 / Math.cos(Math.atan(slope));
+/** The diagonals' stroke, measured across the diagonal. */
+const diagonalStroke = (stroke * 50) / 48;
+const innerPoint = outerPoint + diagonalStroke * Math.hypot(1, slope);
 const innerLeg = innerPoint - (96 - stroke) * slope;
 const m = [
   `M-96 96V-96h${stroke}L0 ${round(outerPoint)}L${96 - stroke} -96H96V96H${96 - stroke}`,
@@ -56,7 +60,7 @@ for (let row = 0; row < rows; row++) {
     const angle = options[Math.floor(random() * options.length)];
     rotations[row].push(angle);
     const rotate = angle ? ` rotate(${angle})` : '';
-    const transform = `translate(${col * cell + cell / 2} ${row * cell + cell / 2})${rotate} scale(${+(glyph / 192).toFixed(4)})`;
+    const transform = `translate(${col * cell + cell / 2} ${row * cell + cell / 2})${rotate} scale(${scale})`;
     tiles.push(`  <use href="#${letter}" transform="${transform}"/>`);
   }
 }

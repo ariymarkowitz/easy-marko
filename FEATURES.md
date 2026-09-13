@@ -66,7 +66,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 ## Linking the panes
 
 - Scroll sync in split view, with a toolbar toggle.
-- Alt-click in the preview jumps to that spot in the source, and vice versa. If the other pane is hidden, this opens split view. Narrow windows switch panes instead.
+- Alt-click in the preview jumps to that spot in the source, and vice versa. If the other pane is hidden, this opens split view. Narrow windows switch panes instead. A jump into the preview briefly highlights the block it lands on, unless the system asks for reduced motion.
 
 ## Safety
 

@@ -126,79 +126,6 @@ button,
   background-color: var(--color-bg);
 }
 
-/* The preview's layout around the rendered markdown. Its typography is in markdown.css. */
-.preview-pane {
-  container-type: inline-size;
-  overflow-y: auto;
-}
-
-.md-block:first-child > :first-child {
-  margin-top: 0;
-}
-
-/* Headings are trimmed to their cap height, so they keep a little space. */
-.md-block:first-child > :is(h1, h2, h3, h4, h5, h6):first-child {
-  margin-top: var(--md-heading-margin-first);
-}
-
-/* Marks the block an alt-click in the source jumped to, then fades out. */
-.md-block.flash {
-  border-radius: var(--radius);
-  animation: block-flash 1.2s ease-out;
-}
-
-@keyframes block-flash {
-  from {
-    background-color: var(--color-accent-soft);
-    box-shadow: 0 0 0 var(--space-2) var(--color-accent-soft);
-  }
-}
-
-/* An image with a relative path that can't show yet (state/local-images.ts). */
-.markdown .local-image {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  max-width: 100%;
-  padding: var(--space-1) var(--space-2);
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius);
-  font-family: var(--font-sans);
-  font-size: var(--text-ui);
-  line-height: 1.4;
-  color: var(--color-text-muted);
-  vertical-align: middle;
-}
-
-.markdown .local-image-icon {
-  flex: none;
-  width: 1rem;
-  height: 1rem;
-}
-
-.markdown .local-image-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.markdown .local-image-allow {
-  flex: none;
-  padding: 0 var(--space-1);
-  border: 0;
-  border-radius: var(--radius);
-  background-color: transparent;
-  font: inherit;
-  font-weight: 600;
-  color: var(--color-accent);
-  cursor: pointer;
-}
-
-.markdown .local-image-allow:hover {
-  background-color: var(--color-accent-soft);
-}
-
 .workspace[data-view='split'] .source-pane {
   flex: 0 0 var(--split);
 }
@@ -234,6 +161,50 @@ button,
 .resizer:focus-visible {
   outline: none;
   box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+/* Controls */
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background-color: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.icon-button:hover:not(:disabled) {
+  background-color: var(--color-hover);
+  color: var(--color-text);
+}
+
+.icon-button[aria-pressed='true'] {
+  background-color: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.icon-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* A text button in the accent colour, like a notice's action. */
+.text-button {
+  border: 0;
+  border-radius: var(--radius);
+  background-color: transparent;
+  font-weight: 600;
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.text-button:hover {
+  background-color: var(--color-accent-soft);
 }
 
 /*
@@ -328,34 +299,83 @@ button,
   transition: none;
 }
 
-/* Controls */
+/* Preview: the layout around the rendered markdown. Its typography is in markdown.css. */
 
-.icon-button {
-  display: inline-grid;
-  place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 0;
+.preview-pane {
+  container-type: inline-size;
+  overflow-y: auto;
+}
+
+.md-block:first-child > :first-child {
+  margin-top: 0;
+}
+
+/* Headings are trimmed to their cap height, so they keep a little space. */
+.md-block:first-child > :is(h1, h2, h3, h4, h5, h6):first-child {
+  margin-top: var(--md-heading-margin-first);
+}
+
+/* Marks the block an alt-click in the source jumped to, then fades out. */
+.md-block.flash {
+  border-radius: var(--radius);
+  animation: block-flash 1.2s ease-out;
+}
+
+@keyframes block-flash {
+  from {
+    background-color: var(--color-accent-soft);
+    box-shadow: 0 0 0 var(--space-2) var(--color-accent-soft);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-block.flash {
+    animation: none;
+  }
+}
+
+/* An image with a relative path that can't show yet (state/local-images.ts). */
+.markdown .local-image {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+  padding: var(--space-1) var(--space-2);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  font-family: var(--font-sans);
+  font-size: var(--text-ui);
+  line-height: 1.4;
+  color: var(--color-text-muted);
+  vertical-align: middle;
+}
+
+.markdown .local-image-icon {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
+
+.markdown .local-image-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.markdown .local-image-allow {
+  flex: none;
+  padding: 0 var(--space-1);
   border: 0;
   border-radius: var(--radius);
   background-color: transparent;
-  color: var(--color-text-muted);
+  font-weight: 600;
+  color: var(--color-accent);
   cursor: pointer;
 }
 
-.icon-button:hover:not(:disabled) {
-  background-color: var(--color-hover);
-  color: var(--color-text);
-}
-
-.icon-button[aria-pressed='true'] {
+.markdown .local-image-allow:hover {
   background-color: var(--color-accent-soft);
-  color: var(--color-accent);
-}
-
-.icon-button:disabled {
-  opacity: 0.35;
-  cursor: default;
 }
 
 /* Sidebar */
@@ -511,16 +531,6 @@ button,
 .notice-action {
   flex: none;
   padding: var(--space-1) var(--space-2);
-  border: 0;
-  border-radius: var(--radius);
-  background-color: transparent;
-  font-weight: 600;
-  color: var(--color-accent);
-  cursor: pointer;
-}
-
-.notice-action:hover {
-  background-color: var(--color-accent-soft);
 }
 
 /* Drop indicator: outlines the window while files are dragged over it. */

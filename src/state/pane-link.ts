@@ -6,7 +6,7 @@
 import { createEffect, flush, onSettled } from 'solid-js';
 import { EditorView } from '@codemirror/view';
 import { editorView } from '../editor/controller';
-import { listenAll } from '../lib/events';
+import { listen } from '../lib/events';
 import { createScrollMap, mapOffset } from '../lib/scroll-map';
 import { createAttachment } from '../reactive';
 import { revealPane, viewMode } from './layout';
@@ -102,7 +102,10 @@ function previewLineAt(pane: HTMLElement, clientY: number): number | undefined {
   return Math.min(line, Math.max(block.line, block.endLine - 1));
 }
 
-/** Directive that attaches a preview pane to this model. */
+/**
+ * Ref for <Preview>'s scrolling pane: publishes it to this module while
+ * mounted, and runs a jump that was waiting for it to mount.
+ */
 export function previewPaneRef(): (pane: HTMLElement) => void {
   let pane: HTMLElement;
   onSettled(() => {
@@ -197,17 +200,14 @@ function linkScrolling(view: EditorView, pane: HTMLElement): () => void {
   // Edits, images loading and pane resizes all move content around, so
   // realign whenever either pane's content changes size. This also aligns
   // the panes as soon as they're linked.
-  const resizeObserver = new ResizeObserver(() => sync());
+  const resizeObserver = new ResizeObserver(sync);
   resizeObserver.observe(view.contentDOM);
   resizeObserver.observe(pane.querySelector('.markdown') ?? pane);
-  const unlisten = listenAll(
-    [source, { scroll: onScroll }, { passive: true }],
-    [pane, { scroll: onScroll }, { passive: true }],
-  );
+  const unlisten = [source, pane].map((element) => listen(element, { scroll: onScroll }, { passive: true }));
 
   return () => {
     resizeObserver.disconnect();
-    unlisten();
+    for (const stop of unlisten) stop();
   };
 }
 

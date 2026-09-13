@@ -10,12 +10,8 @@ export function createMediaQuery(query: string): () => boolean {
   const media = window.matchMedia(query);
   const [matches, setMatches] = createSignal(media.matches);
 
-  // Its own root, so the cleanup has an owner to run it.
-  createRoot(() => {
-    const update = () => setMatches(media.matches);
-    media.addEventListener('change', update);
-    onCleanup(() => media.removeEventListener('change', update));
-  });
+  // Its own root, so the cleanup has an owner even at module scope.
+  createRoot(() => onCleanup(listen(media, { change: () => setMatches(media.matches) })));
 
   return matches;
 }

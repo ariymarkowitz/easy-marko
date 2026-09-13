@@ -24,6 +24,7 @@ This is a SolidJS 2.x project. Solid is not React: components run once (there is
 
 - `src/App.tsx`: layout root. Calls each app-wide `use*` hook once.
 - `src/Document.tsx`: the HTML shell (head tags, pre-paint theme script). Prerendered at build time; ships no JS.
+- `src/app-info.ts`: the app's name, description and browser-UI colours, shared by `Document.tsx` and the manifest in `vite.config.ts`.
 - `src/components/`: UI components.
 - `src/state/`: app state as module-level signals and stores, action functions, and `use*` hooks for their effects (persistence, cross-tab backup sync, theme sync).
   - `notices.ts`: `showNotice()` for in-app messages and errors (no `alert()`). Rendered by `components/Notices.tsx`.
