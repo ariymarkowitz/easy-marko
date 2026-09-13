@@ -15,4 +15,4 @@ npm run build      # static site in dist/client
 npm run serve      # preview the build (service worker included)
 ```
 
-See `TODO.md` for what's built, and `AGENTS.md` for the code structure and conventions.
+See `FEATURES.md` for what's built, and `AGENTS.md` for the code structure and conventions.
