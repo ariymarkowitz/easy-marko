@@ -1,21 +1,29 @@
-// Links the source and preview panes: synced scrolling in split view, and
-// alt-click jumps from a place in one pane to the same place in the other.
-// Preview blocks carry the source lines they came from (data-line and
-// data-end-line), which is what lines the two panes up.
+// Links the source and preview panes: synced scrolling in split view, a
+// shown pane opening where the other was scrolled to, and alt-click jumps
+// from a place in one pane to the same place in the other. Preview blocks
+// carry the source lines they came from (data-line and data-end-line), which
+// is what lines the two panes up.
 
-import { createEffect, flush, onSettled } from 'solid-js';
+import { createEffect, flush, onSettled, untrack } from 'solid-js';
 import { EditorView } from '@codemirror/view';
 import { editorView } from '../editor/controller';
 import { listen } from '../lib/events';
 import { createScrollMap, mapOffset } from '../lib/scroll-map';
 import { createAttachment } from '../reactive';
 import { revealPane, viewMode } from './layout';
-import { settings } from './settings';
+import { type PanelMode, settings } from './settings';
 
 const [previewPane, attachPane] = createAttachment<HTMLElement>();
 
 /** A jump into the preview that has to wait for the preview to mount. */
 let pendingPreviewJump: { line: number; offset: number } | undefined;
+
+/**
+ * Where the user last scrolled: the pane, and the source line at its top,
+ * fractional for a place partway through. A pane that's shown with scroll
+ * sync on opens here, and split view's panes follow this pane when linked.
+ */
+const scrollAnchor: { pane: PanelMode; line: number } = { pane: 'source', line: 0 };
 
 interface PreviewBlock {
   element: HTMLElement;
@@ -73,8 +81,12 @@ function flash(element: HTMLElement): void {
   element.addEventListener('animationend', () => element.classList.remove('flash'), { once: true });
 }
 
-/** Scrolls the preview so source `line` sits `offset` pixels below the pane's top. */
-function scrollPreviewToLine(pane: HTMLElement, line: number, offset: number): void {
+/**
+ * Scrolls the preview so source `line` (which can be fractional) sits `offset`
+ * pixels below the pane's top, and highlights the block there unless `flash`
+ * is false.
+ */
+function scrollPreviewToLine(pane: HTMLElement, line: number, offset: number, { flash: highlight = true } = {}): void {
   const blocks = measurePreviewBlocks(pane);
   const block = blocks.findLast((b) => b.line <= line) ?? blocks[0];
   if (!block) return;
@@ -83,7 +95,54 @@ function scrollPreviewToLine(pane: HTMLElement, line: number, offset: number): v
       ? block.bottom
       : block.top + ((block.bottom - block.top) * (line - block.line)) / (block.endLine - block.line);
   scrollElement(pane, top - offset);
-  flash(block.element);
+  if (highlight) flash(block.element);
+}
+
+/** Scrolls the preview to the scroll anchor's line, and makes it the pane the anchor follows. */
+function showPreviewAtAnchor(pane: HTMLElement): void {
+  scrollAnchor.pane = 'preview';
+  if (scrollAnchor.line <= 0) scrollElement(pane, 0);
+  else scrollPreviewToLine(pane, scrollAnchor.line, 0, { flash: false });
+}
+
+/** The source line at the top of the preview, fractional within a block. */
+function previewLineAtTop(pane: HTMLElement): number {
+  const y = pane.scrollTop;
+  if (y <= 0) return 0;
+  const block = measurePreviewBlocks(pane).findLast((b) => b.top <= y);
+  if (!block) return 0;
+  if (y >= block.bottom) return block.endLine;
+  return block.line + ((block.endLine - block.line) * (y - block.top)) / (block.bottom - block.top);
+}
+
+/** The source line at the top of the editor, fractional within a line. */
+function sourceLineAtTop(view: EditorView): number {
+  const scroller = view.scrollDOM;
+  if (scroller.scrollTop <= 0) return 0;
+  const { doc } = view.state;
+  // documentTop moves with the scroll, so this is the scroll position in document coordinates.
+  const height = scroller.getBoundingClientRect().top - view.documentTop;
+  const block = view.lineBlockAtHeight(height);
+  const first = doc.lineAt(block.from).number;
+  const lines = doc.lineAt(block.to).number - first + 1;
+  const fraction = Math.min(1, Math.max(0, (height - block.top) / block.height));
+  return first - 1 + lines * fraction;
+}
+
+/** Scrolls the editor so source `line` (which can be fractional) is at its top. Works on an editor that was just shown. */
+function scrollSourceToLine(view: EditorView, line: number): void {
+  const { doc } = view.state;
+  if (line <= 0) {
+    scrollElement(view.scrollDOM, 0);
+    return;
+  }
+  const whole = Math.min(Math.floor(line), doc.lines - 1);
+  const position = doc.line(whole + 1).from;
+  const block = view.lineBlockAt(position);
+  const lines = doc.lineAt(block.to).number - doc.lineAt(block.from).number + 1;
+  const offset = (block.height * Math.min(line - whole, lines)) / lines;
+  // CodeMirror measures the target once it's laid out, which a freshly shown editor isn't yet.
+  view.dispatch({ effects: EditorView.scrollIntoView(position, { y: 'start', yMargin: -offset }) });
 }
 
 /**
@@ -113,8 +172,15 @@ export function previewPaneRef(): (pane: HTMLElement) => void {
     if (pendingPreviewJump) {
       scrollPreviewToLine(pane, pendingPreviewJump.line, pendingPreviewJump.offset);
       pendingPreviewJump = undefined;
+    } else if (untrack(() => settings.syncScroll && viewMode() === 'preview')) {
+      // Shown in place of the editor, so open where it was. Split view's linking aligns a preview shown beside it.
+      showPreviewAtAnchor(pane);
     }
-    return detach;
+    const unlisten = listen(pane, { scroll: () => onScroll('preview', pane) }, { passive: true });
+    return () => {
+      unlisten();
+      detach();
+    };
   });
   return (element) => {
     pane = element;
@@ -167,11 +233,39 @@ export function jumpToSource(event: MouseEvent): void {
   view.focus();
 }
 
-/** Keeps both panes scrolled to the same place and returns the cleanup. */
+/** Aligns the other pane with the one the user scrolled, while the panes are linked. */
+let syncLinkedPanes: (() => void) | undefined;
+
+/** Scroll frames waiting to record the scroll anchor, by pane. */
+const anchorFrames = new Map<PanelMode, number>();
+
+/** Records where the user scrolled a pane to, and brings a linked pane along. */
+function onScroll(pane: PanelMode, element: HTMLElement): void {
+  if (isProgrammaticScroll(element)) return;
+  // The editor stays mounted in preview mode, where its scroll position means nothing.
+  if (pane === 'source' && viewMode() === 'preview') return;
+  scrollAnchor.pane = pane;
+  syncLinkedPanes?.();
+  // Measuring every block on each scroll event would be wasteful outside split view, so record once a frame.
+  if (anchorFrames.has(pane)) return;
+  anchorFrames.set(
+    pane,
+    requestAnimationFrame(() => {
+      anchorFrames.delete(pane);
+      if (scrollAnchor.pane !== pane) return;
+      if (pane === 'preview') {
+        if (element.isConnected) scrollAnchor.line = previewLineAtTop(element);
+      } else {
+        const view = editorView();
+        if (view && viewMode() !== 'preview') scrollAnchor.line = sourceLineAtTop(view);
+      }
+    }),
+  );
+}
+
+/** Keeps both panes scrolled to the same place, following the pane last scrolled, and returns the cleanup. */
 function linkScrolling(view: EditorView, pane: HTMLElement): () => void {
   const source = view.scrollDOM;
-  /** The pane the user scrolled last. The other one follows it. */
-  let leader = source;
 
   const sync = () => {
     const lineTop = sourceLineTops(view);
@@ -183,36 +277,42 @@ function linkScrolling(view: EditorView, pane: HTMLElement): () => void {
       source.scrollHeight - source.clientHeight,
       pane.scrollHeight - pane.clientHeight,
     ]);
-    if (leader === source) {
+    if (scrollAnchor.pane === 'source') {
       scrollElement(pane, mapOffset(source.scrollTop, map.source, map.preview));
     } else {
       scrollElement(source, mapOffset(pane.scrollTop, map.preview, map.source));
     }
   };
 
-  const onScroll = (event: Event) => {
-    const element = event.currentTarget as HTMLElement;
-    if (isProgrammaticScroll(element)) return;
-    leader = element;
-    sync();
-  };
+  // The preview reflows when split view narrows it, so put it back where it was before the editor follows.
+  if (scrollAnchor.pane === 'preview') showPreviewAtAnchor(pane);
 
   // Edits, images loading and pane resizes all move content around, so
   // realign whenever either pane's content changes size. This also aligns
-  // the panes as soon as they're linked.
+  // the panes as soon as they're linked, to the pane that was showing.
   const resizeObserver = new ResizeObserver(sync);
   resizeObserver.observe(view.contentDOM);
   resizeObserver.observe(pane.querySelector('.markdown') ?? pane);
-  const unlisten = [source, pane].map((element) => listen(element, { scroll: onScroll }, { passive: true }));
+  syncLinkedPanes = sync;
 
   return () => {
     resizeObserver.disconnect();
-    for (const stop of unlisten) stop();
+    if (syncLinkedPanes === sync) syncLinkedPanes = undefined;
   };
 }
 
-/** Syncs scrolling between the panes while split view and the setting are on. Call once from the app root. */
+/**
+ * Syncs scrolling between the panes while split view and the setting are on,
+ * and with the setting on, opens a pane that's shown alone where the other
+ * was scrolled to. Call once from the app root.
+ */
 export function useScrollSync(): void {
+  createEffect(
+    () => editorView(),
+    (view) => view && listen(view.scrollDOM, { scroll: () => onScroll('source', view.scrollDOM) }, { passive: true }),
+    { name: 'sourceScrollAnchor' },
+  );
+
   createEffect(
     () => {
       const view = editorView();
@@ -222,5 +322,23 @@ export function useScrollSync(): void {
     },
     (panes) => panes && linkScrolling(panes.view, panes.pane),
     { name: 'scrollSync' },
+  );
+
+  // A pane shown alone keeps the place the other was scrolled to. The preview
+  // opens there when it mounts (see previewPaneRef), and is moved when split
+  // view widens it. The editor stays mounted, so it's moved when it replaces
+  // the preview.
+  createEffect(
+    () => ({ mode: viewMode(), view: editorView(), pane: previewPane(), sync: settings.syncScroll }),
+    ({ mode, view, pane, sync }, previous) => {
+      if (!sync || !previous || mode === previous.mode) return;
+      if (mode === 'source' && previous.mode === 'preview' && view) {
+        scrollAnchor.pane = 'source';
+        scrollSourceToLine(view, scrollAnchor.line);
+      } else if (mode === 'preview' && previous.mode === 'split' && pane) {
+        showPreviewAtAnchor(pane);
+      }
+    },
+    { name: 'keepScrollOnViewChange' },
   );
 }
