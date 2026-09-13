@@ -76,19 +76,21 @@ button,
   display: flex;
   align-items: center;
   background-color: var(--color-surface);
+  /* If the contents don't fit, they scroll on one line rather than shrink or wrap. */
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+
+.toolbar > :not(.spacer),
+.status-bar > :not(.spacer) {
+  flex-shrink: 0;
 }
 
 .toolbar {
   gap: 2px;
   padding: var(--space-1) var(--space-2);
   border-bottom: 1px solid var(--color-border);
-  /* If the buttons don't fit, they scroll rather than shrink. */
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.toolbar > :not(.spacer) {
-  flex-shrink: 0;
 }
 
 .toolbar-divider {

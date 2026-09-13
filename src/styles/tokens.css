@@ -38,7 +38,7 @@
   --space-6: 1.5rem;
 
   --radius: 6px;
-  --content-width: 760px;
+  --content-width: 800px;
 
   /* Text and icons change quickly; larger surfaces fade a little slower. */
   --transition-colors:

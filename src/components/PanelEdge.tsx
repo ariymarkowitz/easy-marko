@@ -1,11 +1,12 @@
 import type { JSX } from '@solidjs/web';
 import { createSignal, For, onSettled } from 'solid-js';
-import { ChevronLeft, ChevronRight, Eye, PanelLeft, PenLine, type IconNode } from 'lucide';
+import { ChevronLeft, ChevronRight, Eye, PanelLeft, type IconNode } from 'lucide';
 import { CLICK_SLOP, trackDrag } from '../lib/drag';
 import { useListeners } from '../reactive';
 import { hidePane, revealPane, startSidebarDrag, startSplitDrag } from '../state/layout';
 import { setSidebarOpen } from '../state/settings';
 import Icon from './Icon';
+import { SourceIcon } from './icons';
 
 export interface EdgeAction {
   icon: IconNode;
@@ -43,7 +44,7 @@ export const edgeActions = {
     onDragStart: startSidebarDrag,
   },
   showSource: {
-    icon: PenLine,
+    icon: SourceIcon,
     label: 'Show source',
     controls: 'source-pane',
     onClick: () => revealPane('source'),

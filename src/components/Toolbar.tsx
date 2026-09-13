@@ -7,7 +7,6 @@ import {
   FolderOpen,
   Link2,
   Moon,
-  PenLine,
   PanelLeft,
   Redo2,
   Save,
@@ -33,9 +32,10 @@ import {
 import { settings, toggleSyncScroll, type ViewMode } from '../state/settings';
 import { theme, toggleTheme } from '../state/theme';
 import IconButton from './IconButton';
+import { SourceIcon } from './icons';
 
 const viewModes: { mode: ViewMode; label: string; icon: IconNode }[] = [
-  { mode: 'source', label: 'Source', icon: PenLine },
+  { mode: 'source', label: 'Source', icon: SourceIcon },
   { mode: 'split', label: 'Side by side', icon: Columns2 },
   { mode: 'preview', label: 'Preview', icon: Eye },
 ];
