@@ -194,6 +194,8 @@
 
 .markdown img {
   max-width: 100%;
+  /* Keeps the aspect ratio when an image with a height attribute is scaled down. */
+  height: auto;
 }
 
 .markdown table {

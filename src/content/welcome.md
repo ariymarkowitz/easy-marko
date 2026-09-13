@@ -1,3 +1,5 @@
+<p><img src="/welcome-banner.svg" alt="A tiling of the Easy Marko E and M at different rotations" width="720" height="144"></p>
+
 # Welcome to <span style="color: #4c7bf4">Easy Marko!</span>
 
 Easy Marko is a markdown editor that runs in your browser and keeps working offline. This page is an ordinary document. Edit it, break it, or close it from the sidebar when you're done. You can get it back with the About button in the toolbar.
