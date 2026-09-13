@@ -3,6 +3,18 @@
 // so scripts, event handlers and javascript: URLs have to go.
 
 import DOMPurify, { type Config } from 'dompurify';
+import appCss from '../styles/base.css?raw';
+
+/** The classes and ids that `css` has selectors for. Reads rule and at-rule preludes, nested ones included. */
+function selectorNames(css: string): { classes: Set<string>; ids: Set<string> } {
+  const preludes = [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/[^;{}]*(?=\{)/g)].join(' ');
+  const names = (pattern: RegExp) => new Set(Array.from(preludes.matchAll(pattern), (match) => match[1]));
+  return { classes: names(/\.(-?[_a-zA-Z][\w-]*)/g), ids: names(/#(-?[_a-zA-Z][\w-]*)/g) };
+}
+
+// Markdown is styled only by markdown.css. The app's stylesheet shouldn't
+// reach it, so classes and ids that base.css uses are removed.
+const app = selectorNames(appCss);
 
 const config: Config = {
   // KaTeX's MathML puts the formula in <semantics>, with its TeX source in an
@@ -14,7 +26,7 @@ const config: Config = {
   FORBID_TAGS: ['style', 'form'],
 };
 
-// A separate instance, so the hook below doesn't apply to other DOMPurify users.
+// A separate instance, so the hooks below don't apply to other DOMPurify users.
 const purifier = DOMPurify(window);
 
 // Links open in a new tab so they never navigate away from the editor.
@@ -27,12 +39,21 @@ purifier.addHook('afterSanitizeAttributes', (node) => {
   node.setAttribute('rel', 'noopener noreferrer');
 });
 
-// Heading ids are link targets. DOMPurify drops any id that names a document
-// property (a heading "Title" or "Links"), in case it clobbers it. Only
-// forms, images, embeds, iframes and objects show up on `document` by name,
-// so headings can keep theirs.
 purifier.addHook('uponSanitizeAttribute', (node, data) => {
-  if (data.attrName === 'id' && /^h[1-6]$/.test(node.localName)) data.forceKeepAttr = true;
+  if (data.attrName === 'class') {
+    data.attrValue = data.attrValue
+      .split(/\s+/)
+      .filter((name) => name && !app.classes.has(name))
+      .join(' ');
+    if (!data.attrValue) data.keepAttr = false;
+  } else if (data.attrName === 'id') {
+    if (app.ids.has(data.attrValue)) data.keepAttr = false;
+    // Heading ids are link targets. DOMPurify drops any id that names a
+    // document property (a heading "Title" or "Links"), in case it clobbers
+    // it. Only forms, images, embeds, iframes and objects show up on
+    // `document` by name, so headings can keep theirs.
+    else if (/^h[1-6]$/.test(node.localName)) data.forceKeepAttr = true;
+  }
 });
 
 export function sanitizeHtml(html: string): string {

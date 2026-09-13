@@ -126,6 +126,74 @@ button,
   background-color: var(--color-bg);
 }
 
+/* The preview's layout around the rendered markdown. Its typography is in markdown.css. */
+.preview-pane {
+  container-type: inline-size;
+  overflow-y: auto;
+}
+
+.md-block:first-child > :first-child {
+  margin-top: 0;
+}
+
+/* Marks the block an alt-click in the source jumped to, then fades out. */
+.md-block.flash {
+  border-radius: var(--radius);
+  animation: block-flash 1.2s ease-out;
+}
+
+@keyframes block-flash {
+  from {
+    background-color: var(--color-accent-soft);
+    box-shadow: 0 0 0 var(--space-2) var(--color-accent-soft);
+  }
+}
+
+/* An image with a relative path that can't show yet (state/local-images.ts). */
+.markdown .local-image {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+  padding: var(--space-1) var(--space-2);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  font-family: var(--font-sans);
+  font-size: var(--text-ui);
+  line-height: 1.4;
+  color: var(--color-text-muted);
+  vertical-align: middle;
+}
+
+.markdown .local-image-icon {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
+
+.markdown .local-image-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.markdown .local-image-allow {
+  flex: none;
+  padding: 0 var(--space-1);
+  border: 0;
+  border-radius: var(--radius);
+  background-color: transparent;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.markdown .local-image-allow:hover {
+  background-color: var(--color-accent-soft);
+}
+
 .workspace[data-view='split'] .source-pane {
   flex: 0 0 var(--split);
 }

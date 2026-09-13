@@ -1,13 +1,12 @@
 /*
- * Preview typography. The pane is a size container, so type scales with the
+ * Preview typography, shared with exported HTML. Styles for the app around or
+ * inside the preview go in base.css, whose classes and ids markdown can't use
+ * (lib/sanitize.ts).
+ *
+ * The pane is a size container, so type scales with the
  * pane's width (not the viewport's) between 360px and 800px (22.5rem–50rem):
  * font size 1rem → 1.125rem, line height 1.4 → 1.6.
  */
-
-.preview-pane {
-  container-type: inline-size;
-  overflow-y: auto;
-}
 
 .markdown {
   max-width: var(--content-width);
@@ -22,23 +21,6 @@
    * the preview instead of covering the rest of the app.
    */
   contain: paint;
-}
-
-.md-block:first-child > :first-child {
-  margin-top: 0;
-}
-
-/* Marks the block an alt-click in the source jumped to, then fades out. */
-.md-block.flash {
-  border-radius: var(--radius);
-  animation: block-flash 1.2s ease-out;
-}
-
-@keyframes block-flash {
-  from {
-    background-color: var(--color-accent-soft);
-    box-shadow: 0 0 0 var(--space-2) var(--color-accent-soft);
-  }
 }
 
 .markdown :is(p, ul, ol, blockquote, pre, table) {
@@ -147,51 +129,6 @@
 
 .markdown img {
   max-width: 100%;
-}
-
-/* An image with a relative path that can't show yet (state/local-images.ts). */
-.markdown .local-image {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  max-width: 100%;
-  padding: var(--space-1) var(--space-2);
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius);
-  font-family: var(--font-sans);
-  font-size: var(--text-ui);
-  line-height: 1.4;
-  color: var(--color-text-muted);
-  vertical-align: middle;
-}
-
-.markdown .local-image-icon {
-  flex: none;
-  width: 1rem;
-  height: 1rem;
-}
-
-.markdown .local-image-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.markdown .local-image-allow {
-  flex: none;
-  padding: 0 var(--space-1);
-  border: 0;
-  border-radius: var(--radius);
-  background-color: transparent;
-  font: inherit;
-  font-weight: 600;
-  color: var(--color-accent);
-  cursor: pointer;
-}
-
-.markdown .local-image-allow:hover {
-  background-color: var(--color-accent-soft);
 }
 
 .markdown table {

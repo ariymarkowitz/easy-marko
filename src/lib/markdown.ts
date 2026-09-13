@@ -113,13 +113,39 @@ const voidElements = new Set([
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr',
 ]);
 
-/** Elements that raw HTML opens without closing, less those it closes without opening. */
+const tagName = /<(\/?)([a-z][\w-]*)/iy;
+
+/**
+ * Elements that raw HTML opens without closing, less those it closes without
+ * opening. Scans in one pass: a regex over tags backtracks through the rest of
+ * the block at each `<` when a tag or quote isn't closed, which freezes the app
+ * on a long crafted block. An unclosed comment, tag or quote hides the rest of
+ * the block, as it does from the browser.
+ */
 function unclosedElements(html: string): number {
   let depth = 0;
-  const tags = html.replace(/<!--[\s\S]*?-->/g, '').matchAll(/<(\/?)([a-z][\w-]*)(?:"[^"]*"|'[^']*'|[^'">])*?(\/?)>/gi);
-  for (const [, closing, name, selfClosing] of tags) {
-    if (selfClosing || voidElements.has(name.toLowerCase())) continue;
-    depth += closing ? -1 : 1;
+  for (let index = html.indexOf('<'); index !== -1; index = html.indexOf('<', index)) {
+    if (html.startsWith('<!--', index)) {
+      const end = html.indexOf('-->', index + 4);
+      if (end === -1) break;
+      index = end + 3;
+      continue;
+    }
+    tagName.lastIndex = index;
+    const tag = tagName.exec(html);
+    if (!tag) {
+      index++;
+      continue;
+    }
+    // Find the tag's `>`, skipping quoted attribute values.
+    let end = tagName.lastIndex;
+    while (end < html.length && html[end] !== '>') {
+      end = html[end] === '"' || html[end] === "'" ? html.indexOf(html[end], end + 1) + 1 || html.length : end + 1;
+    }
+    if (end === html.length) break;
+    const [, closing, name] = tag;
+    if (html[end - 1] !== '/' && !voidElements.has(name.toLowerCase())) depth += closing ? -1 : 1;
+    index = end + 1;
   }
   return depth;
 }
@@ -155,21 +181,28 @@ function topLevelBlocks(tokens: Token[]): BlockRange[] {
  * renders inside it. Each preview block is parsed on its own, which would
  * otherwise close the element straight away. Unclosed elements that nothing
  * later closes are left alone.
+ *
+ * Finds every closing block in one pass, so many unclosed blocks don't each
+ * scan the rest of the document. Block i is closed by the first HTML block j
+ * where the depth summed over blocks i to j drops to 0 or below.
  */
 function mergeOpenHtml(tokens: Token[], blocks: BlockRange[]): BlockRange[] {
+  const closedBy = blocks.map((_, index) => index);
+  // Blocks still open, with the total depth before each. The totals increase up the stack.
+  const open: { index: number; depthBefore: number }[] = [];
+  let depth = 0;
+  blocks.forEach((block, index) => {
+    const token = tokens[block.start];
+    if (token.type !== 'html_block') return;
+    const change = unclosedElements(token.content);
+    if (change > 0) open.push({ index, depthBefore: depth });
+    depth += change;
+    while (open.length > 0 && open[open.length - 1].depthBefore >= depth) closedBy[open.pop()!.index] = index;
+  });
+
   const merged: BlockRange[] = [];
-  for (let i = 0; i < blocks.length; i++) {
-    const first = tokens[blocks[i].start];
-    let depth = first.type === 'html_block' ? unclosedElements(first.content) : 0;
-    let last = i;
-    for (let j = i + 1; depth > 0 && j < blocks.length; j++) {
-      const token = tokens[blocks[j].start];
-      if (token.type !== 'html_block') continue;
-      depth += unclosedElements(token.content);
-      if (depth <= 0) last = j;
-    }
-    merged.push({ start: blocks[i].start, end: blocks[last].end });
-    i = last;
+  for (let i = 0; i < blocks.length; i = closedBy[i] + 1) {
+    merged.push({ start: blocks[i].start, end: blocks[closedBy[i]].end });
   }
   return merged;
 }

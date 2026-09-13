@@ -260,6 +260,42 @@ describe('raw HTML', () => {
     expect(blocks).toHaveLength(2);
   });
 
+  test('merges up to the block that closes the outermost element', () => {
+    const blocks = createMarkdownRenderer()('<div>\n\nA\n\n<div>\n\nB\n\n</div>\n\nC\n\n</div>\n\nD\n');
+    expect(blocks.map((block) => [block.line, block.endLine])).toEqual([
+      [0, 13],
+      [14, 15],
+    ]);
+  });
+
+  test('merges an unclosed block with nothing, and a later block with the block that closes it', () => {
+    const blocks = createMarkdownRenderer()('<div>\n\nA\n\n<div>\n\nB\n\n</div>\n');
+    expect(blocks.map((block) => [block.line, block.endLine])).toEqual([
+      [0, 1],
+      [2, 3],
+      [4, 9],
+    ]);
+  });
+
+  test('ignores tags in comments and > in quoted attributes', () => {
+    const blocks = createMarkdownRenderer()('<div title="a>b"><!-- <div> -->\n\nA\n\n</div>\n\nB\n');
+    expect(blocks.map((block) => [block.line, block.endLine])).toEqual([
+      [0, 5],
+      [6, 7],
+    ]);
+  });
+
+  test.each([
+    ['a tag', '<div ' + '<a'.repeat(100_000)],
+    ['a quote', '<div ' + '<a "'.repeat(50_000)],
+    ['a comment', '<div>' + '<!--'.repeat(50_000)],
+  ])('splits blocks in linear time with unclosed %s', (_, source) => {
+    const start = performance.now();
+    createMarkdownRenderer()(source);
+    // Quadratic splitting takes minutes on these.
+    expect(performance.now() - start).toBeLessThan(3000);
+  });
+
   test('opens raw HTML links in a new tab', () => {
     const [block] = createMarkdownRenderer()('<a href="https://example.com">out</a>');
     expect(parse(block.html).querySelector('a')).toHaveAttribute('rel', 'noopener noreferrer');
