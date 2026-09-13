@@ -1,6 +1,7 @@
-import { createMemo, For } from 'solid-js';
+import { createMemo, For, Show } from 'solid-js';
 import { X } from 'lucide';
-import { closeDocument, documentsState, hasUnsavedChanges } from '../state/documents';
+import { closeDocument, documentsState, hasUnsavedChanges, openRecentFile } from '../state/documents';
+import { forgetFile, recentFiles } from '../state/recent-files';
 import DocumentName from './DocumentName';
 import IconButton from './IconButton';
 
@@ -26,6 +27,31 @@ export default function Sidebar() {
           }}
         </For>
       </ul>
+      <Show when={recentFiles().length > 0}>
+        <h2 class="sidebar-heading">Recent files</h2>
+        <ul class="document-list">
+          <For each={recentFiles()}>
+            {(file) => (
+              <li class="document-item">
+                <button
+                  type="button"
+                  class="document-name"
+                  title={file.name}
+                  onClick={() => void openRecentFile(file.handle)}
+                >
+                  {file.name}
+                </button>
+                <IconButton
+                  icon={X}
+                  label={`Remove ${file.name} from recent files`}
+                  class="document-close"
+                  onClick={() => void forgetFile(file.handle)}
+                />
+              </li>
+            )}
+          </For>
+        </ul>
+      </Show>
     </aside>
   );
 }

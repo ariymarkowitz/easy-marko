@@ -21,6 +21,7 @@ import { useFileDrop } from './state/file-drop';
 import { useLaunchQueue } from './state/launch-queue';
 import { narrowScreen, sidebarOpen, startSidebarDrag, useLayout, viewMode } from './state/layout';
 import { useScrollSync } from './state/pane-link';
+import { useRecentFiles } from './state/recent-files';
 import { setSidebarWidth, settings, SIDEBAR_WIDTH, useSettingsPersistence } from './state/settings';
 import { useTheme } from './state/theme';
 
@@ -33,6 +34,7 @@ export default function App() {
   useDocumentsBackup();
   useWindowTitle();
   useFileChanges();
+  useRecentFiles();
   useLaunchQueue();
   useFileDrop();
   useShortcuts();

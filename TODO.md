@@ -92,7 +92,9 @@ What's built, and the behaviour decisions behind each item.
   - Checks the linked files of open documents every 2s while the page is visible, and when the window gains focus; a file is only read when its modification time changes. It has changed when its content matches neither the document's saved content nor its current content. A file that now matches the document marks it saved.
   - The notice stays until dismissed, and says when reloading replaces unsaved changes. Reload goes through the editor, so it can be undone. A dismissed notice doesn't come back until the file changes again, and the notice closes when the document is closed or renamed.
   - Handles restored after a reload can't be read until the page is given permission again (by saving), so their files aren't checked until then. `src/state/file-changes.ts`.
-- [ ] Recent files
+- [x] Recent files
+  - The sidebar lists the 10 files opened or saved most recently, newest first, below the open documents; a file can be both. Clicking one opens it, or switches to it if it's open, asking for permission to read it first after a reload. A file that was moved or deleted is reported and removed; the X button removes one by hand.
+  - Only files with handles are listed (Chromium). The list is kept in IndexedDB with the handles, shared by all tabs, and reloaded when the window gains focus.
 - [ ] Show local images with relative paths, once the file's folder is granted
   - An image that can't load shows a placeholder with an "Allow access" button, which calls `showDirectoryPicker({ startIn: fileHandle })`. `dirHandle.resolve(fileHandle)` gives the file's path in the folder (or `null` if it's outside); relative paths resolve from there.
   - Images are read into `blob:` URLs and swapped in after sanitising. Folder handles persist in IndexedDB, so later files inside a granted folder show their images straight away.

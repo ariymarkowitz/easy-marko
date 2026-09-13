@@ -107,12 +107,15 @@ function openWithInput(): Promise<OpenedFile | undefined> {
 }
 
 /**
- * Whether the page may write to `handle`, asking the user if needed. Handles
- * restored from IndexedDB start without permission. Asking needs a user
- * gesture, so call this straight from one.
+ * Whether the page may read (or, with 'readwrite', write) `handle`, asking the
+ * user if needed. Handles restored from IndexedDB start without permission.
+ * Asking needs a user gesture, so call this straight from one.
  */
-async function canWrite(handle: FileSystemFileHandle): Promise<boolean> {
-  const descriptor = { mode: 'readwrite' } as const;
+export async function requestAccess(
+  handle: FileSystemFileHandle,
+  mode: 'read' | 'readwrite',
+): Promise<boolean> {
+  const descriptor = { mode };
   // Browsers without the permission methods grant access with the handle.
   if (!handle.queryPermission || !handle.requestPermission) return true;
   if ((await handle.queryPermission(descriptor)) === 'granted') return true;
@@ -131,7 +134,7 @@ export async function saveFile(
   { handle, type = markdownFile }: { handle?: FileSystemFileHandle; type?: FileType } = {},
 ): Promise<SavedFile | undefined> {
   try {
-    const permitted = handle && (await canWrite(handle)) ? handle : undefined;
+    const permitted = handle && (await requestAccess(handle, 'readwrite')) ? handle : undefined;
     const target =
       permitted ?? (await window.showSaveFilePicker?.({ suggestedName: name, types: pickerTypes(type) }));
     const text = typeof content === 'string' ? content : await content();

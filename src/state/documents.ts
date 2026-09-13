@@ -1,13 +1,14 @@
 import { createEffect, createStore, deep, flush, reconcile, snapshot } from 'solid-js';
 import { clamp } from '../lib/clamp';
 import { exportHtml } from '../lib/export-html';
-import { type OpenedFile, openFile, saveFile } from '../lib/files';
+import { type OpenedFile, openFile, readFileHandle, requestAccess, saveFile } from '../lib/files';
 import { deleteHandles, readHandles, storeHandle } from '../lib/handle-store';
 import { hashText } from '../lib/hash';
 import { mergeById } from '../lib/merge';
 import { parseJSON, readText, STORAGE_KEYS, writeText } from '../lib/storage';
 import { useListeners } from '../reactive';
 import { showNotice } from './notices';
+import { forgetFile, rememberFile } from './recent-files';
 import welcome from '../content/welcome.md?raw';
 
 export interface MarkdownDocument {
@@ -243,6 +244,7 @@ async function findDocumentForFile(handle: FileSystemFileHandle): Promise<string
 
 /** Opens `file` as a new document, or switches to its document if the file is already open. */
 async function openFileDocument(file: OpenedFile): Promise<void> {
+  if (file.handle) void rememberFile(file.handle);
   const openId = file.handle && (await findDocumentForFile(file.handle));
   if (openId) {
     selectDocument(openId);
@@ -262,6 +264,31 @@ async function openFileDocument(file: OpenedFile): Promise<void> {
 export async function openDocument(): Promise<void> {
   const file = await openFile().catch((error) => reportFileError('open', error));
   if (file) await openFileDocument(file);
+}
+
+/**
+ * Opens a recent file, or switches to it if it's open. Asks for permission to
+ * read it if needed, so call this straight from a user gesture. A file that
+ * has been moved or deleted is reported and removed from the recent files.
+ */
+export async function openRecentFile(handle: FileSystemFileHandle): Promise<void> {
+  const openId = await findDocumentForFile(handle);
+  if (openId) {
+    selectDocument(openId);
+    void rememberFile(handle);
+    return;
+  }
+  try {
+    if (!(await requestAccess(handle, 'read'))) return;
+    await openFileDocument(await readFileHandle(handle));
+  } catch (error) {
+    if (!(error instanceof DOMException && error.name === 'NotFoundError')) {
+      reportFileError('open', error);
+      return;
+    }
+    void forgetFile(handle);
+    showNotice(`${handle.name} has been moved or deleted.`, { tone: 'error' });
+  }
 }
 
 /**
@@ -303,6 +330,7 @@ export async function saveActiveDocument(): Promise<void> {
     );
     if (!saved) return;
     if (saved.handle && saved.handle !== handle) setFileHandle(id, saved.handle);
+    if (saved.handle) void rememberFile(saved.handle);
     // The content as written, so edits made while saving still count as unsaved.
     updateDocument(id, { name: saved.name, savedHash: hashText(content) });
   } finally {
