@@ -6,7 +6,7 @@
 import { createEffect, flush, onSettled } from 'solid-js';
 import { EditorView } from '@codemirror/view';
 import { editorView } from '../editor/controller';
-import { listen } from '../lib/events';
+import { listenAll } from '../lib/events';
 import { createScrollMap, mapOffset } from '../lib/scroll-map';
 import { createAttachment } from '../reactive';
 import { revealPane, viewMode } from './layout';
@@ -201,14 +201,14 @@ function linkScrolling(view: EditorView, pane: HTMLElement): () => void {
   const resizeObserver = new ResizeObserver(() => sync());
   resizeObserver.observe(view.contentDOM);
   resizeObserver.observe(pane.querySelector('.markdown') ?? pane);
-  const unlisten = [
-    listen(source, { scroll: onScroll }, { passive: true }),
-    listen(pane, { scroll: onScroll }, { passive: true }),
-  ];
+  const unlisten = listenAll(
+    [source, { scroll: onScroll }, { passive: true }],
+    [pane, { scroll: onScroll }, { passive: true }],
+  );
 
   return () => {
     resizeObserver.disconnect();
-    for (const stop of unlisten) stop();
+    unlisten();
   };
 }
 

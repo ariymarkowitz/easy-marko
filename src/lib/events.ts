@@ -11,14 +11,23 @@ type EventMapOf<T> = T extends Window
         ? HTMLElementEventMap
         : Record<string, Event>;
 
+/** Handlers for `target`'s events, keyed by event type. */
+export type Listeners<T extends EventTarget> = {
+  [K in keyof EventMapOf<T> & string]?: (event: EventMapOf<T>[K]) => void;
+};
+
+/** Options for `listen`. Its `signal` is used to remove the listeners. */
+export type ListenOptions = Omit<AddEventListenerOptions, 'signal'>;
+
 /**
  * Adds each listener to `target` and returns a function removing them all.
- * Return the result from onSettled or an effect to unbind on cleanup.
+ * Return the result from onSettled or an effect to unbind on cleanup, or use
+ * `useListeners` (`src/reactive.ts`) to listen for an owner's lifetime.
  */
 export function listen<T extends EventTarget>(
   target: T,
-  listeners: { [K in keyof EventMapOf<T> & string]?: (event: EventMapOf<T>[K]) => void },
-  options?: Omit<AddEventListenerOptions, 'signal'>,
+  listeners: Listeners<T>,
+  options?: ListenOptions,
 ): () => void {
   const controller = new AbortController();
   for (const [type, handler] of Object.entries(listeners)) {
@@ -28,4 +37,20 @@ export function listen<T extends EventTarget>(
     });
   }
   return () => controller.abort();
+}
+
+/** The arguments to `listen`, for passing a group of them to `listenAll`. */
+export type ListenArgs<T extends EventTarget> = [target: T, listeners: Listeners<T>, options?: ListenOptions];
+
+/**
+ * Calls `listen` with each set of arguments and returns a function removing
+ * every listener, for listening to several targets with one teardown.
+ */
+export function listenAll<Targets extends EventTarget[]>(
+  ...groups: { [I in keyof Targets]: ListenArgs<Targets[I]> }
+): () => void {
+  const unlisten = groups.map((args) => listen(...(args as ListenArgs<EventTarget>)));
+  return () => {
+    for (const stop of unlisten) stop();
+  };
 }

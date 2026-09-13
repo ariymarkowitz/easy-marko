@@ -1,12 +1,12 @@
-import { createEffect, createStore, deep, flush, onSettled, reconcile, snapshot } from 'solid-js';
+import { createEffect, createStore, deep, flush, reconcile, snapshot } from 'solid-js';
 import { clamp } from '../lib/clamp';
-import { listen } from '../lib/events';
 import { exportHtml } from '../lib/export-html';
 import { type OpenedFile, openFile, saveFile } from '../lib/files';
 import { deleteHandles, readHandles, storeHandle } from '../lib/handle-store';
 import { hashText } from '../lib/hash';
 import { mergeById } from '../lib/merge';
 import { parseJSON, readText, STORAGE_KEYS, writeText } from '../lib/storage';
+import { useListeners } from '../reactive';
 import { showNotice } from './notices';
 import welcome from '../content/welcome.md?raw';
 
@@ -346,20 +346,14 @@ export function useDocumentsBackup(): void {
   // browsers can discard a background tab without firing pagehide, so also
   // sync whenever the page is hidden. A page restored from the back/forward
   // cache missed other tabs' storage events, so sync when it's shown too.
-  onSettled(() => {
-    const unlistenWindow = listen(window, {
-      storage: (event) => {
-        if (event.key === STORAGE_KEYS.documents) syncBackup();
-      },
-      pagehide: syncBackup,
-      pageshow: syncBackup,
-    });
-    const unlistenDocument = listen(document, { visibilitychange: syncBackup });
-    return () => {
-      unlistenWindow();
-      unlistenDocument();
-    };
+  useListeners(window, {
+    storage: (event) => {
+      if (event.key === STORAGE_KEYS.documents) syncBackup();
+    },
+    pagehide: syncBackup,
+    pageshow: syncBackup,
   });
+  useListeners(document, { visibilitychange: syncBackup });
 }
 
 /** Shows the active document's name in the window title. */
