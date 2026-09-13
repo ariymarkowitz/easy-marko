@@ -68,6 +68,13 @@ test('lists files newest first, once each, up to the limit', async () => {
   expect(stored.list.map((file) => file.name)).toEqual(names());
 });
 
+test('keeps every file remembered at the same time, as when several are dropped', async () => {
+  await Promise.all(['A.md', 'B.md', 'C.md', 'D.md'].map((name) => rememberFile(fakeHandle(name))));
+  flush();
+  expect(names()).toEqual(['D.md', 'C.md', 'B.md', 'A.md']);
+  expect(stored.list.map((file) => file.name)).toEqual(names());
+});
+
 test('keeps same-named files in different folders apart, and forgets one', async () => {
   await rememberFile(fakeHandle('Notes.md', { path: 'work/Notes.md' }));
   await rememberFile(fakeHandle('Notes.md', { path: 'home/Notes.md' }));

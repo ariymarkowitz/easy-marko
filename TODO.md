@@ -1,5 +1,4 @@
 # TODO
-- [ ] Bug: Recent Files missed some files when dragging in multiple (~4) files at the same time
 - [ ] Make find/replace panel more aesthetic?
 - [ ] Bug: first quote in quote pair 'curls' the wrong way
 - [ ] Make inline code radius in em, so it scales with font size (for header)
