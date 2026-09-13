@@ -428,9 +428,17 @@ interface Block {
   /** The block's source, which keys the cache. Undefined if the block has no line map. */
   text?: string;
   tokens: Token[];
-  /** Valid cached outputs for the block's source, one for each set of ids it has rendered with. Empty if it was parsed. */
-  cached: BlockOutput[];
+  /** Valid cached outputs for the block's source, keyed by the ids they rendered with. Empty if it was parsed. */
+  cached: Outputs;
 }
+
+/** A block source's outputs, keyed by their serialised ids. */
+type Outputs = Map<string, BlockOutput>;
+
+const noOutputs: Outputs = new Map();
+
+/** Any of a block's cached outputs, for what depends only on its source. */
+const anyOutput = (block: Block) => block.cached.values().next().value;
 
 /**
  * Creates a renderer that splits a document into top-level blocks and caches
@@ -444,9 +452,12 @@ interface Block {
  * records its slugs and footnote labels, so ids can be assigned without
  * parsing cached blocks. The rare block whose ids changed is parsed in a
  * second pass.
+ *
+ * The cache holds one output for each source and set of ids, so copies of a
+ * repeated block share it.
  */
 export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
-  let cache = new Map<string, BlockOutput[]>();
+  let cache = new Map<string, Outputs>();
   let definitions = '';
   const requested = new Set<LanguageDescription>();
 
@@ -471,6 +482,18 @@ export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
       definitions = nextDefinitions;
     }
 
+    // Skips cached outputs waiting for a language that has loaded since. Once for each source, not each copy.
+    const valid = new Map<string, Outputs>();
+    const validOutputs = (text: string): Outputs => {
+      let outputs = valid.get(text);
+      if (!outputs) {
+        const entries = [...(cache.get(text) ?? noOutputs)];
+        outputs = new Map(entries.filter(([, output]) => output.waitingFor.every((language) => !language.support)));
+        valid.set(text, outputs);
+      }
+      return outputs;
+    };
+
     // CodeMirror normalises line endings to \n, so line maps index into this.
     const lines = source.split('\n');
     return topLevelBlocks(tokens).map(({ start, end }, index) => {
@@ -480,9 +503,7 @@ export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
       const line = firstMap?.[0] ?? 0;
       const endLine = lastMap?.[1] ?? firstMap?.[1] ?? 0;
       const text = firstMap ? lines.slice(line, endLine).join('\n') : undefined;
-      // Skip cached outputs waiting for a language that has loaded since.
-      const outputs = text === undefined || reparse.has(index) ? [] : (cache.get(text) ?? []);
-      const cached = outputs.filter((output) => output.waitingFor.every((language) => !language.support));
+      const cached = text === undefined || reparse.has(index) ? noOutputs : validOutputs(text);
       return { line, endLine, text, tokens: blockTokens, cached };
     });
   };
@@ -495,7 +516,7 @@ export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
         blocks = splitBlocks(source, tokens, env, reparse);
         // The core rules after this one edit these token objects in place,
         // so each block's tokens are complete once parsing finishes.
-        return blocks.filter((block) => block.cached.length === 0).flatMap((block) => block.tokens);
+        return blocks.filter((block) => block.cached.size === 0).flatMap((block) => block.tokens);
       },
     };
     markdown.parse(source, env);
@@ -504,33 +525,30 @@ export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
 
   return (source: string): RenderedBlock[] => {
     let parsed = parse(source, new Set());
-    let anchors = parsed.blocks.map((block) => block.cached[0]?.anchors ?? collectAnchors(block.tokens));
+    let anchors = parsed.blocks.map((block) => anyOutput(block)?.anchors ?? collectAnchors(block.tokens));
     const ids = assignIds(anchors).map((blockIds) => ({ ids: blockIds, key: JSON.stringify(blockIds) }));
     const stale = new Set(
-      parsed.blocks.flatMap((block, index) =>
-        block.cached.length > 0 && !block.cached.some((output) => output.ids === ids[index].key) ? [index] : [],
-      ),
+      parsed.blocks.flatMap((block, index) => (block.cached.size > 0 && !block.cached.has(ids[index].key) ? [index] : [])),
     );
     if (stale.size > 0) {
       // Anchors come from the source alone, so the ids stay the same.
       parsed = parse(source, stale);
-      anchors = parsed.blocks.map((block) => block.cached[0]?.anchors ?? collectAnchors(block.tokens));
+      anchors = parsed.blocks.map((block) => anyOutput(block)?.anchors ?? collectAnchors(block.tokens));
     }
     const { blocks, env } = parsed;
 
-    const nextCache = new Map<string, BlockOutput[]>();
+    const nextCache = new Map<string, Outputs>();
     const occurrences = new Map<string, number>();
     const footnotes: RenderedFootnote[] = [];
     const rendered = blocks.map((block, index): RenderedBlock => {
       const { ids: blockIds, key } = ids[index];
+      const outputs = block.text === undefined ? undefined : (nextCache.get(block.text) ?? new Map());
+      // An earlier copy of the block may have rendered it in this pass.
       const output =
-        block.cached.find((cached) => cached.ids === key) ??
+        outputs?.get(key) ??
+        block.cached.get(key) ??
         ({ ...renderBlock(block.tokens, env, blockIds), anchors: anchors[index], ids: key } satisfies BlockOutput);
-      if (block.text !== undefined) {
-        const outputs = nextCache.get(block.text) ?? [];
-        if (!outputs.includes(output)) outputs.push(output);
-        nextCache.set(block.text, outputs);
-      }
+      if (outputs) nextCache.set(block.text!, outputs.set(key, output));
       output.waitingFor.forEach(load);
       footnotes.push(...output.footnotes);
 

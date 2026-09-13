@@ -141,6 +141,37 @@ describe('incremental parsing', () => {
     render('# Heading\n\n[link][a]\n\n[a]: https://two.example');
     expect(spy.mock.calls.map(([content]) => content)).toEqual(['Heading', '[link][a]']);
   });
+
+  test('renders copies of a block once when they have the same ids', () => {
+    const spy = vi.spyOn(markdown.renderer, 'render');
+    const blocks = createMarkdownRenderer()('Same\n\nSame\n\n# Title\n\n# Title\n\nSame\n');
+    expect(blocks.map((block) => block.html)).toEqual([
+      '<p>Same</p>\n',
+      '<p>Same</p>\n',
+      '<h1 id="title">Title</h1>\n',
+      '<h1 id="title-1">Title</h1>\n',
+      '<p>Same</p>\n',
+    ]);
+    expect(spy).toHaveBeenCalledTimes(3);
+  });
+
+  test('renders copies of a heading with their ids after an edit renumbers them', () => {
+    const render = createMarkdownRenderer();
+    render('# A\n\n# A\n\n# A\n');
+    expect(joined(render('# A\n\nText\n\n# A\n\n# A\n\n# A\n'))).toBe(
+      '<h1 id="a">A</h1>\n<p>Text</p>\n<h1 id="a-1">A</h1>\n<h1 id="a-2">A</h1>\n<h1 id="a-3">A</h1>\n',
+    );
+  });
+
+  test('re-renders a block repeated many times in linear time', () => {
+    const render = createMarkdownRenderer();
+    const source = 'Text\n\n'.repeat(5_000);
+    render(source);
+    const start = performance.now();
+    render(`${source}x`);
+    // Keeping an output for every copy takes over a second.
+    expect(performance.now() - start).toBeLessThan(300);
+  });
 });
 
 describe('code highlighting', () => {

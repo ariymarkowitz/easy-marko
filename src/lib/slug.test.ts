@@ -20,4 +20,18 @@ describe('createSlugger', () => {
     const slug = createSlugger();
     expect(['a', 'a', 'a-1', 'a', 'b'].map(slug)).toEqual(['a', 'a-1', 'a-1-1', 'a-2', 'b']);
   });
+
+  test('skips a suffix taken after the slug was last numbered', () => {
+    const slug = createSlugger();
+    expect(['a', 'a', 'a-2', 'a'].map(slug)).toEqual(['a', 'a-1', 'a-2', 'a-3']);
+  });
+
+  test('numbers a slug repeated many times in linear time', () => {
+    const slug = createSlugger();
+    const start = performance.now();
+    for (let i = 0; i < 10_000; i++) slug('a');
+    // Retrying every suffix takes seconds.
+    expect(performance.now() - start).toBeLessThan(250);
+    expect(slug('a')).toBe('a-10000');
+  });
 });

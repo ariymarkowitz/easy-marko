@@ -11,9 +11,13 @@ export function slugify(text: string): string {
 /** Returns a function that makes repeated slugs unique with `-1`, `-2` and so on. */
 export function createSlugger(): (slug: string) => string {
   const used = new Set<string>();
+  // The last suffix tried for each slug, so a slug repeated n times doesn't retry n suffixes.
+  const suffixes = new Map<string, number>();
   return (slug) => {
     let unique = slug;
-    for (let count = 1; used.has(unique); count++) unique = `${slug}-${count}`;
+    let count = suffixes.get(slug) ?? 0;
+    while (used.has(unique)) unique = `${slug}-${++count}`;
+    suffixes.set(slug, count);
     used.add(unique);
     return unique;
   };
