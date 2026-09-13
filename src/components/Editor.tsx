@@ -1,4 +1,5 @@
 import { createEffect, onSettled } from 'solid-js';
+import { searchPanelOpen } from '@codemirror/search';
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { attachEditor, syncEditorState } from '../editor/controller';
@@ -18,7 +19,8 @@ export default function Editor() {
       if (update.docChanged && documentId) {
         updateContent(documentId, update.state.doc.toString());
       }
-      if (update.docChanged || update.selectionSet) syncEditorState(update.state);
+      const findToggled = searchPanelOpen(update.state) !== searchPanelOpen(update.startState);
+      if (update.docChanged || update.selectionSet || findToggled) syncEditorState(update.state);
     }),
     EditorView.domEventHandlers({
       click: (event, editor) => {

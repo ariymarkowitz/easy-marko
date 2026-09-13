@@ -9,6 +9,7 @@ import { classHighlighter, tagHighlighter, tags } from '@lezer/highlight';
 import { carriesFiles } from '../lib/files';
 import { formattingExtensions } from './formatting';
 import { mathSyntax, mathTag } from './math';
+import { createSearchPanel } from './search-panel';
 
 // classHighlighter covers code in fenced blocks; this adds classes for the
 // markdown syntax it doesn't know about. Colours live in styles/editor.css.
@@ -50,16 +51,9 @@ const theme = EditorView.theme({
     backgroundColor: 'var(--color-surface)',
     color: 'var(--color-text)',
     fontFamily: 'var(--font-sans)',
+    fontSize: 'var(--text-ui)',
   },
   '.cm-panels.cm-panels-top': { borderBottom: '1px solid var(--color-border)' },
-  '.cm-textfield, .cm-button': {
-    font: 'inherit',
-    color: 'inherit',
-    backgroundColor: 'var(--color-bg)',
-    backgroundImage: 'none',
-    border: '1px solid var(--color-border)',
-    borderRadius: 'var(--radius)',
-  },
 });
 
 // Files dropped on the editor open as documents (see state/file-drop.ts), so
@@ -76,7 +70,7 @@ export const editorExtensions: Extension[] = [
   indentOnInput(),
   bracketMatching(),
   highlightSelectionMatches(),
-  search({ top: true }),
+  search({ top: true, createPanel: createSearchPanel }),
   // Pasting a URL as a link is in ./formatting, which also trims and checks the URL.
   markdown({ base: markdownLanguage, codeLanguages: languages, extensions: mathSyntax, pasteURLAsLink: false }),
   syntaxHighlighting(classHighlighter),

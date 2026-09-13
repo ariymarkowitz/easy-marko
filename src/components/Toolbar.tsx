@@ -16,7 +16,7 @@ import {
   Undo2,
   type IconNode,
 } from 'lucide';
-import { canRedo, canUndo, editorCommands } from '../editor/controller';
+import { canRedo, canUndo, editorCommands, findOpen } from '../editor/controller';
 import {
   exportActiveDocument,
   newDocument,
@@ -60,7 +60,12 @@ export default function Toolbar() {
       <div class="toolbar-divider" />
       <IconButton icon={Undo2} label="Undo" disabled={!canUndo()} onClick={editorCommands.undo} />
       <IconButton icon={Redo2} label="Redo" disabled={!canRedo()} onClick={editorCommands.redo} />
-      <IconButton icon={Search} label="Find and replace" onClick={editorCommands.find} />
+      <IconButton
+        icon={Search}
+        label="Find and replace"
+        pressed={findOpen()}
+        onClick={editorCommands.toggleFind}
+      />
 
       <span class="spacer" />
 
