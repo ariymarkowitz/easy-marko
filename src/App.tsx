@@ -1,4 +1,5 @@
 import 'katex/dist/katex.min.css';
+import 'virtual:app-colors.css';
 import './styles/tokens.css';
 import './styles/base.css';
 import './styles/editor.css';

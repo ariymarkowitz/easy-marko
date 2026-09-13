@@ -8,8 +8,7 @@
 :root {
   color-scheme: light dark;
 
-  --color-bg: light-dark(#fafafa, #161616);
-  --color-surface: light-dark(#f6f6f6, #1e1e1e);
+  /* --color-bg and --color-surface come from src/app-info.ts (virtual:app-colors.css). */
   /* Code in rendered markdown: fenced blocks, and inline code spans. */
   --color-code-bg: light-dark(#f1f1f1, #202020);
   --color-code-inline-bg: light-dark(#ececec, #292929);

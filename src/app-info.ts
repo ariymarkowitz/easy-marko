@@ -4,7 +4,10 @@
 export const APP_NAME = 'Easy Marko';
 export const APP_DESCRIPTION = 'A minimal markdown editor that works offline.';
 
-/** Copies of colours in tokens.css, for the browser and OS around the app. Keep them in sync. */
+/**
+ * Colours shared by the app and the browser and OS around it. vite.config.ts
+ * serves them to the CSS as `virtual:app-colors.css`, alongside tokens.css.
+ */
 export const APP_COLORS = {
   /** --color-surface: the toolbar, which the browser's own UI blends into. */
   surface: { light: '#f6f6f6', dark: '#1e1e1e' },

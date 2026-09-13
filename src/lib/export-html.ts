@@ -6,6 +6,7 @@ import katexCss from 'katex/dist/katex.min.css?raw';
 import syntaxCss from '../styles/editor.css?raw';
 import markdownCss from '../styles/markdown.css?raw';
 import tokensCss from '../styles/tokens.css?raw';
+import appColorsCss from 'virtual:app-colors.css?raw';
 import { escapeHtml } from './escape-html';
 import { htmlFile, saveFile } from './files';
 import { embedLocalImages } from './local-images';
@@ -103,7 +104,7 @@ export async function buildHtmlDocument(
   const rendered = await renderMarkdown(source);
   const body = readImage ? await embedLocalImages(rendered, readImage) : rendered;
   const hasMaths = body.includes('class="katex');
-  const css = [documentCss, tokensCss, syntaxCss, markdownCss, hasMaths ? await katexCssWithFonts() : '']
+  const css = [documentCss, appColorsCss, tokensCss, syntaxCss, markdownCss, hasMaths ? await katexCssWithFonts() : '']
     .join('\n')
     .trim();
   return `<!doctype html>

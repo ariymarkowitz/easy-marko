@@ -32,6 +32,34 @@ function precachePrerenderedShell(): Plugin {
 }
 
 /**
+ * Serves `virtual:app-colors.css`, the tokens.css colours that app-info.ts
+ * also gives the browser and OS, so they're written once. Also serves
+ * `virtual:app-colors.css?raw` for the HTML export, which Vite's own `?raw`
+ * handling can't load because there is no file.
+ */
+function appColors(): Plugin {
+  const id = 'virtual:app-colors.css';
+  const resolvedId = `\0${id}`;
+  const css = `:root {
+  --color-bg: light-dark(${APP_COLORS.background.light}, ${APP_COLORS.background.dark});
+  --color-surface: light-dark(${APP_COLORS.surface.light}, ${APP_COLORS.surface.dark});
+}
+`;
+  return {
+    name: 'easy-marko:app-colors',
+    enforce: 'pre',
+    resolveId(source) {
+      if (source === id) return resolvedId;
+      if (source === `${id}?raw`) return `${resolvedId}?raw`;
+    },
+    load(loadId) {
+      if (loadId === resolvedId) return css;
+      if (loadId === `${resolvedId}?raw`) return `export default ${JSON.stringify(css)};`;
+    },
+  };
+}
+
+/**
  * Test files that call vi.mock. Tests otherwise share one module graph
  * (`isolate: false`), where a mock can't replace a module that an earlier test
  * file already loaded, so these files run isolated.
@@ -49,6 +77,7 @@ export default defineConfig(({ mode }) => {
   return {
     base,
     plugins: [
+      appColors(),
       // Turnkey client mode: no index.html and no mount file. The plugin
       // generates the entries around src/App.tsx, wrapped in src/Document.tsx,
       // and `vite build` prerenders the shell into a static dist/client.
