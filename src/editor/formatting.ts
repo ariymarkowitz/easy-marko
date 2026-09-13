@@ -186,7 +186,7 @@ function inCode(state: EditorState, pos: number): boolean {
   return false;
 }
 
-const wrapMarkers = new Set(['*', '_', '`']);
+const wrapMarkers = new Set(['*', '_', '`', '~']);
 
 /** What goes on each side of `text` to wrap it in `marker`; code spans need a backtick run longer than any inside. */
 function wrapping(text: string, marker: string): string {
