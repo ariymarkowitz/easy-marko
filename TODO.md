@@ -72,10 +72,14 @@ What's built, and the behaviour decisions behind each item.
   - Read-only (disabled); clicking them doesn't edit the source.
 - [x] Export as self-contained HTML document
   - Inlines the tokens, syntax and preview CSS; KaTeX's CSS and WOFF2 fonts (about 400 KB) only when the document has maths. Follows `prefers-color-scheme`.
-- [ ] Formatting shortcuts: Cmd/Ctrl+B bold, +I italic, +K link, +Shift+X strikethrough
-  - Wrap the selection, or unwrap it when it's already wrapped.
-- [ ] Auto-close brackets, and wrap a selection when typing a markdown marker (`*`, `_`, `` ` ``)
-- [ ] Pasting a URL over selected text makes a link
+- [x] Formatting shortcuts: Cmd/Ctrl+B bold, +I italic, +K link, +Shift+X strikethrough
+  - Wrap the selection, or unwrap it when it's already wrapped (markers just outside the selection or at its ends). `*` and `_` both count, and `***x***` is bold and italic, so either can be removed on its own. Underscores inside a word aren't emphasis. At a cursor, bold/italic/strikethrough insert empty markers, or remove them when the cursor is between empty markers.
+  - Cmd/Ctrl+K puts the cursor where the URL goes, or in the link text when the selection is a URL; it unlinks a selected link or link text. Cmd/Ctrl+I replaces CodeMirror's "select parent syntax".
+  - `src/editor/formatting.ts`.
+- [x] Auto-close brackets, and wrap a selection when typing a markdown marker (`*`, `_`, `` ` ``)
+  - Only `(`, `[` and `{` close in markdown text, so apostrophes don't; fenced code uses its language's brackets. Markers only wrap a non-empty selection outside code, so list items and emphasis type as usual. A code span gets a backtick run longer than any in the selection.
+- [x] Pasting a URL over selected text makes a link
+  - The pasted text is trimmed and must be a single `http(s)` or `mailto` URL. The selection must be on one line, outside code, and not a URL itself. A URL with unbalanced parentheses goes in `<…>`. Replaces lang-markdown's `pasteURLAsLink`, which doesn't trim or check the URL.
 - [ ] Heading anchors, so `[text](#heading)` links work in the preview and exported HTML
 - [ ] Footnotes
 - [ ] GitHub-style alerts (`> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`)
