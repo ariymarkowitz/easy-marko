@@ -3,7 +3,7 @@
 
 import { ImageOff } from 'lucide';
 import { hasAccess, isDomError } from './file-access';
-import { iconMarkup } from './icon-markup';
+import { iconSvg } from './icon-markup';
 
 /** Whether `src` is a path relative to the document, rather than a URL, an absolute path or a fragment. */
 export function isRelativePath(src: string): boolean {
@@ -95,7 +95,7 @@ export type LocalImage =
   /** No granted folder contains the image. */
   | { status: 'no-access' };
 
-const imageOffIcon = `<svg class="local-image-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${iconMarkup(ImageOff)}</svg>`;
+const imageOffIcon = iconSvg(ImageOff, 'local-image-icon');
 
 function placeholder(alt: string, src: string, status: 'missing' | 'no-access'): HTMLElement {
   let path = src;
@@ -117,7 +117,7 @@ function placeholder(alt: string, src: string, status: 'missing' | 'no-access'):
     box.title = `Allow access to the folder with ${path} to show it`;
     const button = box.appendChild(document.createElement('button'));
     button.type = 'button';
-    button.className = 'local-image-allow';
+    button.className = 'text-button local-image-allow';
     button.textContent = 'Allow access';
   }
   return box;

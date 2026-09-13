@@ -366,16 +366,6 @@ button,
 .markdown .local-image-allow {
   flex: none;
   padding: 0 var(--space-1);
-  border: 0;
-  border-radius: var(--radius);
-  background-color: transparent;
-  font-weight: 600;
-  color: var(--color-accent);
-  cursor: pointer;
-}
-
-.markdown .local-image-allow:hover {
-  background-color: var(--color-accent-soft);
 }
 
 /* Sidebar */
