@@ -3,7 +3,7 @@
   <title>A tiling of the Easy Marko E and M at different rotations</title>
   <defs>
     <path id="e" fill="#4c7bf4" fill-opacity="0.45" d="M-96-96H96v46H-50v27H17l23 23 -23 23H-50v27H96v46H-96z"/>
-    <path id="m" fill="#888" fill-opacity="0.45" d="M-96 96V-96h46L0 -33.5L50 -96H96V96H50V-19.3L0 43.2L-50 -19.3V96z"/>
+    <path id="m" fill="#888" fill-opacity="0.3" d="M-96 96V-96h46L0 -33.5L50 -96H96V96H50V-19.3L0 43.2L-50 -19.3V96z"/>
   </defs>
   <use href="#e" transform="translate(24 24) rotate(180) scale(0.2292)"/>
   <use href="#m" transform="translate(72 24) rotate(90) scale(0.2292)"/>
