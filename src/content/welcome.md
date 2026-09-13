@@ -12,6 +12,8 @@ You get **bold**, *italic*, ~~strikethrough~~, `inline code` and [links](https:/
 
 Straight quotes turn "curly" in the preview, and `--` becomes an en dash, as in pages 10--12. Use `---` to type an em dash --- so you can sound just like your favourite LLM.
 
+---
+
 ### Lists and tasks
 
 1. Numbered lists
@@ -93,6 +95,8 @@ Scripts, styles and forms get stripped, so pasting HTML from elsewhere can't bre
 ### Headings and anchors
 
 Headings can be used as links. To format the link, use a single `#` and write the heading as hyphenated-lower-case. For example, `[Using the app](#using-the-app)` becomes [Using the app](#using-the-app). You can also link to the top with [`#top`](#top).
+
+---
 
 ## Using the app
 
