@@ -2,9 +2,9 @@
 
 # Welcome to <span style="color: #4c7bf4">Easy Marko!</span>
 
-Easy Marko is a markdown editor. In runs in the browser or on your device as a Progressive Web App. This page is an ordinary document. Edit it, break it, or close it from the sidebar when you're done. You can bring it back by clicking the About button in the toolbar.
+Easy Marko is a markdown editor. It runs in the browser or on your device as a Progressive Web App. This page is an ordinary document. Edit it, break it, or close it from the sidebar when you're done. You can bring it back by clicking the About button in the toolbar.
 
-The first half shows the Markdown features this viewer supports. The second half covers the parts of the app that are easy to miss. Jump to [the guide](#using-the-app) if you already know markdown.
+The first half shows the markdown features Easy Marko supports. The second half covers the parts of the app that are easy to miss. Jump to [the guide](#using-the-app) if you already know markdown.
 
 ## Markdown guide
 
@@ -52,7 +52,7 @@ function wordCount(text: string): number {
 An element of $\mathrm{PSL}(2, \mathbb{R})$ defined by
 
 $$
-  g =\begin{bmatrix} a & b \\ c & d \end{bmatrix} 
+  g = \begin{bmatrix} a & b \\ c & d \end{bmatrix}
 $$
 acts by a *Möbius transformation* on $\hat{\mathbb{C}}$ of the form
 $$
@@ -63,14 +63,14 @@ $$
 
 **Code**
 ```markdown
-  You can create footnotes[^label]. Define it anyware in the document, and it is added to the bottom of the page.
+You can create footnotes[^label]. Define each one anywhere in the document, and it appears at the bottom of the page.
 
-  [^label]: Like this. There's also a handy link back to the source.
+[^label]: Like this. There's also a handy link back to the source.
 ```
 
 **Result**
 
-You can create footnotes[^label]. Define it anyware in the document, and it is added to the bottom of the page.
+You can create footnotes[^label]. Define each one anywhere in the document, and it appears at the bottom of the page.
 
 [^label]: Like this. There's also a handy link back to the source.
 
@@ -96,7 +96,7 @@ Scripts, styles and forms get stripped, so pasting HTML from elsewhere can't bre
 
 ### Headings and anchors
 
-Headings can be used as links. To format the link, use a single `#` and write the heading as hyphenated-lower-case. For example, `[Using the app](#using-the-app)` becomes [Using the app](#using-the-app). You can also link to the top with [`#top`](#top).
+You can link to any heading. Write `#` followed by the heading in lower case, with hyphens for spaces. For example, `[Using the app](#using-the-app)` becomes [Using the app](#using-the-app). You can also link to the top with [`#top`](#top).
 
 ---
 
@@ -104,7 +104,7 @@ Headings can be used as links. To format the link, use a single `#` and write th
 
 ### Views
 
-The toolbar switches between source, split and preview mode. You can drag the separators to resize and collapse the panes, or hover over the separators to show buttons.
+The toolbar switches between source, split and preview modes. You can drag the separators to resize and collapse the panes, or hover over the separators to show buttons.
 
 **Alt-click** anywhere in the preview to jump to that line in the source, and alt-click in the source to jump the other way. Scroll sync keeps the panes lined up. Turn it off in the toolbar if it gets in your way.
 
@@ -133,8 +133,8 @@ Relative image paths like `![](images/photo.png)` work for documents opened from
 
 ### Exporting
 
-The export button saves the document as a self-contains HTML file. It follows the reader's light or dark setting, and it includes the maths fonts and any local images the app can read, so you can send it to someone as is.
+The export button saves the document as a self-contained HTML file. It keeps the light or dark theme you're using, and it includes the maths fonts and any local images the app can read, so you can send it to someone as is.
 
 ### Installing
 
-Easy Marko can be installed to your device as a Progressive Web App. Once installed, you can open `.md` files with it from your file manager.
+Easy Marko can be installed on your device as a Progressive Web App. Once installed, you can open `.md` files with it from your file manager.
