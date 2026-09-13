@@ -10,6 +10,9 @@
 
   --color-bg: light-dark(#fafafa, #161616);
   --color-surface: light-dark(#f6f6f6, #1e1e1e);
+  /* Code in rendered markdown: fenced blocks, and inline code spans. */
+  --color-code-bg: light-dark(#f1f1f1, #202020);
+  --color-code-inline-bg: light-dark(#ececec, #292929);
   --color-hover: light-dark(#e6e6e6, #2c2c2c);
   --color-hover-soft: light-dark(rgb(0 0 0 / 3%), rgb(255 255 255 / 3%));
   --color-border: light-dark(#e1e1e1, #2e2e2e);
