@@ -10,6 +10,8 @@ Easy Marko is a simple markdown editor and viewer. It runs in the browser or on 
 
 The first half shows the markdown features Easy Marko supports. The second half covers the parts of the app that are easy to miss. Jump to [the guide](#using-the-app) if you already know markdown.
 
+---
+
 ## Markdown guide
 
 ### Text
@@ -17,8 +19,6 @@ The first half shows the markdown features Easy Marko supports. The second half 
 You get **bold**, *italic*, ~~strikethrough~~, `inline code` and [links](https://commonmark.org). Bare URLs like https://example.com become links on their own.
 
 Straight quotes turn "curly" in the preview, and `--` becomes an en dash, as in pages 10--12. Use `---` to type an em dash --- so you can sound just like your favourite LLM.
-
----
 
 ### Lists and tasks
 
