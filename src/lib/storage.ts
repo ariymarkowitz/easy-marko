@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
   theme: 'easy-marko:theme',
   settings: 'easy-marko:settings',
   documents: 'easy-marko:documents',
+  activeDocument: 'easy-marko:active-document',
 } as const;
 
 export function readText(key: string): string | null {

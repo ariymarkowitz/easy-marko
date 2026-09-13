@@ -19,6 +19,12 @@ export interface MarkdownDocument {
    * from before this field existed don't have it, so they count as unsaved.
    */
   savedHash: string;
+  /**
+   * When the document last changed, in milliseconds. Tabs use it to keep the
+   * latest version when merging; backups from before this field existed count
+   * the documents as changed at time 0.
+   */
+  updatedAt: number;
 }
 
 interface DocumentsState {
@@ -27,13 +33,23 @@ interface DocumentsState {
 }
 
 function createDocument(name = 'Untitled.md', content = ''): MarkdownDocument {
-  return { id: crypto.randomUUID(), name, content, savedHash: hashText(content) };
+  const updatedAt = Date.now();
+  return { id: crypto.randomUUID(), name, content, savedHash: hashText(content), updatedAt };
 }
 
-/** A backup's state, or undefined if it's missing, corrupt, or has no documents. */
-function parseBackup(json: string | null): DocumentsState | undefined {
-  const saved = parseJSON<DocumentsState | undefined>(json, undefined);
-  return saved?.documents?.length ? saved : undefined;
+/**
+ * The shared backup. Which document is active is per tab, so it's stored
+ * separately (see useDocumentsBackup) and tabs don't overwrite each other's.
+ */
+interface Backup {
+  documents: MarkdownDocument[];
+}
+
+/** A backup's documents, or undefined if it's missing, corrupt, or has no documents. */
+function parseBackup(json: string | null): MarkdownDocument[] | undefined {
+  const saved = parseJSON<Backup | undefined>(json, undefined);
+  if (!saved?.documents?.length) return undefined;
+  return saved.documents.map((doc) => ({ ...doc, updatedAt: doc.updatedAt ?? 0 }));
 }
 
 /**
@@ -43,10 +59,11 @@ function parseBackup(json: string | null): DocumentsState | undefined {
 let syncedBackup = readText(STORAGE_KEYS.documents);
 
 function initialState(): DocumentsState {
-  const saved = parseBackup(syncedBackup);
-  if (saved) {
-    const hasActive = saved.documents.some((doc) => doc.id === saved.activeId);
-    return hasActive ? saved : { ...saved, activeId: saved.documents[0].id };
+  const documents = parseBackup(syncedBackup);
+  if (documents) {
+    const activeId = readText(STORAGE_KEYS.activeDocument);
+    const hasActive = documents.some((doc) => doc.id === activeId);
+    return { documents, activeId: hasActive ? activeId! : documents[0].id };
   }
   const doc = createDocument('Welcome.md', welcome);
   return { documents: [doc], activeId: doc.id };
@@ -103,7 +120,7 @@ async function loadFileHandles(prune = false): Promise<void> {
   // Other tabs back up their new documents before storing their handles (see
   // openFileDocument), so any document with a stored handle is in the backup
   // by now, even if this tab hasn't synced it yet.
-  for (const doc of parseBackup(readText(STORAGE_KEYS.documents))?.documents ?? []) {
+  for (const doc of parseBackup(readText(STORAGE_KEYS.documents)) ?? []) {
     openIds.add(doc.id);
   }
   const unused = [...stored.keys()].filter((id) => !openIds.has(id));
@@ -130,11 +147,20 @@ function addDocument(doc: MarkdownDocument): void {
   });
 }
 
-/** Applies `change` to the document with `id`, if it's still open. */
-function updateDocument(id: string, change: (doc: MarkdownDocument) => void): void {
+type DocumentChange = Partial<Pick<MarkdownDocument, 'name' | 'content' | 'savedHash'>>;
+
+/**
+ * Applies `change` to the document with `id`, if it's still open. A change
+ * that sets fields to the values they have leaves the document as it is, so
+ * it doesn't count as a newer version.
+ */
+function updateDocument(id: string, change: DocumentChange): void {
   setState((draft) => {
     const doc = draft.documents.find((d) => d.id === id);
-    if (doc) change(doc);
+    const fields = Object.keys(change) as (keyof DocumentChange)[];
+    if (!doc || fields.every((field) => doc[field] === change[field])) return;
+    // Later than the version it changes, even if the clock hasn't moved on.
+    Object.assign(doc, change, { updatedAt: Math.max(Date.now(), doc.updatedAt + 1) });
   });
 }
 
@@ -143,9 +169,7 @@ export function newDocument(): void {
 }
 
 export function updateContent(id: string, content: string): void {
-  updateDocument(id, (doc) => {
-    doc.content = content;
-  });
+  updateDocument(id, { content });
 }
 
 /**
@@ -246,9 +270,7 @@ export async function openFiles(files: Iterable<Promise<OpenedFile>>): Promise<v
 export function renameDocument(id: string, name: string): boolean {
   const trimmed = name.trim();
   if (!trimmed) return false;
-  updateDocument(id, (doc) => {
-    doc.name = trimmed;
-  });
+  updateDocument(id, { name: trimmed });
   return true;
 }
 
@@ -263,11 +285,8 @@ export async function saveActiveDocument(): Promise<void> {
   );
   if (!saved) return;
   if (saved.handle && saved.handle !== handle) setFileHandle(id, saved.handle);
-  updateDocument(id, (target) => {
-    target.name = saved.name;
-    // The content as written, so edits made while saving still count as unsaved.
-    target.savedHash = hashText(content);
-  });
+  // The content as written, so edits made while saving still count as unsaved.
+  updateDocument(id, { name: saved.name, savedHash: hashText(content) });
 }
 
 /** Saves a standalone HTML copy of the active document. Its markdown file stays the one Save writes to. */
@@ -281,30 +300,43 @@ const sameDocument = (a: MarkdownDocument, b: MarkdownDocument): boolean =>
   a.name === b.name && a.content === b.content && a.savedHash === b.savedHash;
 
 /**
+ * The later of two versions of a document. Versions changed in the same
+ * millisecond are ordered by their contents, so every tab picks the same one.
+ */
+function laterVersion(a: MarkdownDocument, b: MarkdownDocument): MarkdownDocument {
+  if (a.updatedAt !== b.updatedAt) return a.updatedAt > b.updatedAt ? a : b;
+  return JSON.stringify(a) >= JSON.stringify(b) ? a : b;
+}
+
+/**
  * Merges this tab's documents with the backup, shows the result, and writes
  * it back. If another tab has written the backup since this tab last synced,
- * each side keeps the documents it changed (this tab wins where both changed
- * one), so neither overwrites the other's edits.
+ * each document takes its latest version, and documents that one side closed
+ * stay open if the other changed them.
+ *
+ * Tabs don't see each other's writes straight away, so a tab can write over a
+ * newer backup with an older copy of a document it didn't change. Keeping the
+ * latest version stops that copy undoing the newer edits, and the next write
+ * restores them.
  */
 function syncBackup(): void {
   const stored = readText(STORAGE_KEYS.documents);
-  let next = snapshot(state);
+  const local = snapshot(state);
+  let documents = local.documents;
   const remote = stored === syncedBackup ? undefined : parseBackup(stored);
   if (remote) {
-    const local = next;
-    const base = parseBackup(syncedBackup)?.documents ?? [];
-    const documents = mergeById(base, local.documents, remote.documents, sameDocument);
+    const base = parseBackup(syncedBackup) ?? [];
+    documents = mergeById(base, local.documents, remote, sameDocument, laterVersion);
     // Each tab closed a different document that the other didn't change.
     if (documents.length === 0) documents.push(createDocument());
     const activeIndex = local.documents.findIndex((doc) => doc.id === local.activeId);
     const activeId = documents.some((doc) => doc.id === local.activeId)
       ? local.activeId
       : documents[clamp(activeIndex, 0, documents.length - 1)].id;
-    next = { documents, activeId };
 
     const openIds = new Set(documents.map((doc) => doc.id));
     const baseIds = new Set(base.map((doc) => doc.id));
-    const remoteIds = new Set(remote.documents.map((doc) => doc.id));
+    const remoteIds = new Set(remote.map((doc) => doc.id));
     for (const [id, handle] of fileHandles) {
       // Closed in another tab, which removed the stored handle.
       if (!openIds.has(id)) fileHandles.delete(id);
@@ -319,7 +351,7 @@ function syncBackup(): void {
     void loadFileHandles();
   }
 
-  const json = JSON.stringify(next);
+  const json = JSON.stringify({ documents } satisfies Backup);
   // If the write fails, the stored backup (already merged) stays the base.
   syncedBackup = json === stored || writeText(STORAGE_KEYS.documents, json) ? json : stored;
 }
@@ -327,7 +359,8 @@ function syncBackup(): void {
 /**
  * Auto-backup of every open document to localStorage, shared by all tabs of
  * the app. Syncs 300ms after a change, and straight away when another tab
- * writes the backup. Also restores the file handles stored in IndexedDB, so
+ * writes the backup. Also remembers the active document, which the tab
+ * opens after a reload, and restores the file handles stored in IndexedDB, so
  * saves go to the same files after a reload. Call once from the app root.
  */
 export function useDocumentsBackup(): void {
@@ -340,6 +373,14 @@ export function useDocumentsBackup(): void {
       return () => clearTimeout(timer);
     },
     { name: 'documentsBackup' },
+  );
+
+  createEffect(
+    () => state.activeId,
+    (id) => {
+      writeText(STORAGE_KEYS.activeDocument, id);
+    },
+    { name: 'activeDocumentBackup' },
   );
 
   // Write the last edits straight away when the page goes away. Mobile

@@ -78,4 +78,4 @@ What's built, and the behaviour decisions behind each item.
 - [x] Replace `alert()` error reporting with in-app notices
   - `showNotice` in `state/notices.ts`. Info notices close after 6s (paused while hovered or focused); errors stay until dismissed. The unsaved-changes `confirm()` stays.
 - [x] Flush the pending auto-backup on `pagehide` (and when the page is hidden)
-- [x] Share the auto-backup between tabs: each sync merges this tab's documents with the stored backup (three-way, by document id, against the backup as the tab last synced it), and `storage` events and page show/hide sync straight away, so tabs pick up each other's edits instead of overwriting them
+- [x] Share the auto-backup between tabs: each sync merges this tab's documents with the stored backup (three-way, by document id, against the backup as the tab last synced it, keeping each document's latest version so a tab that's behind can't undo newer edits; the active document is stored per tab, outside the shared backup, so tabs don't rewrite the backup for each other), and `storage` events and page show/hide sync straight away, so tabs pick up each other's edits instead of overwriting them

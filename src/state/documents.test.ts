@@ -186,7 +186,6 @@ describe('openDocument', () => {
 describe('useDocumentsBackup', () => {
   interface Backup {
     documents: MarkdownDocument[];
-    activeId: string;
   }
 
   function useBackup() {
@@ -208,8 +207,14 @@ describe('useDocumentsBackup', () => {
     localStorage.setItem(STORAGE_KEYS.documents, JSON.stringify(backup));
   }
 
-  const editIn = (id: string, content: string) => (documents: MarkdownDocument[]) =>
-    documents.map((doc) => (doc.id === id ? { ...doc, content } : doc));
+  /** Changes a document as another tab would, making it the latest version. */
+  const changeDocument =
+    (id: string, change: Partial<MarkdownDocument>) => (documents: MarkdownDocument[]) =>
+      documents.map((doc) =>
+        doc.id === id ? { ...doc, updatedAt: doc.updatedAt + 1, ...change } : doc,
+      );
+
+  const editIn = (id: string, content: string) => changeDocument(id, { content });
 
   function hidePage() {
     window.dispatchEvent(new Event('pagehide'));
@@ -281,6 +286,41 @@ describe('useDocumentsBackup', () => {
     dispose();
   });
 
+  test('keeps the latest edits when another tab writes an older copy', () => {
+    const dispose = useBackup();
+    const doc = addDocument();
+    edit(doc.id, 'Older');
+    hidePage();
+    const older = backedUp(doc.id)!;
+    edit(doc.id, 'Newer');
+    hidePage();
+
+    // The other tab hadn't seen the newer edit when it wrote.
+    changeInOtherTab((documents) => documents.map((d) => (d.id === doc.id ? older : d)));
+    syncFromOtherTab();
+    expect(doc.content).toBe('Newer');
+    expect(backedUp(doc.id)?.content).toBe('Newer');
+    dispose();
+  });
+
+  test("does not write the backup for another tab's changes", () => {
+    const dispose = useBackup();
+    const edited = addDocument();
+    addDocument();
+    hidePage();
+
+    // The other tab has a different document open.
+    changeInOtherTab(editIn(edited.id, 'Their edit'));
+    const written = localStorage.getItem(STORAGE_KEYS.documents);
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+    syncFromOtherTab();
+    hidePage();
+    expect(edited.content).toBe('Their edit');
+    expect(setItem).not.toHaveBeenCalledWith(STORAGE_KEYS.documents, expect.anything());
+    expect(localStorage.getItem(STORAGE_KEYS.documents)).toBe(written);
+    dispose();
+  });
+
   describe('file handles', () => {
     async function openWithHandle(name: string) {
       vi.mocked(openFile).mockResolvedValueOnce({ name, content: '', handle: fakeHandle(name) });
@@ -321,9 +361,7 @@ describe('useDocumentsBackup', () => {
       // The other tab saved the document to a file.
       const handle = fakeHandle(doc.name, 'Saved in other tab.md');
       storedHandles.set(doc.id, handle);
-      changeInOtherTab((documents) =>
-        documents.map((d) => (d.id === doc.id ? { ...d, savedHash: 'saved' } : d)),
-      );
+      changeInOtherTab(changeDocument(doc.id, { savedHash: 'saved' }));
       syncFromOtherTab();
       await settle();
       expect(await saveActive()).toBe(handle);
@@ -334,7 +372,13 @@ describe('useDocumentsBackup', () => {
       const dispose = useBackup();
       hidePage();
 
-      const shared = { id: 'shared-document', name: 'Shared.md', content: '', savedHash: '' };
+      const shared = {
+        id: 'shared-document',
+        name: 'Shared.md',
+        content: '',
+        savedHash: '',
+        updatedAt: 0,
+      };
       changeInOtherTab((documents) => [...documents, shared]);
       storedHandles.set(shared.id, fakeHandle('Shared.md'));
       syncFromOtherTab();
