@@ -1,3 +1,5 @@
+import { trackDrag } from '../lib/drag';
+
 export interface ResizerRange {
   min: number;
   max: number;
@@ -9,9 +11,11 @@ export interface ResizerRange {
 
 /**
  * A vertical drag handle that sizes the element before it, following the
- * ARIA window splitter pattern. Dragging reports the pointer's clientX;
+ * ARIA window splitter pattern. Dragging reports the pointer's clientX to
+ * the handler that `onDragStart` returns;
  * Left/Right (Shift for larger steps), Home and End report a new value, which
- * the receiver clamps to the range.
+ * the receiver clamps to the range. A drag carries on if the resizer is
+ * removed during it, so the receiver can hide a panel and show it again.
  */
 export default function Resizer(props: {
   label: string;
@@ -21,7 +25,8 @@ export default function Resizer(props: {
   range: ResizerRange;
   /** Read out instead of the raw value, e.g. a percentage. */
   valueText?: string;
-  onDrag: (clientX: number) => void;
+  /** Called when a drag starts; returns what follows the pointer's clientX. */
+  onDragStart: () => (clientX: number) => void;
   onChange: (value: number) => void;
 }) {
   function keyValue(event: KeyboardEvent): number | undefined {
@@ -52,10 +57,7 @@ export default function Resizer(props: {
       aria-valuemin={props.range.min}
       aria-valuemax={props.range.max}
       aria-valuetext={props.valueText}
-      onPointerDown={(event) => event.currentTarget.setPointerCapture(event.pointerId)}
-      onPointerMove={(event) => {
-        if (event.currentTarget.hasPointerCapture(event.pointerId)) props.onDrag(event.clientX);
-      }}
+      onPointerDown={(event) => trackDrag(event, { onMove: props.onDragStart() })}
       onKeyDown={(event) => {
         if (event.altKey || event.ctrlKey || event.metaKey) return;
         const value = keyValue(event);

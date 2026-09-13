@@ -1,6 +1,5 @@
 import { For } from 'solid-js';
 import {
-  Code,
   Columns2,
   Eye,
   FileDown,
@@ -8,6 +7,7 @@ import {
   FolderOpen,
   Link2,
   Moon,
+  PenLine,
   PanelLeft,
   Redo2,
   Save,
@@ -35,7 +35,7 @@ import { theme, toggleTheme } from '../state/theme';
 import IconButton from './IconButton';
 
 const viewModes: { mode: ViewMode; label: string; icon: IconNode }[] = [
-  { mode: 'source', label: 'Source', icon: Code },
+  { mode: 'source', label: 'Source', icon: PenLine },
   { mode: 'split', label: 'Side by side', icon: Columns2 },
   { mode: 'preview', label: 'Preview', icon: Eye },
 ];

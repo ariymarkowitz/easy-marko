@@ -18,7 +18,7 @@ function renderResizer(initial: number) {
       controls="panel"
       value={value()}
       range={range}
-      onDrag={() => {}}
+      onDragStart={() => () => {}}
       onChange={onChange}
     />
   ));
@@ -75,7 +75,7 @@ describe('Resizer', () => {
         controls="sidebar"
         value={settings.sidebarWidth}
         range={SIDEBAR_WIDTH}
-        onDrag={setSidebarWidth}
+        onDragStart={() => setSidebarWidth}
         onChange={setSidebarWidth}
       />
     ));

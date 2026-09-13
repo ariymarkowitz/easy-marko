@@ -17,6 +17,9 @@ What's built, and the behaviour decisions behind each item.
 - [x] Small toolbar and status bar; editor/preview fill the rest
 - [x] Keyboard-accessible resizers (arrow keys)
   - Focusable separators: Left/Right move a step, Shift+Left/Right a larger step, Home/End jump to the limits.
+- [x] Hide panels by dragging their edges; buttons on hovered edges to show or hide them
+  - Dragging the sidebar's resizer below half its minimum width closes the sidebar, and dragging a pane's side of the split resizer closer to the edge than half its minimum hides that pane. Dragging back within the same drag shows it again. A panel hidden this way keeps the size it had before the drag.
+  - Keeping the pointer near an edge for 0.2s shows buttons beside it (within a resizer's hit area, or 16px of the window's left or right edge, tracked without a hover area so the window's edges still take clicks); they hide once the pointer is 20px away and not over them. A pointer that leaves the window through its left or right side counts as reaching that edge, since the last position the page sees can be further in. A resizer has one button on each collapsible panel's side to hide it; the window's edge or the sidebar's resizer has one for each panel hidden on that side (the sidebar and source on the left, the preview on the right). Clicking a button runs it; dragging it drags that edge, so a hidden panel can be pulled open. The buttons are out of the tab order, as the toolbar has the same controls, and narrow screens don't have them.
 - [x] Narrow screens: sidebar as an overlay, no split view below ~700px
   - The sidebar opens over the workspace and closes on Escape, a click outside, or selecting a document. A stored split view shows the last single pane, and choosing a pane there keeps split view stored, so widening the window restores it.
 

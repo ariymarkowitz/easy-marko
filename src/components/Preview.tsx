@@ -17,6 +17,7 @@ export default function Preview() {
   return (
     <section
       ref={previewPaneRef()}
+      id="preview-pane"
       class="pane preview-pane"
       aria-label="Preview"
       onClick={jumpToSource}

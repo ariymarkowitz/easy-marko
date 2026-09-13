@@ -12,8 +12,12 @@ import {
   type PanelMode,
   setLastPanel,
   setSidebarOpen,
+  setSidebarWidth,
+  setSplitRatio,
   settings,
   setViewMode,
+  SIDEBAR_WIDTH,
+  SPLIT_RATIO,
   type ViewMode,
 } from './settings';
 
@@ -61,6 +65,57 @@ export function selectViewMode(mode: ViewMode): void {
 export function revealPane(pane: PanelMode): void {
   if (narrowScreen()) selectViewMode(pane);
   else setViewMode('split');
+}
+
+/** Hides `pane`, showing only the other one. */
+export function hidePane(pane: PanelMode): void {
+  const other = pane === 'source' ? 'preview' : 'source';
+  setLastPanel(other);
+  setViewMode(other);
+}
+
+/**
+ * Starts a drag of the sidebar's edge, returning what follows the pointer's
+ * clientX (the sidebar starts at the window's left edge, so that's its width).
+ * Sizes the sidebar, or closes it when dragged to less than half its minimum
+ * width, keeping its width from before the drag, and opens it again when
+ * dragged back.
+ */
+export function startSidebarDrag(): (clientX: number) => void {
+  const initialWidth = settings.sidebarWidth;
+  return (clientX) => {
+    const open = clientX >= SIDEBAR_WIDTH.min / 2;
+    setSidebarOpen(open);
+    setSidebarWidth(open ? clientX : initialWidth);
+  };
+}
+
+/**
+ * Starts a drag of the edge between the panes, returning what follows the
+ * pointer's clientX. Splits the workspace there, or hides a pane when dragged
+ * closer to its side than half the pane's minimum size, keeping the split from
+ * before the drag, and shows it again when dragged back.
+ */
+export function startSplitDrag(): (clientX: number) => void {
+  const initialRatio = settings.splitRatio;
+  return (clientX) => {
+    const ratio = workspaceRatioAt(clientX);
+    const hidden =
+      ratio < SPLIT_RATIO.min / 2
+        ? 'source'
+        : ratio > 1 - (1 - SPLIT_RATIO.max) / 2
+          ? 'preview'
+          : undefined;
+    if (hidden) hidePane(hidden);
+    else setViewMode('split');
+    setSplitRatio(hidden ? initialRatio : ratio);
+  };
+}
+
+/** The fraction of the workspace's width left of `clientX`. */
+function workspaceRatioAt(clientX: number): number {
+  const bounds = document.getElementById('workspace')?.getBoundingClientRect();
+  return bounds?.width ? (clientX - bounds.left) / bounds.width : settings.splitRatio;
 }
 
 /**

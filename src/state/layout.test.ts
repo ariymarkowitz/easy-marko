@@ -2,15 +2,26 @@ import { createRoot, flush } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { activeDocument, closeDocument, newDocument, selectDocument } from './documents';
 import {
+  hidePane,
   NARROW_WIDTH,
   revealPane,
   selectViewMode,
+  startSidebarDrag,
+  startSplitDrag,
   sidebarOpen,
   toggleSidebar,
   useLayout,
   viewMode,
 } from './layout';
-import { setLastPanel, setSidebarOpen, settings, setViewMode } from './settings';
+import {
+  setLastPanel,
+  setSidebarOpen,
+  setSidebarWidth,
+  setSplitRatio,
+  settings,
+  setViewMode,
+  SIDEBAR_WIDTH,
+} from './settings';
 
 /** Changes the window width as the stand-in matchMedia in vitest-setup.ts sees it. */
 function setNarrowWindow(narrow: boolean) {
@@ -99,6 +110,59 @@ describe('view mode', () => {
     run(() => revealPane('source'));
     expect(viewMode()).toBe('source');
     expect(settings.viewMode).toBe('split');
+  });
+});
+
+describe('dragging panel edges', () => {
+  test('hides a pane, leaving the other as the last single pane', () => {
+    run(() => hidePane('source'));
+    expect(viewMode()).toBe('preview');
+    expect(settings.lastPanel).toBe('preview');
+    run(() => hidePane('preview'));
+    expect(viewMode()).toBe('source');
+    expect(settings.lastPanel).toBe('source');
+  });
+
+  test('sizes the sidebar, and closes it below half its minimum width until dragged back', () => {
+    run(() => setSidebarWidth(300));
+    const drag = startSidebarDrag();
+    run(() => drag(250));
+    expect(settings.sidebarWidth).toBe(250);
+    run(() => drag(SIDEBAR_WIDTH.min / 2 + 1));
+    expect(sidebarOpen()).toBe(true);
+    expect(settings.sidebarWidth).toBe(SIDEBAR_WIDTH.min);
+    run(() => drag(SIDEBAR_WIDTH.min / 2 - 1));
+    expect(sidebarOpen()).toBe(false);
+    expect(settings.sidebarWidth).toBe(300);
+    run(() => drag(250));
+    expect(sidebarOpen()).toBe(true);
+    expect(settings.sidebarWidth).toBe(250);
+    run(() => setSidebarWidth(220));
+  });
+
+  test('splits the panes, and hides the pane dragged close to its side until dragged back', () => {
+    // A 1000px workspace starting at the window's left edge.
+    const workspace = document.body.appendChild(document.createElement('main'));
+    workspace.id = 'workspace';
+    workspace.getBoundingClientRect = () => new DOMRect(0, 0, 1000, 500);
+
+    run(() => setSplitRatio(0.4));
+    const drag = startSplitDrag();
+    run(() => drag(300));
+    expect(settings.splitRatio).toBe(0.3);
+    run(() => drag(50));
+    expect(viewMode()).toBe('preview');
+    expect(settings.splitRatio).toBe(0.4);
+    run(() => drag(150));
+    expect(viewMode()).toBe('split');
+    expect(settings.splitRatio).toBe(0.2);
+    run(() => drag(950));
+    expect(viewMode()).toBe('source');
+    expect(settings.splitRatio).toBe(0.4);
+    run(() => drag(600));
+    expect(viewMode()).toBe('split');
+    expect(settings.splitRatio).toBe(0.6);
+    run(() => setSplitRatio(0.5));
   });
 });
 

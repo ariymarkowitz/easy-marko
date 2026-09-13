@@ -110,6 +110,7 @@ button,
 .workspace {
   display: flex;
   flex: 1;
+  position: relative;
   min-width: 0;
   /* Keeps CodeMirror's z-indexed panels below the sidebar overlay. */
   isolation: isolate;
@@ -118,6 +119,8 @@ button,
 .pane {
   flex: 1 1 0;
   min-width: 0;
+  /* Keeps CodeMirror's z-indexed gutters and panels below the panel edge buttons. */
+  isolation: isolate;
   background-color: var(--color-bg);
 }
 
@@ -132,8 +135,9 @@ button,
 
 .resizer {
   position: relative;
-  flex: 0 0 1px;
+  height: 100%;
   background-color: var(--color-border);
+  touch-action: none;
 }
 
 /* A wider invisible hit area around the 1px line. */
@@ -155,6 +159,98 @@ button,
 .resizer:focus-visible {
   outline: none;
   box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+/*
+ * Panel edges (components/PanelEdge.tsx): a resizer, or the window's edge,
+ * that shows buttons beside it (.revealed) while the pointer is near.
+ */
+
+.panel-edge {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 1px;
+}
+
+.panel-edge-start,
+.panel-edge-end {
+  position: absolute;
+  inset-block: 0;
+  width: 0;
+}
+
+.panel-edge-start {
+  left: 0;
+}
+
+.panel-edge-end {
+  right: 0;
+}
+
+.panel-edge-buttons {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  translate: 0 -50%;
+  /* Hidden until revealed; `visibility` waits for the fade so it plays. */
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.15s ease,
+    visibility 0s linear 0.15s;
+}
+
+.panel-edge-buttons.before {
+  right: 100%;
+  padding-right: 2px;
+}
+
+.panel-edge-buttons.after {
+  left: 100%;
+  padding-left: 2px;
+}
+
+.panel-edge-start .panel-edge-buttons.after {
+  padding-left: var(--space-1);
+}
+
+.panel-edge-end .panel-edge-buttons.before {
+  padding-right: var(--space-1);
+}
+
+.panel-edge.revealed > .panel-edge-buttons {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.15s ease;
+}
+
+.panel-edge-button.icon-button {
+  width: 1.25rem;
+  height: 1.75rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-overlay);
+  touch-action: none;
+}
+
+.panel-edge-button.icon-button:hover {
+  background-color: var(--color-hover);
+}
+
+/* Set by lib/drag.ts while a resizer or an edge button is dragged. */
+:root.dragging,
+:root.dragging * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+:root.dragging .panel-edge-buttons {
+  opacity: 0;
+  visibility: hidden;
+  transition: none;
 }
 
 /* Controls */
@@ -395,7 +491,8 @@ button,
     background-color: var(--color-backdrop);
   }
 
-  .app-body > .resizer {
+  /* No resizing or hiding panels by their edges; the toolbar does it. */
+  .panel-edge {
     display: none;
   }
 
