@@ -1,0 +1,127 @@
+import { createEffect } from 'solid-js';
+import { hashText } from '../lib/hash';
+import { useListeners } from '../reactive';
+import {
+  documentFile,
+  documentsState,
+  hasUnsavedChanges,
+  isSaving,
+  reloadDocument,
+} from './documents';
+import { showNotice } from './notices';
+
+/** How often files are checked while the page is visible, besides whenever the window gains focus. */
+export const FILE_CHECK_INTERVAL = 2000;
+
+interface Watched {
+  handle: FileSystemFileHandle;
+  /** The file's modification time when it was last read, so unchanged files aren't read again. */
+  lastModified: number;
+  /** Hash of the file's content when a notice was shown for it, and the notice's dismissal. */
+  notice?: { hash: string; dismiss: () => void };
+}
+
+/** What's known about each linked document's file, by document id. */
+const watched = new Map<string, Watched>();
+
+/** Whether the page may read `handle` without asking. Asking needs a user gesture, so checks don't. */
+async function canRead(handle: FileSystemFileHandle): Promise<boolean> {
+  if (!handle.queryPermission) return true;
+  return (await handle.queryPermission({ mode: 'read' })) === 'granted';
+}
+
+function forget(id: string): void {
+  watched.get(id)?.notice?.dismiss();
+  watched.delete(id);
+}
+
+async function checkDocument(id: string, handle: FileSystemFileHandle): Promise<void> {
+  let entry = watched.get(id);
+  if (entry?.handle !== handle) {
+    forget(id);
+    entry = { handle, lastModified: -1 };
+    watched.set(id, entry);
+  }
+
+  const readable = await canRead(handle).catch(() => false);
+  // Rejects if the file was moved or deleted.
+  const file = readable ? await handle.getFile().catch(() => undefined) : undefined;
+  if (!file || file.lastModified === entry.lastModified) return;
+  const content = await file.text().catch(() => undefined);
+  const doc = documentsState.documents.find((d) => d.id === id);
+  // Read again next time: the document was closed, relinked or saved during the read.
+  if (content === undefined || !doc || documentFile(id) !== handle || isSaving(id)) return;
+  entry.lastModified = file.lastModified;
+
+  const hash = hashText(content);
+  if (hash === doc.savedHash || content === doc.content) {
+    // Saved elsewhere, such as by another tab, or changed back.
+    if (content === doc.content && hash !== doc.savedHash) reloadDocument(id, content);
+    entry.notice?.dismiss();
+    entry.notice = undefined;
+    return;
+  }
+  // Already shown for this version of the file, even if it was dismissed.
+  if (entry.notice?.hash === hash) return;
+
+  entry.notice?.dismiss();
+  const message = hasUnsavedChanges(doc)
+    ? `${doc.name} changed on disk. Reloading it replaces your unsaved changes.`
+    : `${doc.name} changed on disk.`;
+  entry.notice = {
+    hash,
+    dismiss: showNotice(message, {
+      timeout: 0,
+      actions: [{ label: 'Reload', run: () => reloadDocument(id, content) }],
+    }),
+  };
+}
+
+let running: Promise<void> | undefined;
+
+/**
+ * Checks the files of the open documents that are linked to one, and shows a
+ * notice offering to reload each document whose file has changed since it
+ * was opened or saved. Files the page may not read yet, such as those of
+ * handles restored after a reload, are skipped.
+ */
+export function checkFiles(): Promise<void> {
+  running ??= (async () => {
+    const linked = new Map<string, FileSystemFileHandle>();
+    for (const doc of documentsState.documents) {
+      const handle = documentFile(doc.id);
+      if (handle) linked.set(doc.id, handle);
+    }
+    for (const id of watched.keys()) {
+      if (!linked.has(id)) forget(id);
+    }
+    for (const [id, handle] of linked) await checkDocument(id, handle);
+  })().finally(() => {
+    running = undefined;
+  });
+  return running;
+}
+
+/**
+ * Notices when an open document's file changes on disk, checking every
+ * couple of seconds while the page is visible and whenever the window gains
+ * focus. Call once from the app root.
+ */
+export function useFileChanges(): void {
+  const check = () => {
+    if (document.visibilityState === 'visible') void checkFiles();
+  };
+
+  createEffect(
+    () => documentsState.documents.map((doc) => `${doc.id}\n${doc.name}`).join('\n'),
+    () => {
+      check();
+      const timer = setInterval(check, FILE_CHECK_INTERVAL);
+      return () => clearInterval(timer);
+    },
+    { name: 'fileChanges' },
+  );
+
+  useListeners(window, { focus: check });
+  useListeners(document, { visibilitychange: check });
+}

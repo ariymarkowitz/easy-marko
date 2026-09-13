@@ -16,6 +16,7 @@ import Workspace from './components/Workspace';
 import { registerServiceWorker } from './pwa';
 import { useShortcuts } from './shortcuts';
 import { useDocumentsBackup, useWindowTitle } from './state/documents';
+import { useFileChanges } from './state/file-changes';
 import { useFileDrop } from './state/file-drop';
 import { useLaunchQueue } from './state/launch-queue';
 import { narrowScreen, sidebarOpen, startSidebarDrag, useLayout, viewMode } from './state/layout';
@@ -31,6 +32,7 @@ export default function App() {
   useLayout();
   useDocumentsBackup();
   useWindowTitle();
+  useFileChanges();
   useLaunchQueue();
   useFileDrop();
   useShortcuts();

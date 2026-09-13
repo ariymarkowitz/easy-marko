@@ -215,6 +215,22 @@ function linkedFileHandle(doc: MarkdownDocument): FileSystemFileHandle | undefin
   return handle?.name === doc.name ? handle : undefined;
 }
 
+/** The file that the open document with `id` is linked to, if any. See linkedFileHandle. */
+export function documentFile(id: string): FileSystemFileHandle | undefined {
+  const doc = state.documents.find((d) => d.id === id);
+  return doc && linkedFileHandle(doc);
+}
+
+/** Replaces a document's content with its file's, as read from disk. It then has no unsaved changes. */
+export function reloadDocument(id: string, content: string): void {
+  updateDocument(id, { content, savedHash: hashText(content) });
+}
+
+/** Ids of the documents being saved, whose files may be part-written. */
+const savingIds = new Set<string>();
+
+export const isSaving = (id: string): boolean => savingIds.has(id);
+
 /** The id of the open document backed by the same file as `handle`, if any. */
 async function findDocumentForFile(handle: FileSystemFileHandle): Promise<string | undefined> {
   await handlesLoaded;
@@ -278,15 +294,20 @@ export async function saveActiveDocument(): Promise<void> {
   const doc = activeDocument();
   if (!doc) return;
   const { id, name, content } = doc;
-  await handlesLoaded;
-  const handle = linkedFileHandle(doc);
-  const saved = await saveFile(name, content, { handle }).catch((error) =>
-    reportFileError('save', error),
-  );
-  if (!saved) return;
-  if (saved.handle && saved.handle !== handle) setFileHandle(id, saved.handle);
-  // The content as written, so edits made while saving still count as unsaved.
-  updateDocument(id, { name: saved.name, savedHash: hashText(content) });
+  savingIds.add(id);
+  try {
+    await handlesLoaded;
+    const handle = linkedFileHandle(doc);
+    const saved = await saveFile(name, content, { handle }).catch((error) =>
+      reportFileError('save', error),
+    );
+    if (!saved) return;
+    if (saved.handle && saved.handle !== handle) setFileHandle(id, saved.handle);
+    // The content as written, so edits made while saving still count as unsaved.
+    updateDocument(id, { name: saved.name, savedHash: hashText(content) });
+  } finally {
+    savingIds.delete(id);
+  }
 }
 
 /** Saves a standalone HTML copy of the active document. Its markdown file stays the one Save writes to. */

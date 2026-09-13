@@ -88,7 +88,10 @@ What's built, and the behaviour decisions behind each item.
   - Heading ids and note numbers depend on earlier blocks. Cached blocks keep their slugs and labels, so ids are assigned without parsing them, and a cached block whose ids changed is parsed again in a second pass.
 - [x] GitHub-style alerts (`> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`)
   - The marker must be alone on a top-level blockquote's first line (any case), with content after it; otherwise it stays a blockquote. Lucide icons; notes, tips and important use the accent, warnings and cautions the danger colour.
-- [ ] Notice when an open file changes on disk, and offer to reload it
+- [x] Notice when an open file changes on disk, and offer to reload it
+  - Checks the linked files of open documents every 2s while the page is visible, and when the window gains focus; a file is only read when its modification time changes. It has changed when its content matches neither the document's saved content nor its current content. A file that now matches the document marks it saved.
+  - The notice stays until dismissed, and says when reloading replaces unsaved changes. Reload goes through the editor, so it can be undone. A dismissed notice doesn't come back until the file changes again, and the notice closes when the document is closed or renamed.
+  - Handles restored after a reload can't be read until the page is given permission again (by saving), so their files aren't checked until then. `src/state/file-changes.ts`.
 - [ ] Recent files
 - [ ] Show local images with relative paths, once the file's folder is granted
   - An image that can't load shows a placeholder with an "Allow access" button, which calls `showDirectoryPicker({ startIn: fileHandle })`. `dirHandle.resolve(fileHandle)` gives the file's path in the folder (or `null` if it's outside); relative paths resolve from there.
