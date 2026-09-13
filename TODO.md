@@ -72,6 +72,19 @@ What's built, and the behaviour decisions behind each item.
   - Read-only (disabled); clicking them doesn't edit the source.
 - [x] Export as self-contained HTML document
   - Inlines the tokens, syntax and preview CSS; KaTeX's CSS and WOFF2 fonts (about 400 KB) only when the document has maths. Follows `prefers-color-scheme`.
+- [ ] Formatting shortcuts: Cmd/Ctrl+B bold, +I italic, +K link, +Shift+X strikethrough
+  - Wrap the selection, or unwrap it when it's already wrapped.
+- [ ] Auto-close brackets, and wrap a selection when typing a markdown marker (`*`, `_`, `` ` ``)
+- [ ] Pasting a URL over selected text makes a link
+- [ ] Heading anchors, so `[text](#heading)` links work in the preview and exported HTML
+- [ ] Footnotes
+- [ ] GitHub-style alerts (`> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]`)
+- [ ] Notice when an open file changes on disk, and offer to reload it
+- [ ] Recent files
+- [ ] Show local images with relative paths, once the file's folder is granted
+  - An image that can't load shows a placeholder with an "Allow access" button, which calls `showDirectoryPicker({ startIn: fileHandle })`. `dirHandle.resolve(fileHandle)` gives the file's path in the folder (or `null` if it's outside); relative paths resolve from there.
+  - Images are read into `blob:` URLs and swapped in after sanitising. Folder handles persist in IndexedDB, so later files inside a granted folder show their images straight away.
+  - Chromium only. `../` paths need a higher folder to be granted; absolute paths aren't supported. HTML export inlines the images as data URIs.
 
 ## Hardening
 
