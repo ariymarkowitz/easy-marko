@@ -5,6 +5,7 @@ import {
   FileDown,
   FilePlus,
   FolderOpen,
+  Info,
   Link2,
   Moon,
   PanelLeft,
@@ -20,6 +21,7 @@ import {
   exportActiveDocument,
   newDocument,
   openDocument,
+  openWelcomeDocument,
   saveActiveDocument,
 } from '../state/documents';
 import {
@@ -87,6 +89,7 @@ export default function Toolbar() {
         label={theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
         onClick={toggleTheme}
       />
+      <IconButton icon={Info} label="About Easy Marko" onClick={openWelcomeDocument} />
     </header>
   );
 }

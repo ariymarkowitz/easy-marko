@@ -35,6 +35,8 @@ interface DocumentsState {
   activeId: string;
 }
 
+const welcomeName = 'Welcome.md';
+
 function createDocument(name = 'Untitled.md', content = ''): MarkdownDocument {
   const updatedAt = Date.now();
   return { id: crypto.randomUUID(), name, content, savedHash: hashText(content), updatedAt };
@@ -68,7 +70,7 @@ function initialState(): DocumentsState {
     const hasActive = documents.some((doc) => doc.id === activeId);
     return { documents, activeId: hasActive ? activeId! : documents[0].id };
   }
-  const doc = createDocument('Welcome.md', welcome);
+  const doc = createDocument(welcomeName, welcome);
   return { documents: [doc], activeId: doc.id };
 }
 
@@ -169,6 +171,18 @@ function updateDocument(id: string, change: DocumentChange): void {
 
 export function newDocument(): void {
   addDocument(createDocument());
+}
+
+/**
+ * Opens a new copy of the welcome document. Switches to an open copy instead
+ * if one is unedited and not saved to a file, so repeated clicks don't pile up.
+ */
+export function openWelcomeDocument(): void {
+  const copy = state.documents.find(
+    (doc) => doc.name === welcomeName && doc.content === welcome && !fileHandles.has(doc.id),
+  );
+  if (copy) selectDocument(copy.id);
+  else addDocument(createDocument(welcomeName, welcome));
 }
 
 export function updateContent(id: string, content: string): void {

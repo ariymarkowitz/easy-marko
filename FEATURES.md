@@ -23,7 +23,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 
 ## Documents and files
 
-- Several open documents, each with its own undo history. New documents are named `Untitled.md`. First run opens a welcome document.
+- Several open documents, each with its own undo history. New documents are named `Untitled.md`. First run opens a welcome document. The About button (info icon) opens a fresh copy of it, or switches to an open copy that's unedited and not linked to a file.
 - New, open and save use the File System Access API, falling back to a file input and download. Open accepts `.md`, `.markdown`, `.mdown` and `.txt`. Shortcuts: Cmd/Ctrl+O opens, Cmd/Ctrl+S saves.
 - IndexedDB stores file handles, so Save writes to the same file after a reload. The first save to a restored handle asks for write permission, and asks where to save if that's refused. Tabs share handles, and closing a document in any tab removes its handle.
 - The same file won't open twice. Matching uses file handles, so files opened without the File System Access API can't be matched.

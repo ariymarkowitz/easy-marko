@@ -2,6 +2,7 @@ import { createRoot, flush } from 'solid-js';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { openFile, saveFile } from '../lib/files';
 import { STORAGE_KEYS } from '../lib/storage';
+import welcome from '../content/welcome.md?raw';
 import {
   activeDocument,
   closeDocument,
@@ -10,6 +11,7 @@ import {
   type MarkdownDocument,
   newDocument,
   openDocument,
+  openWelcomeDocument,
   renameDocument,
   saveActiveDocument,
   selectDocument,
@@ -154,6 +156,28 @@ describe('closeDocument', () => {
     closeDocument(doc.id);
     flush();
     expect(isOpen(doc.id)).toBe(false);
+  });
+});
+
+describe('openWelcomeDocument', () => {
+  test('opens the original welcome text, and reuses a copy until it is edited', () => {
+    openWelcomeDocument();
+    flush();
+    const first = activeDocument()!;
+    expect(first).toMatchObject({ name: 'Welcome.md', content: welcome });
+    expect(hasUnsavedChanges(first)).toBe(false);
+
+    addDocument();
+    openWelcomeDocument();
+    flush();
+    expect(activeDocument()!.id).toBe(first.id);
+
+    edit(first.id, 'Edited');
+    openWelcomeDocument();
+    flush();
+    const second = activeDocument()!;
+    expect(second.id).not.toBe(first.id);
+    expect(second.content).toBe(welcome);
   });
 });
 
