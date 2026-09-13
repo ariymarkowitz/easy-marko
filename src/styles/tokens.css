@@ -40,6 +40,23 @@
   --radius: 6px;
   --content-width: 800px;
 
+  /* Rendered markdown (markdown.css). Em sizes follow the element's own font size. */
+  --md-block-gap: 1em;
+  --md-heading-margin: 1.7em;
+  /* Above a heading that starts the document. */
+  --md-heading-margin-first: 0.3em;
+  --md-list-indent: 1.5em;
+  --md-list-item-gap: 0.3em;
+  /* Between a list marker and its text. */
+  --md-marker-gap: 0.25em;
+  --md-bullet-size: 0.35em;
+  --md-bullet-stroke: 1px;
+  --md-checkbox-size: 0.9em;
+  --md-checkbox-gap: 0.5em;
+  --md-checkbox-stroke: 1.5px;
+  /* The tick's size relative to Lucide's square-check. */
+  --md-tick-scale: 1.67;
+
   /* Text and icons change quickly; larger surfaces fade a little slower. */
   --transition-colors:
     color 0.15s ease, fill 0.15s ease, stroke 0.15s ease, background-color 0.25s ease,

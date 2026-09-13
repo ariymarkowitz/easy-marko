@@ -24,11 +24,11 @@
 }
 
 .markdown :is(p, ul, ol, dl, blockquote, pre, table, details, figure) {
-  margin: 0 0 1em;
+  margin: 0 0 var(--md-block-gap);
 }
 
 .markdown :is(h1, h2, h3, h4, h5, h6) {
-  margin: 1.7em 0;
+  margin: var(--md-heading-margin) 0;
   font-weight: 800;
   line-height: 1.4;
   /* Trims the box to the cap height and baseline, so margins set the spacing. */
@@ -61,12 +61,12 @@
 }
 
 .markdown :is(ul, ol) {
-  padding-left: 1.25em;
+  padding-left: calc(var(--md-list-indent) - var(--md-marker-gap));
 }
 
 /* Markers sit outside the item's padding, so this widens the gap after them. */
 .markdown li {
-  padding-left: 0.25em;
+  padding-left: var(--md-marker-gap);
 }
 
 .markdown li > :is(ul, ol) {
@@ -74,14 +74,14 @@
 }
 
 .markdown :is(li + li, li > ul, li > ol) {
-  margin-top: 0.3em;
+  margin-top: var(--md-list-item-gap);
 }
 
 /*
  * Drawn bullets, since native ones can't be restyled and the hollow circle's
- * hairline stroke is hard to see in dark mode. They sit where native bullets
- * do: centred 0.54em left of the text and just below the middle of the first
- * line. The style follows the depth among bullet lists only.
+ * hairline stroke is hard to see in dark mode. They're centred where native
+ * bullets are: 0.54em outside the item's padding and just below the middle of
+ * the first line. The style follows the depth among bullet lists only.
  */
 .markdown ul > li {
   position: relative;
@@ -91,32 +91,27 @@
 }
 
 .markdown ul > li:not(.task-list-item)::before {
+  --size: var(--md-bullet-size);
   content: '';
   position: absolute;
-  top: calc(0.5lh - 0.11em);
-  left: -0.715em;
-  width: 0.35em;
-  height: 0.35em;
+  top: calc(0.5lh + 0.065em - var(--size) / 2);
+  left: calc(-0.54em - var(--size) / 2);
+  width: var(--size);
+  height: var(--size);
   box-sizing: border-box;
   border-radius: 50%;
   background-color: currentColor;
 }
 
-/* Half a stroke (0.5px) bigger than the others, with the same centre. */
+/* Half a stroke bigger than the others. */
 .markdown ul ul > li:not(.task-list-item)::before {
-  top: calc(0.5lh - 0.11em - 0.25px);
-  left: calc(-0.715em - 0.25px);
-  width: calc(0.35em + 0.5px);
-  height: calc(0.35em + 0.5px);
-  border: 1px solid currentColor;
+  --size: calc(var(--md-bullet-size) + var(--md-bullet-stroke) / 2);
+  border: var(--md-bullet-stroke) solid currentColor;
   background-color: transparent;
 }
 
 .markdown ul ul ul > li:not(.task-list-item)::before {
-  top: calc(0.5lh - 0.11em);
-  left: -0.715em;
-  width: 0.35em;
-  height: 0.35em;
+  --size: var(--md-bullet-size);
   border: none;
   border-radius: 0;
   background-color: currentColor;
@@ -134,13 +129,13 @@
   display: inline-block;
   /* Inputs don't inherit the font, which would shrink the em sizes here. */
   font: inherit;
-  width: 0.9em;
-  height: 0.9em;
+  width: var(--md-checkbox-size);
+  height: var(--md-checkbox-size);
   /* Its width plus margins nets to zero, so the text lines up with other items. */
-  margin: 0 0.5em 0 -1.4em;
+  margin: 0 var(--md-checkbox-gap) 0 calc(-1 * (var(--md-checkbox-size) + var(--md-checkbox-gap)));
   /* Centred on the capital letters (about 0.7em tall). */
-  vertical-align: -0.1em;
-  border: 1.5px solid var(--color-text-muted);
+  vertical-align: calc(0.35em - var(--md-checkbox-size) / 2);
+  border: var(--md-checkbox-stroke) solid var(--color-text-muted);
   border-radius: 4px;
 }
 
@@ -153,14 +148,14 @@
   content: '';
   position: absolute;
   /* Covers the border too, so the icon's square lines up with the box's border. */
-  inset: -1.5px;
+  inset: calc(-1 * var(--md-checkbox-stroke));
   background-color: var(--color-bg);
   /*
-   * The tick from Lucide's square-check. The viewBox is cropped closer than the
-   * square's outer edge (2 2 20 20), which scales the tick up.
+   * The tick from Lucide's square-check. The viewBox is cropped to the square's
+   * outer edge, so at a scale of 1 the tick fits the box as it does the icon.
    */
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='6 6 12 12' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E")
-    center / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2 2 20 20' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E")
+    center / calc(var(--md-tick-scale) * 100%) no-repeat;
 }
 
 .markdown blockquote {
