@@ -34,8 +34,6 @@ const theme = EditorView.theme({
     lineHeight: '1.6',
   },
   '.cm-content': {
-    maxWidth: 'var(--content-width)',
-    marginInline: 'auto',
     padding: 'var(--space-6) var(--space-4)',
     caretColor: 'var(--color-accent)',
   },

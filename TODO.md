@@ -28,7 +28,7 @@ What's built, and the behaviour decisions behind each item.
 - [x] System sans font for UI, system mono font for source
 - [x] Lucide icons
 - [x] Greyscale palette + accent; 0.15s text/icon and 0.25s background transitions
-- [x] 760px max content width
+- [x] 760px max content width in the preview; the source fills its pane
 - [x] Fluid preview type between 360px and 800px pane width (font size 1rem → 1.125rem, line height 1.4 → 1.6)
 - [x] Source syntax highlighting, including fenced code languages
 - [x] Highlight `$…$` / `$$…$$` maths in the source
