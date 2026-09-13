@@ -1,28 +1,12 @@
 // The folders the user has granted for showing local images, kept in IndexedDB
-// so later files inside them show their images straight away. Every access is
-// best effort.
+// so later files inside them show their images straight away.
 
-import { STORES, transaction } from './database';
+import { listStore, STORES } from './database';
 
-const KEY = 'list';
+const folders = listStore<FileSystemDirectoryHandle>(STORES.folders);
 
 /** The granted folders, or undefined if IndexedDB can't be read. */
-export async function readFolders(): Promise<FileSystemDirectoryHandle[] | undefined> {
-  try {
-    return (
-      (await transaction<FileSystemDirectoryHandle[] | undefined>(STORES.folders, 'readonly', (store) =>
-        store.get(KEY),
-      )) ?? []
-    );
-  } catch {
-    return undefined;
-  }
-}
+export const readFolders = folders.read;
 
-export async function writeFolders(folders: readonly FileSystemDirectoryHandle[]): Promise<void> {
-  try {
-    await transaction(STORES.folders, 'readwrite', (store) => store.put(folders, KEY));
-  } catch {
-    // Best effort: without it, images need access granting again after a reload.
-  }
-}
+/** Best effort: without it, images need access granting again after a reload. */
+export const writeFolders = folders.write;

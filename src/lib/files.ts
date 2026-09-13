@@ -2,6 +2,8 @@
 // (so saves go back to the same file) and falls back to a file input and a
 // download link elsewhere.
 
+import { isDomError, requestAccess } from './file-access';
+
 export interface SavedFile {
   name: string;
   handle?: FileSystemFileHandle;
@@ -33,12 +35,8 @@ const pickerTypes = (type: FileType) => [{ description: type.description, accept
 /** The files the app opens, as a manifest `accept` value. */
 export const fileTypes = accept(markdownFile);
 
-function isAbort(error: unknown): boolean {
-  return error instanceof DOMException && error.name === 'AbortError';
-}
-
 /** Reads `file` as text. Rejects if it isn't a text file. */
-async function readText(file: Pick<File, 'name' | 'text'>): Promise<string> {
+async function readTextFile(file: Pick<File, 'name' | 'text'>): Promise<string> {
   const content = await file.text();
   // Runs of control characters mean binary data (the same test CodeMirror uses for drops).
   // eslint-disable-next-line no-control-regex -- matching control characters is the point
@@ -49,11 +47,11 @@ async function readText(file: Pick<File, 'name' | 'text'>): Promise<string> {
 /** Reads the file behind `handle`. Rejects if it isn't a text file. */
 export async function readFileHandle(handle: FileSystemFileHandle): Promise<OpenedFile> {
   const file = await handle.getFile();
-  return { name: file.name, content: await readText(file), handle };
+  return { name: file.name, content: await readTextFile(file), handle };
 }
 
 /** Whether a drag carries files, rather than text or a link. */
-export function carriesFiles(data: DataTransfer | null): boolean {
+export function carriesFiles(data: DataTransfer | null): data is DataTransfer {
   return data?.types.includes('Files') ?? false;
 }
 
@@ -76,7 +74,7 @@ async function readDroppedFile(
   if (entry?.kind === 'directory') throw new Error(`${entry.name} is a folder.`);
   if (entry) return readFileHandle(entry as FileSystemFileHandle);
   if (!file) throw new Error("The dropped item isn't a file.");
-  return { name: file.name, content: await readText(file) };
+  return { name: file.name, content: await readTextFile(file) };
 }
 
 /** Asks for a file to open. Resolves undefined if cancelled; rejects if it isn't a text file. */
@@ -86,7 +84,7 @@ export async function openFile(): Promise<OpenedFile | undefined> {
     const [handle] = await window.showOpenFilePicker({ types: pickerTypes(markdownFile) });
     return await readFileHandle(handle);
   } catch (error) {
-    if (isAbort(error)) return undefined;
+    if (isDomError(error, 'AbortError')) return undefined;
     throw error;
   }
 }
@@ -98,7 +96,7 @@ function openWithInput(): Promise<OpenedFile | undefined> {
     input.accept = [...markdownFile.extensions, markdownFile.mimeType, 'text/plain'].join(',');
     input.addEventListener('change', () => {
       const file = input.files?.[0];
-      if (file) readText(file).then((content) => resolve({ name: file.name, content }), reject);
+      if (file) readTextFile(file).then((content) => resolve({ name: file.name, content }), reject);
       else resolve(undefined);
     });
     input.addEventListener('cancel', () => resolve(undefined));
@@ -106,20 +104,17 @@ function openWithInput(): Promise<OpenedFile | undefined> {
   });
 }
 
-/**
- * Whether the page may read (or, with 'readwrite', write) `handle`, asking the
- * user if needed. Handles restored from IndexedDB start without permission.
- * Asking needs a user gesture, so call this straight from one.
- */
-export async function requestAccess(
-  handle: FileSystemFileHandle,
-  mode: 'read' | 'readwrite',
-): Promise<boolean> {
-  const descriptor = { mode };
-  // Browsers without the permission methods grant access with the handle.
-  if (!handle.queryPermission || !handle.requestPermission) return true;
-  if ((await handle.queryPermission(descriptor)) === 'granted') return true;
-  return (await handle.requestPermission(descriptor)) === 'granted';
+/** Where to save: `handle` if writing to it is allowed, else a picked file, else undefined to download. */
+async function saveTarget(
+  name: string,
+  type: FileType,
+  handle: FileSystemFileHandle | undefined,
+): Promise<FileSystemFileHandle | undefined> {
+  if (handle && (await requestAccess(handle, 'readwrite'))) return handle;
+  if (typeof window.showSaveFilePicker === 'function') {
+    return window.showSaveFilePicker({ suggestedName: name, types: pickerTypes(type) });
+  }
+  return undefined;
 }
 
 /**
@@ -134,12 +129,7 @@ export async function saveFile(
   { handle, type = markdownFile }: { handle?: FileSystemFileHandle; type?: FileType } = {},
 ): Promise<SavedFile | undefined> {
   try {
-    const permitted = handle && (await requestAccess(handle, 'readwrite')) ? handle : undefined;
-    const target =
-      permitted ??
-      (typeof window.showSaveFilePicker === 'function'
-        ? await window.showSaveFilePicker({ suggestedName: name, types: pickerTypes(type) })
-        : undefined);
+    const target = await saveTarget(name, type, handle);
     const text = typeof content === 'string' ? content : await content();
     if (!target) {
       download(name, text, type.mimeType);
@@ -150,7 +140,7 @@ export async function saveFile(
     await writable.close();
     return { name: target.name, handle: target };
   } catch (error) {
-    if (isAbort(error)) return undefined;
+    if (isDomError(error, 'AbortError')) return undefined;
     throw error;
   }
 }

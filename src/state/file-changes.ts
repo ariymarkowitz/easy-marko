@@ -1,4 +1,5 @@
 import { createEffect, untrack } from 'solid-js';
+import { hasAccess } from '../lib/file-access';
 import { hashText } from '../lib/hash';
 import { useListeners } from '../reactive';
 import {
@@ -11,7 +12,7 @@ import {
 import { showNotice } from './notices';
 
 /** How often files are checked while the page is visible, besides whenever the window gains focus. */
-export const FILE_CHECK_INTERVAL = 2000;
+const FILE_CHECK_INTERVAL = 2000;
 
 interface Watched {
   handle: FileSystemFileHandle;
@@ -23,12 +24,6 @@ interface Watched {
 
 /** What's known about each linked document's file, by document id. */
 const watched = new Map<string, Watched>();
-
-/** Whether the page may read `handle` without asking. Asking needs a user gesture, so checks don't. */
-async function canRead(handle: FileSystemFileHandle): Promise<boolean> {
-  if (!handle.queryPermission) return true;
-  return (await handle.queryPermission({ mode: 'read' })) === 'granted';
-}
 
 function forget(id: string): void {
   watched.get(id)?.notice?.dismiss();
@@ -43,14 +38,15 @@ async function checkDocument(id: string, handle: FileSystemFileHandle): Promise<
     watched.set(id, entry);
   }
 
-  const readable = await canRead(handle).catch(() => false);
+  // Asking for permission needs a user gesture, so files the page may not read are skipped.
+  const readable = await hasAccess(handle);
   // Rejects if the file was moved or deleted.
   const file = readable ? await handle.getFile().catch(() => undefined) : undefined;
   if (!file || file.lastModified === entry.lastModified) return;
   const content = await file.text().catch(() => undefined);
   const doc = documentsState.documents.find((d) => d.id === id);
   // Read again next time: the document was closed, relinked or saved during the read.
-  if (content === undefined || !doc || documentFile(id) !== handle || isSaving(id)) return;
+  if (content === undefined || !doc || documentFile(doc) !== handle || isSaving(id)) return;
   entry.lastModified = file.lastModified;
 
   const hash = hashText(content);
@@ -89,7 +85,7 @@ export function checkFiles(): Promise<void> {
   running ??= (async () => {
     const linked = new Map<string, FileSystemFileHandle>();
     for (const doc of documentsState.documents) {
-      const handle = documentFile(doc.id);
+      const handle = documentFile(doc);
       if (handle) linked.set(doc.id, handle);
     }
     for (const id of watched.keys()) {

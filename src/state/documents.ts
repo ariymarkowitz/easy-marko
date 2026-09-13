@@ -1,15 +1,16 @@
 import { createEffect, createStore, deep, flush, reconcile, snapshot } from 'solid-js';
 import { clamp } from '../lib/clamp';
 import { exportHtml } from '../lib/export-html';
-import { type OpenedFile, openFile, readFileHandle, requestAccess, saveFile } from '../lib/files';
-import { readFolders } from '../lib/folder-store';
+import { isDomError, requestAccess } from '../lib/file-access';
+import { type OpenedFile, openFile, readFileHandle, saveFile } from '../lib/files';
 import { deleteHandles, readHandles, storeHandle } from '../lib/handle-store';
 import { hashText } from '../lib/hash';
 import { localImageReader } from '../lib/local-images';
 import { mergeById } from '../lib/merge';
 import { parseJSON, readText, STORAGE_KEYS, writeText } from '../lib/storage';
 import { useListeners } from '../reactive';
-import { showNotice } from './notices';
+import { grantedFolders } from './granted-folders';
+import { errorMessage, showNotice } from './notices';
 import { forgetFile, rememberFile } from './recent-files';
 import { theme } from './theme';
 import welcomeSource from '../content/welcome.md?raw';
@@ -81,6 +82,15 @@ const [state, setState] = createStore<DocumentsState>(initialState());
 
 export { state as documentsState };
 
+export const activeDocument = (): MarkdownDocument | undefined =>
+  state.documents.find((doc) => doc.id === state.activeId);
+
+export function hasUnsavedChanges(doc: MarkdownDocument): boolean {
+  return hashText(doc.content) !== doc.savedHash;
+}
+
+// File links
+
 /**
  * File System Access API handles by document id: this tab's copy of the
  * handles in IndexedDB, which all tabs share. A tab stores the handles it gets
@@ -135,12 +145,35 @@ async function loadFileHandles(prune = false): Promise<void> {
   if (unused.length > 0) void deleteHandles(unused);
 }
 
-export const activeDocument = (): MarkdownDocument | undefined =>
-  state.documents.find((doc) => doc.id === state.activeId);
-
-export function hasUnsavedChanges(doc: MarkdownDocument): boolean {
-  return hashText(doc.content) !== doc.savedHash;
+/**
+ * The handle of the file that `doc` was opened from or last saved to, while
+ * the document still has the file's name. Renaming a document unlinks it from
+ * its file: the next save asks where to save it under the new name, and
+ * opening the file again opens a new document. Renaming it back relinks it.
+ */
+export function documentFile(doc: MarkdownDocument): FileSystemFileHandle | undefined {
+  const handle = fileHandles.get(doc.id);
+  return handle?.name === doc.name ? handle : undefined;
 }
+
+/** The file linked to the open document with `id`, once the stored handles have loaded. See documentFile. */
+export async function loadDocumentFile(id: string): Promise<FileSystemFileHandle | undefined> {
+  await handlesLoaded;
+  const doc = state.documents.find((d) => d.id === id);
+  return doc && documentFile(doc);
+}
+
+/** The id of the open document backed by the same file as `handle`, if any. */
+async function findDocumentForFile(handle: FileSystemFileHandle): Promise<string | undefined> {
+  await handlesLoaded;
+  for (const doc of state.documents) {
+    const existing = documentFile(doc);
+    if (existing && (await existing.isSameEntry(handle))) return doc.id;
+  }
+  return undefined;
+}
+
+// Document actions
 
 export function selectDocument(id: string): void {
   setState((draft) => {
@@ -192,6 +225,22 @@ export function updateContent(id: string, content: string): void {
   updateDocument(id, { content });
 }
 
+/** Replaces a document's content with its file's, as read from disk. It then has no unsaved changes. */
+export function reloadDocument(id: string, content: string): void {
+  updateDocument(id, { content, savedHash: hashText(content) });
+}
+
+/**
+ * Renames a document, trimming the name. Returns false, leaving the name as
+ * it was, if the name is empty. See documentFile for documents with files.
+ */
+export function renameDocument(id: string, name: string): boolean {
+  const trimmed = name.trim();
+  if (!trimmed) return false;
+  updateDocument(id, { name: trimmed });
+  return true;
+}
+
 /**
  * Removes a document from the app, asking first if it has unsaved changes.
  * The file on disk, if any, is untouched.
@@ -217,66 +266,33 @@ export function closeDocument(id: string): void {
   });
 }
 
+// File actions
+
 function reportFileError(action: 'open' | 'save' | 'export', error: unknown): undefined {
   console.error(error);
-  const reason = error instanceof Error ? error.message : String(error);
-  showNotice(`Couldn't ${action} the file: ${reason}`, { tone: 'error' });
-  return undefined;
-}
-
-/**
- * The handle of the file that `doc` was opened from or last saved to, while
- * the document still has the file's name. Renaming a document unlinks it from
- * its file: the next save asks where to save it under the new name, and
- * opening the file again opens a new document. Renaming it back relinks it.
- */
-function linkedFileHandle(doc: MarkdownDocument): FileSystemFileHandle | undefined {
-  const handle = fileHandles.get(doc.id);
-  return handle?.name === doc.name ? handle : undefined;
-}
-
-/** The file that the open document with `id` is linked to, if any. See linkedFileHandle. */
-export function documentFile(id: string): FileSystemFileHandle | undefined {
-  const doc = state.documents.find((d) => d.id === id);
-  return doc && linkedFileHandle(doc);
-}
-
-/** Replaces a document's content with its file's, as read from disk. It then has no unsaved changes. */
-export function reloadDocument(id: string, content: string): void {
-  updateDocument(id, { content, savedHash: hashText(content) });
-}
-
-/** Ids of the documents being saved, whose files may be part-written. */
-const savingIds = new Set<string>();
-
-export const isSaving = (id: string): boolean => savingIds.has(id);
-
-/** The id of the open document backed by the same file as `handle`, if any. */
-async function findDocumentForFile(handle: FileSystemFileHandle): Promise<string | undefined> {
-  await handlesLoaded;
-  for (const doc of state.documents) {
-    const existing = linkedFileHandle(doc);
-    if (existing && (await existing.isSameEntry(handle))) return doc.id;
-  }
+  showNotice(`Couldn't ${action} the file: ${errorMessage(error)}`, { tone: 'error' });
   return undefined;
 }
 
 /** Opens `file` as a new document, or switches to its document if the file is already open. */
 async function openFileDocument(file: OpenedFile): Promise<void> {
-  if (file.handle) void rememberFile(file.handle);
-  const openId = file.handle && (await findDocumentForFile(file.handle));
-  if (openId) {
-    selectDocument(openId);
-    return;
+  const { handle } = file;
+  if (handle) {
+    void rememberFile(handle);
+    const openId = await findDocumentForFile(handle);
+    if (openId) {
+      selectDocument(openId);
+      return;
+    }
   }
   const doc = createDocument(file.name, file.content);
   addDocument(doc);
-  if (file.handle) {
+  if (handle) {
     // Back up the document before storing its handle, so that a tab starting
     // in between doesn't take the handle for a closed document's and remove it.
     flush();
     syncBackup();
-    setFileHandle(doc.id, file.handle);
+    setFileHandle(doc.id, handle);
   }
 }
 
@@ -301,7 +317,7 @@ export async function openRecentFile(handle: FileSystemFileHandle): Promise<void
     if (!(await requestAccess(handle, 'read'))) return;
     await openFileDocument(await readFileHandle(handle));
   } catch (error) {
-    if (!(error instanceof DOMException && error.name === 'NotFoundError')) {
+    if (!isDomError(error, 'NotFoundError')) {
       reportFileError('open', error);
       return;
     }
@@ -325,16 +341,10 @@ export async function openFiles(files: Iterable<Promise<OpenedFile>>): Promise<v
   }
 }
 
-/**
- * Renames a document, trimming the name. Returns false, leaving the name as
- * it was, if the name is empty. See linkedFileHandle for documents with files.
- */
-export function renameDocument(id: string, name: string): boolean {
-  const trimmed = name.trim();
-  if (!trimmed) return false;
-  updateDocument(id, { name: trimmed });
-  return true;
-}
+/** Ids of the documents being saved, whose files may be part-written. */
+const savingIds = new Set<string>();
+
+export const isSaving = (id: string): boolean => savingIds.has(id);
 
 export async function saveActiveDocument(): Promise<void> {
   const doc = activeDocument();
@@ -342,8 +352,7 @@ export async function saveActiveDocument(): Promise<void> {
   const { id, name, content } = doc;
   savingIds.add(id);
   try {
-    await handlesLoaded;
-    const handle = linkedFileHandle(doc);
+    const handle = await loadDocumentFile(id);
     const saved = await saveFile(name, content, { handle }).catch((error) =>
       reportFileError('save', error),
     );
@@ -365,19 +374,14 @@ export async function saveActiveDocument(): Promise<void> {
 export async function exportActiveDocument(): Promise<void> {
   const doc = activeDocument();
   if (!doc) return;
-  const { name, content } = doc;
+  const { id, name, content } = doc;
   const colorScheme = theme();
-  await handlesLoaded;
-  const file = linkedFileHandle(doc);
-  const readImage = file && localImageReader(readFolders().then((folders) => folders ?? []), file);
+  const file = await loadDocumentFile(id);
+  const readImage = file && localImageReader(grantedFolders(), file);
   await exportHtml(name, content, { readImage, colorScheme }).catch((error) => reportFileError('export', error));
 }
 
-/** The file linked to the document with `id`, once the stored handles have loaded. */
-export async function loadDocumentFile(id: string): Promise<FileSystemFileHandle | undefined> {
-  await handlesLoaded;
-  return documentFile(id);
-}
+// Backup sync
 
 const sameDocument = (a: MarkdownDocument, b: MarkdownDocument): boolean =>
   a.name === b.name && a.content === b.content && a.savedHash === b.savedHash;

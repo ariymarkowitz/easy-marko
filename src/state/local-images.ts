@@ -1,17 +1,18 @@
 import { createEffect, createSignal } from 'solid-js';
-import { readFolders, writeFolders } from '../lib/folder-store';
+import { hasAccess } from '../lib/file-access';
 import {
-  canReadFolder,
   type FileLocation,
   type LocalImage,
   locateFile,
+  pickFolder,
   readFolderFile,
   resolvePath,
   showLocalImages,
 } from '../lib/local-images';
 import { useListeners } from '../reactive';
 import { activeDocument, loadDocumentFile } from './documents';
-import { showNotice } from './notices';
+import { addGrantedFolder, grantedFolders, reloadGrantedFolders } from './granted-folders';
+import { errorMessage, showNotice } from './notices';
 
 /** What the preview can do for the active document's local images. */
 type Access =
@@ -25,11 +26,6 @@ const [access, setAccess] = createSignal<Access>({ status: 'unavailable' });
 
 /** Counts finished image reads, so the preview shows them. */
 const [imagesRead, setImagesRead] = createSignal(0);
-
-/** The granted folders, loaded from IndexedDB when first needed. */
-let folders: Promise<FileSystemDirectoryHandle[]> | undefined;
-
-const storedFolders = () => (folders ??= readFolders().then((list) => list ?? []));
 
 /** Read images by folder, then by path in the folder. Kept while the page is open. */
 const images = new WeakMap<FileSystemDirectoryHandle, Map<string, LocalImage>>();
@@ -55,22 +51,22 @@ function imageIn(folder: FileSystemDirectoryHandle, path: string[]): LocalImage 
   return loading;
 }
 
-/** Counts refreshes, so an older one that finishes late doesn't overwrite a newer one. */
-let refreshes = 0;
+/** Counts access updates, so an older one that finishes late doesn't overwrite a newer one. */
+let accessUpdates = 0;
 
-async function refresh(documentId: string | undefined): Promise<void> {
-  const run = ++refreshes;
+async function updateAccess(documentId: string | undefined): Promise<void> {
+  const run = ++accessUpdates;
   const supported = typeof window.showDirectoryPicker === 'function';
   const file = documentId && supported ? await loadDocumentFile(documentId) : undefined;
   let next: Access = { status: 'unavailable' };
   if (file) {
-    const location = await locateFile(await storedFolders(), file);
+    const location = await locateFile(await grantedFolders(), file);
     next =
-      location && (await canReadFolder(location.folder))
+      location && (await hasAccess(location.folder))
         ? { status: 'granted', file, location }
         : { status: 'prompt', file, location };
   }
-  if (run === refreshes) setAccess(next);
+  if (run === accessUpdates) setAccess(next);
 }
 
 /**
@@ -81,6 +77,7 @@ async function refresh(documentId: string | undefined): Promise<void> {
  */
 export function withLocalImages(html: string): string {
   const current = access();
+  // Re-render as images finish loading.
   imagesRead();
   if (current.status === 'unavailable') return html;
   return showLocalImages(html, (src) => {
@@ -101,39 +98,25 @@ export async function allowImageAccess(): Promise<void> {
   if (current.status === 'unavailable') return;
   const { file } = current;
 
-  if (current.status === 'prompt' && current.location?.folder.requestPermission) {
-    const permission = await current.location.folder.requestPermission({ mode: 'read' });
-    if (permission === 'granted') void refresh(activeDocument()?.id);
+  const stored = current.status === 'prompt' ? current.location?.folder : undefined;
+  if (stored?.requestPermission) {
+    if ((await stored.requestPermission({ mode: 'read' })) === 'granted') void updateAccess(activeDocument()?.id);
     return;
   }
 
-  let folder: FileSystemDirectoryHandle;
-  try {
-    folder = await window.showDirectoryPicker!({ startIn: file, mode: 'read' });
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') return;
-    showNotice(`Couldn't open the folder: ${error instanceof Error ? error.message : String(error)}`, {
-      tone: 'error',
-    });
-    return;
-  }
+  const folder = await pickFolder(file).catch((error: unknown) => {
+    showNotice(`Couldn't open the folder: ${errorMessage(error)}`, { tone: 'error' });
+    return undefined;
+  });
+  if (!folder) return;
   if (!(await folder.resolve(file))) {
     showNotice(`${file.name} isn't in ${folder.name}. Choose its folder, or a folder above it.`, {
       tone: 'error',
     });
     return;
   }
-
-  // Picks up folders other tabs granted, and replaces any stored copy of this one.
-  const stored = (await readFolders()) ?? (await storedFolders());
-  const others: FileSystemDirectoryHandle[] = [];
-  for (const entry of stored) {
-    if (!(await entry.isSameEntry(folder))) others.push(entry);
-  }
-  const list = [...others, folder];
-  folders = Promise.resolve(list);
-  await writeFolders(list);
-  await refresh(activeDocument()?.id);
+  await addGrantedFolder(folder);
+  await updateAccess(activeDocument()?.id);
 }
 
 /**
@@ -150,7 +133,7 @@ export function useLocalImages(): void {
       return doc ? `${doc.id}\n${doc.name}\n${doc.savedHash}` : '';
     },
     (key) => {
-      void refresh(key.split('\n')[0] || undefined);
+      void updateAccess(key.split('\n')[0] || undefined);
     },
     { name: 'localImages' },
   );
@@ -158,8 +141,8 @@ export function useLocalImages(): void {
   useListeners(window, {
     focus: () => {
       if (access().status !== 'prompt') return;
-      folders = undefined;
-      void refresh(activeDocument()?.id);
+      reloadGrantedFolders();
+      void updateAccess(activeDocument()?.id);
     },
   });
 }

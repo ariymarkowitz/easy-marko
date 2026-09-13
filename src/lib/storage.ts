@@ -22,7 +22,7 @@ export function writeText(key: string, value: string): boolean {
     localStorage.setItem(key, value);
     return true;
   } catch {
-    // Best effort: the backup is a convenience, not the source of truth.
+    // Callers that need to know check the result.
     return false;
   }
 }

@@ -1,7 +1,6 @@
-// File handles kept in IndexedDB, keyed by document id, so saves can go back
-// to the same file after a reload. Handles can't go in localStorage, but
-// IndexedDB can store them. Every access is best effort: reads give undefined
-// and writes are dropped.
+// File handles by document id, so saves go back to the same file after a
+// reload. Every access is best effort: reads give undefined and writes are
+// dropped.
 
 import { STORES, transaction } from './database';
 

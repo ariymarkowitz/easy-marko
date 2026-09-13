@@ -2,6 +2,7 @@
 // Access API from a folder the user has granted. Chromium only.
 
 import { ImageOff } from 'lucide';
+import { hasAccess, isDomError } from './file-access';
 import { iconMarkup } from './icon-markup';
 
 /** Whether `src` is a path relative to the document, rather than a URL, an absolute path or a fragment. */
@@ -65,14 +66,18 @@ export async function locateFile(
   return best;
 }
 
-/** Whether the page may read `folder` without asking. */
-export async function canReadFolder(folder: FileSystemDirectoryHandle): Promise<boolean> {
-  if (!folder.queryPermission) return true;
-  return (await folder.queryPermission({ mode: 'read' }).catch(() => 'denied')) === 'granted';
+/** Asks for a folder to read, starting at `file`'s. Resolves undefined if cancelled. */
+export async function pickFolder(file: FileSystemFileHandle): Promise<FileSystemDirectoryHandle | undefined> {
+  try {
+    return await window.showDirectoryPicker!({ startIn: file, mode: 'read' });
+  } catch (error) {
+    if (isDomError(error, 'AbortError')) return undefined;
+    throw error;
+  }
 }
 
 /** Reads `blob` as a data URL, for embedding in exported HTML. */
-export function blobToDataUrl(blob: Blob): Promise<string> {
+function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
@@ -92,7 +97,7 @@ export type LocalImage =
 
 const imageOffIcon = `<svg class="local-image-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${iconMarkup(ImageOff)}</svg>`;
 
-function placeholder(img: HTMLImageElement, src: string, status: 'missing' | 'no-access'): HTMLElement {
+function placeholder(alt: string, src: string, status: 'missing' | 'no-access'): HTMLElement {
   let path = src;
   try {
     path = decodeURI(src);
@@ -104,7 +109,7 @@ function placeholder(img: HTMLImageElement, src: string, status: 'missing' | 'no
   box.innerHTML = imageOffIcon;
   const label = box.appendChild(document.createElement('span'));
   label.className = 'local-image-label';
-  label.textContent = img.alt || path;
+  label.textContent = alt || path;
   if (status === 'missing') {
     box.title = `${path} wasn't found`;
     label.textContent += ' (not found)';
@@ -118,18 +123,21 @@ function placeholder(img: HTMLImageElement, src: string, status: 'missing' | 'no
   return box;
 }
 
-/** The images in `root` whose `src` is a relative path, with that path. */
-function relativeImages(root: ParentNode): [HTMLImageElement, string][] {
-  return [...root.querySelectorAll('img')].flatMap((img) => {
-    const src = img.getAttribute('src');
-    return src !== null && isRelativePath(src) ? [[img, src] as [HTMLImageElement, string]] : [];
-  });
+interface RelativeImages {
+  template: HTMLTemplateElement;
+  images: { img: HTMLImageElement; src: string }[];
 }
 
-function parseHtml(html: string): HTMLTemplateElement {
+/** `html` parsed, with its images whose `src` is a relative path, or undefined if it has none. */
+function parseRelativeImages(html: string): RelativeImages | undefined {
+  if (!html.includes('<img')) return undefined;
   const template = document.createElement('template');
   template.innerHTML = html;
-  return template;
+  const images = [...template.content.querySelectorAll('img')].flatMap((img) => {
+    const src = img.getAttribute('src');
+    return src !== null && isRelativePath(src) ? [{ img, src }] : [];
+  });
+  return images.length > 0 ? { template, images } : undefined;
 }
 
 /**
@@ -139,17 +147,15 @@ function parseHtml(html: string): HTMLTemplateElement {
  * access have an "Allow access" button (`.local-image-allow`).
  */
 export function showLocalImages(html: string, imageFor: (src: string) => LocalImage): string {
-  if (!html.includes('<img')) return html;
-  const template = parseHtml(html);
-  const images = relativeImages(template.content);
-  if (images.length === 0) return html;
-  for (const [img, src] of images) {
+  const parsed = parseRelativeImages(html);
+  if (!parsed) return html;
+  for (const { img, src } of parsed.images) {
     const image = imageFor(src);
     if (image.status === 'loaded') img.src = image.url;
     else if (image.status === 'loading') img.removeAttribute('src');
-    else img.replaceWith(placeholder(img, src, image.status));
+    else img.replaceWith(placeholder(img.alt, src, image.status));
   }
-  return template.innerHTML;
+  return parsed.template.innerHTML;
 }
 
 /** Sanitised HTML with its relatively addressed images embedded as the data URLs `read` gives, where it gives one. */
@@ -157,17 +163,15 @@ export async function embedLocalImages(
   html: string,
   read: (src: string) => Promise<string | undefined>,
 ): Promise<string> {
-  if (!html.includes('<img')) return html;
-  const template = parseHtml(html);
-  const images = relativeImages(template.content);
-  if (images.length === 0) return html;
+  const parsed = parseRelativeImages(html);
+  if (!parsed) return html;
   await Promise.all(
-    images.map(async ([img, src]) => {
+    parsed.images.map(async ({ img, src }) => {
       const url = await read(src).catch(() => undefined);
       if (url) img.src = url;
     }),
   );
-  return template.innerHTML;
+  return parsed.template.innerHTML;
 }
 
 /**
@@ -180,7 +184,7 @@ export function localImageReader(
 ): (src: string) => Promise<string | undefined> {
   const location = folders.then(async (list) => {
     const found = await locateFile(list, file);
-    return found && (await canReadFolder(found.folder)) ? found : undefined;
+    return found && (await hasAccess(found.folder)) ? found : undefined;
   });
   return async (src) => {
     const found = await location;

@@ -63,3 +63,8 @@ export function showNotice(message: string, options: NoticeOptions = {}): () => 
 export function dismissNotice(id: number): void {
   setNotices((list) => list.filter((notice) => notice.id !== id));
 }
+
+/** A caught error's message, for showing in a notice. */
+export function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}

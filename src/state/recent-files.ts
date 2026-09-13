@@ -1,8 +1,7 @@
 import { createSignal } from 'solid-js';
+import { withoutEntry } from '../lib/file-access';
 import { type RecentFile, readRecentFiles, writeRecentFiles } from '../lib/recent-store';
 import { useListeners } from '../reactive';
-
-export type { RecentFile };
 
 /** How many files the list keeps. */
 export const RECENT_FILES_LIMIT = 10;
@@ -24,21 +23,14 @@ async function update(list: readonly RecentFile[]): Promise<void> {
 
 /** Puts the file behind `handle` at the top of the recent files. */
 export async function rememberFile(handle: FileSystemFileHandle): Promise<void> {
-  const list = await currentList();
-  const others: RecentFile[] = [];
-  for (const entry of list) {
-    if (!(await entry.handle.isSameEntry(handle))) others.push(entry);
-  }
+  const others = await withoutEntry(await currentList(), handle, (file) => file.handle);
   await update([{ name: handle.name, handle }, ...others].slice(0, RECENT_FILES_LIMIT));
 }
 
 /** Removes the file behind `handle` from the recent files. */
 export async function forgetFile(handle: FileSystemFileHandle): Promise<void> {
   const list = await currentList();
-  const kept: RecentFile[] = [];
-  for (const entry of list) {
-    if (!(await entry.handle.isSameEntry(handle))) kept.push(entry);
-  }
+  const kept = await withoutEntry(list, handle, (file) => file.handle);
   if (kept.length !== list.length) await update(kept);
 }
 

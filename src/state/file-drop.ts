@@ -30,13 +30,13 @@ export function useFileDrop(): void {
       if (depth === 0) setDraggingFiles(false);
     },
     dragover: (event) => {
-      if (!event.dataTransfer || !carriesFiles(event.dataTransfer)) return;
+      if (!carriesFiles(event.dataTransfer)) return;
       // Allows the drop. Otherwise the browser opens the file in place of the app.
       event.preventDefault();
       event.dataTransfer.dropEffect = 'copy';
     },
     drop: (event) => {
-      if (!event.dataTransfer || !carriesFiles(event.dataTransfer)) return;
+      if (!carriesFiles(event.dataTransfer)) return;
       event.preventDefault();
       depth = 0;
       setDraggingFiles(false);

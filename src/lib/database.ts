@@ -17,7 +17,7 @@ export const STORES = {
   folders: 'folders',
 } as const;
 
-type Store = (typeof STORES)[keyof typeof STORES];
+type StoreName = (typeof STORES)[keyof typeof STORES];
 
 const VERSION = 3;
 
@@ -54,7 +54,7 @@ function openDatabase(): Promise<IDBDatabase> {
 
 /** Runs `use` in a transaction on `store` and resolves when the transaction completes. */
 export async function transaction<T>(
-  store: Store,
+  store: StoreName,
   mode: IDBTransactionMode,
   use: (store: IDBObjectStore) => IDBRequest<T> | void,
 ): Promise<T | undefined> {
@@ -66,4 +66,32 @@ export async function transaction<T>(
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
   });
+}
+
+const LIST_KEY = 'list';
+
+/**
+ * Reading and writing a store that holds one list, whole. Best effort: `read`
+ * gives undefined if IndexedDB can't be read, and a failed `write` is dropped.
+ */
+export function listStore<T>(store: StoreName): {
+  read: () => Promise<T[] | undefined>;
+  write: (list: readonly T[]) => Promise<void>;
+} {
+  return {
+    read: async () => {
+      try {
+        return (await transaction<T[] | undefined>(store, 'readonly', (s) => s.get(LIST_KEY))) ?? [];
+      } catch {
+        return undefined;
+      }
+    },
+    write: async (list) => {
+      try {
+        await transaction(store, 'readwrite', (s) => s.put(list, LIST_KEY));
+      } catch {
+        // Best effort: see each store for what's lost.
+      }
+    },
+  };
 }

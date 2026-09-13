@@ -27,11 +27,12 @@ This is a SolidJS 2.x project. Solid is not React: components run once (there is
 - `src/app-info.ts`: the app's name, description and browser-UI colours, shared by `Document.tsx` and the manifest in `vite.config.ts`.
 - `src/components/`: UI components.
 - `src/state/`: app state as module-level signals and stores, action functions, and `use*` hooks for their effects (persistence, cross-tab backup sync, theme sync).
-  - `notices.ts`: `showNotice()` for in-app messages and errors (no `alert()`). Rendered by `components/Notices.tsx`.
+  - `notices.ts`: `showNotice()` for in-app messages and errors (no `alert()`), and `errorMessage()` to show a caught error. Rendered by `components/Notices.tsx`.
+  - `granted-folders.ts`: the cached list of folders granted for local images, used by the preview and HTML export.
   - `layout.ts`: what the layout shows, from the settings and window width (narrow windows overlay the sidebar and have no split view). Read `viewMode()`/`sidebarOpen()` from it, not the stored settings.
   - `pane-link.ts`: scroll sync and alt-click jumps between the source and preview. Relies on the preview blocks' `data-line`/`data-end-line` attributes.
 - `src/editor/`: CodeMirror extensions/theme, plus the controller other modules use to reach the editor.
-- `src/lib/`: framework-free helpers (markdown rendering in `markdown.ts`, with syntax plugins (maths, task lists, footnotes, alerts) and top-level block splitting (`markdown-blocks.ts`) in `markdown-*.ts`, HTML sanitising, code highlighting, HTML export, local images (`local-images.ts`), files, storage (localStorage in `storage.ts`, IndexedDB stores in `database.ts`), backup merging, scroll mapping, text stats, pointer drags that outlive their element (`drag.ts`), `events.ts` for adding and removing a group of DOM listeners together).
+- `src/lib/`: framework-free helpers (markdown rendering in `markdown.ts`, with syntax plugins (maths, task lists, footnotes, alerts) and top-level block splitting (`markdown-blocks.ts`) in `markdown-*.ts`, HTML sanitising, code highlighting, HTML export, local images (`local-images.ts`), files, file handle permissions and identity (`file-access.ts`), storage (localStorage in `storage.ts`, IndexedDB stores in `database.ts`), backup merging, scroll mapping, text stats, pointer drags that outlive their element (`drag.ts`), `events.ts` for adding and removing a group of DOM listeners together).
 - `src/reactive.ts`: Solid primitives with no app knowledge: `createMediaQuery` for a media query as a signal, `createAttachment` for publishing something a component mounts, `useListeners` for DOM listeners that last as long as the current owner.
 - `src/shortcuts.ts`: app-wide keyboard shortcuts. `src/pwa.ts`: service worker registration.
 - `src/content/welcome.md`: the document opened on first run.
