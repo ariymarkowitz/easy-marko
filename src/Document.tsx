@@ -18,9 +18,9 @@ export default function Document(props: ParentProps) {
         <meta name="description" content="A minimal markdown editor that works offline." />
         <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f6f6" />
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1e1e1e" />
-        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="icon" href={`${import.meta.env.BASE_URL}icon.svg`} type="image/svg+xml" />
+        <link rel="apple-touch-icon" href={`${import.meta.env.BASE_URL}apple-touch-icon.png`} />
+        <link rel="manifest" href={`${import.meta.env.BASE_URL}manifest.webmanifest`} />
         <title>Easy Marko</title>
         {/* eslint-disable-next-line solid/no-innerhtml -- constant script defined above */}
         <script innerHTML={themeScript} />

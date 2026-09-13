@@ -12,7 +12,7 @@ import { useListeners } from '../reactive';
 import { showNotice } from './notices';
 import { forgetFile, rememberFile } from './recent-files';
 import { theme } from './theme';
-import welcome from '../content/welcome.md?raw';
+import welcomeSource from '../content/welcome.md?raw';
 
 export interface MarkdownDocument {
   id: string;
@@ -37,6 +37,8 @@ interface DocumentsState {
 }
 
 const welcomeName = 'Welcome.md';
+// welcome.md links to files in public/ from the root; the app may be served from a subpath.
+const welcome = welcomeSource.replaceAll('src="/', `src="${import.meta.env.BASE_URL}`);
 
 function createDocument(name = 'Untitled.md', content = ''): MarkdownDocument {
   const updatedAt = Date.now();

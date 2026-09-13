@@ -13,6 +13,7 @@ npm test
 npm run typecheck
 npm run build      # static site in dist/client
 npm run serve      # preview the build (service worker included)
+npm run deploy     # build for GitHub Pages and push it to the gh-pages branch
 ```
 
 See `FEATURES.md` for what's built, and `AGENTS.md` for the code structure and conventions.

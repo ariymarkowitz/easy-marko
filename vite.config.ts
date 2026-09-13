@@ -39,66 +39,75 @@ const mockingTests = globSync('src/**/*.test.{ts,tsx}').filter((file) =>
   readFileSync(file, 'utf8').includes('vi.mock('),
 );
 
-export default defineConfig({
-  plugins: [
-    // Turnkey client mode: no index.html and no mount file. The plugin
-    // generates the entries around src/App.tsx, wrapped in src/Document.tsx,
-    // and `vite build` prerenders the shell into a static dist/client.
-    solid({ start: true, diagnostics: true }),
-    VitePWA({
-      // A new version waits until the user chooses to reload (see src/pwa.ts).
-      registerType: 'prompt',
-      // Registered from src/pwa.ts: the prerendered shell doesn't go through
-      // the plugin's HTML injection, so Document.tsx links the manifest too.
-      injectRegister: false,
-      // The static site is the client environment's output; the default
-      // (the top-level build.outDir, `dist`) would precache `client/…` URLs.
-      outDir: 'dist/client',
-      manifest: {
-        name: 'Easy Marko',
-        short_name: 'Easy Marko',
-        description: 'A minimal markdown editor that works offline.',
-        start_url: '/',
-        display: 'standalone',
-        background_color: '#fafafa',
-        theme_color: '#f6f6f6',
-        // PNGs generated from icon.svg by scripts/icons.mjs.
-        icons: [
-          { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-        ],
-        // Open markdown files from the OS once installed; see state/launch-queue.ts.
-        file_handlers: [{ action: '/', accept: fileTypes }],
-        // Every window shows every document, so open launched files in an existing window.
-        launch_handler: { client_mode: 'focus-existing' },
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],
-        navigateFallback: '/index.html',
-      },
-    }),
-    precachePrerenderedShell(),
-  ],
-  server: {
-    port: 3000,
-  },
-  test: {
-    environment: 'jsdom',
-    setupFiles: ['./vitest-setup.ts'],
-    // Agent worktrees live in .claude/worktrees; their tests would share this run's globals.
-    exclude: [...configDefaults.exclude, '.claude/**'],
-    // Vitest empties CSS imports by default; the HTML export inlines ?raw ones.
-    css: { include: [/\.css\?raw$/] },
-    projects: [
-      { extends: true, test: { name: 'shared', isolate: false, exclude: mockingTests } },
-      { extends: true, test: { name: 'isolated', include: mockingTests } },
+/** GitHub Pages serves the site from the repository's path; see `npm run deploy`. */
+const githubPagesBase = '/easy-marko/';
+
+export default defineConfig(({ mode }) => {
+  // Code that links to files in public/ must prefix them with `import.meta.env.BASE_URL`.
+  const base = mode === 'github-pages' ? githubPagesBase : '/';
+  return {
+    base,
+    plugins: [
+      // Turnkey client mode: no index.html and no mount file. The plugin
+      // generates the entries around src/App.tsx, wrapped in src/Document.tsx,
+      // and `vite build` prerenders the shell into a static dist/client.
+      solid({ start: true, diagnostics: true }),
+      VitePWA({
+        // A new version waits until the user chooses to reload (see src/pwa.ts).
+        registerType: 'prompt',
+        // Registered from src/pwa.ts: the prerendered shell doesn't go through
+        // the plugin's HTML injection, so Document.tsx links the manifest too.
+        injectRegister: false,
+        // The static site is the client environment's output; the default
+        // (the top-level build.outDir, `dist`) would precache `client/…` URLs.
+        outDir: 'dist/client',
+        manifest: {
+          name: 'Easy Marko',
+          short_name: 'Easy Marko',
+          description: 'A minimal markdown editor that works offline.',
+            display: 'standalone',
+          background_color: '#fafafa',
+          theme_color: '#f6f6f6',
+          // Icon paths are relative to the manifest, and start_url and scope
+          // default to the base.
+          // PNGs generated from icon.svg by scripts/icons.mjs.
+          icons: [
+            { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+            { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+            { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+            { src: 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          ],
+          // Open markdown files from the OS once installed; see state/launch-queue.ts.
+          file_handlers: [{ action: '.', accept: fileTypes }],
+          // Every window shows every document, so open launched files in an existing window.
+          launch_handler: { client_mode: 'focus-existing' },
+        },
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],
+          navigateFallback: `${base}index.html`,
+        },
+      }),
+      precachePrerenderedShell(),
     ],
-  },
-  build: {
-    target: 'esnext',
-    // Keep images as asset files instead of inlining them into the JS bundle.
-    assetsInlineLimit: 0,
-  },
+    server: {
+      port: 3000,
+    },
+    test: {
+      environment: 'jsdom',
+      setupFiles: ['./vitest-setup.ts'],
+      // Agent worktrees live in .claude/worktrees; their tests would share this run's globals.
+      exclude: [...configDefaults.exclude, '.claude/**'],
+      // Vitest empties CSS imports by default; the HTML export inlines ?raw ones.
+      css: { include: [/\.css\?raw$/] },
+      projects: [
+        { extends: true, test: { name: 'shared', isolate: false, exclude: mockingTests } },
+        { extends: true, test: { name: 'isolated', include: mockingTests } },
+      ],
+    },
+    build: {
+      target: 'esnext',
+      // Keep images as asset files instead of inlining them into the JS bundle.
+      assetsInlineLimit: 0,
+    },
+  };
 });
