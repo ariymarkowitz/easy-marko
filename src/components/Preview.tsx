@@ -17,8 +17,9 @@ function fragmentTarget(root: HTMLElement, fragment: string): HTMLElement | unde
  * nothing has that id.
  */
 function followFragmentLink(event: MouseEvent & { currentTarget: HTMLElement }): void {
+  if (event.defaultPrevented) return;
   const link = (event.target as Element).closest('a[href^="#"]');
-  if (event.defaultPrevented || !link) return;
+  if (!link) return;
   event.preventDefault();
   const pane = event.currentTarget;
   let fragment = link.getAttribute('href')!.slice(1);
@@ -46,7 +47,6 @@ export default function Preview() {
     languagesLoaded();
     return render(activeDocument()?.content ?? '');
   });
-  // Keyed by source text, so unchanged blocks keep their DOM nodes between edits.
   return (
     <section
       ref={previewPaneRef()}
@@ -60,6 +60,7 @@ export default function Preview() {
       }}
     >
       <article class="markdown">
+        {/* Keyed by source text, so unchanged blocks keep their DOM nodes between edits. */}
         <For each={blocks()} keyed={(block) => block.key}>
           {(block) => (
             <div

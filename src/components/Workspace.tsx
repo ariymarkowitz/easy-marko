@@ -37,11 +37,11 @@ export default function Workspace() {
           />
         </PanelEdge>
       </Show>
-      <Show when={viewMode() !== 'source'}>
+      <Show
+        when={viewMode() !== 'source'}
+        fallback={<PanelEdge position="end" before={[edgeActions.showPreview]} />}
+      >
         <Preview />
-      </Show>
-      <Show when={viewMode() === 'source'}>
-        <PanelEdge position="end" before={[edgeActions.showPreview]} />
       </Show>
     </main>
   );

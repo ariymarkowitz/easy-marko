@@ -21,12 +21,12 @@ export default function Editor() {
       if (update.docChanged || update.selectionSet) syncEditorState(update.state);
     }),
     EditorView.domEventHandlers({
-      click: (event, target) => {
+      click: (event, editor) => {
         if (!event.altKey) return false;
-        const position = target.posAtCoords({ x: event.clientX, y: event.clientY });
+        const position = editor.posAtCoords({ x: event.clientX, y: event.clientY });
         if (position === null) return false;
-        const line = target.state.doc.lineAt(position).number - 1;
-        jumpToPreview(line, event.clientY - target.scrollDOM.getBoundingClientRect().top);
+        const line = editor.state.doc.lineAt(position).number - 1;
+        jumpToPreview(line, event.clientY - editor.scrollDOM.getBoundingClientRect().top);
         return false;
       },
     }),
@@ -59,6 +59,7 @@ export default function Editor() {
         if (documentId && ids.includes(documentId)) states.set(documentId, view.state);
         view.setState(states.get(id) ?? EditorState.create({ doc: content, extensions }));
         documentId = id;
+        // setState doesn't notify update listeners.
         syncEditorState(view.state);
       }
       // Equal after typing. They differ when another tab changed the document,

@@ -27,50 +27,18 @@ const HIDE_DISTANCE = 20;
 /** How long, in milliseconds, the pointer stays near an edge before its buttons show. */
 const REVEAL_DELAY = 200;
 
+const sidebar = { controls: 'sidebar', onDragStart: startSidebarDrag };
+const sourcePane = { controls: 'source-pane', onDragStart: startSplitDrag };
+const previewPane = { controls: 'preview-pane', onDragStart: startSplitDrag };
+
 /** The buttons that edges show. Constant, so edges keep their buttons as the layout changes. */
 export const edgeActions = {
-  showSidebar: {
-    icon: PanelLeft,
-    label: 'Show sidebar',
-    controls: 'sidebar',
-    onClick: () => setSidebarOpen(true),
-    onDragStart: startSidebarDrag,
-  },
-  hideSidebar: {
-    icon: ChevronLeft,
-    label: 'Hide sidebar',
-    controls: 'sidebar',
-    onClick: () => setSidebarOpen(false),
-    onDragStart: startSidebarDrag,
-  },
-  showSource: {
-    icon: SourceIcon,
-    label: 'Show source',
-    controls: 'source-pane',
-    onClick: () => revealPane('source'),
-    onDragStart: startSplitDrag,
-  },
-  hideSource: {
-    icon: ChevronLeft,
-    label: 'Hide source',
-    controls: 'source-pane',
-    onClick: () => hidePane('source'),
-    onDragStart: startSplitDrag,
-  },
-  showPreview: {
-    icon: Eye,
-    label: 'Show preview',
-    controls: 'preview-pane',
-    onClick: () => revealPane('preview'),
-    onDragStart: startSplitDrag,
-  },
-  hidePreview: {
-    icon: ChevronRight,
-    label: 'Hide preview',
-    controls: 'preview-pane',
-    onClick: () => hidePane('preview'),
-    onDragStart: startSplitDrag,
-  },
+  showSidebar: { ...sidebar, icon: PanelLeft, label: 'Show sidebar', onClick: () => setSidebarOpen(true) },
+  hideSidebar: { ...sidebar, icon: ChevronLeft, label: 'Hide sidebar', onClick: () => setSidebarOpen(false) },
+  showSource: { ...sourcePane, icon: SourceIcon, label: 'Show source', onClick: () => revealPane('source') },
+  hideSource: { ...sourcePane, icon: ChevronLeft, label: 'Hide source', onClick: () => hidePane('source') },
+  showPreview: { ...previewPane, icon: Eye, label: 'Show preview', onClick: () => revealPane('preview') },
+  hidePreview: { ...previewPane, icon: ChevronRight, label: 'Hide preview', onClick: () => hidePane('preview') },
 } satisfies Record<string, EdgeAction>;
 
 /**
@@ -96,10 +64,6 @@ export default function PanelEdge(props: {
   const cancelReveal = () => {
     clearTimeout(revealTimer);
     revealTimer = undefined;
-  };
-  const hide = () => {
-    cancelReveal();
-    setRevealed(false);
   };
 
   /** How far the pointer is from the edge, or `undefined` when it isn't alongside it. */
@@ -130,7 +94,7 @@ export default function PanelEdge(props: {
     if (event.pointerType === 'touch') return;
     if (revealed()) {
       const overButtons = event.target instanceof Node && edge.contains(event.target);
-      if (!overButtons && (distance === undefined || distance > HIDE_DISTANCE)) hide();
+      if (!overButtons && (distance === undefined || distance > HIDE_DISTANCE)) setRevealed(false);
       return;
     }
     const revealDistance = props.position ? WINDOW_EDGE_REVEAL_DISTANCE : RESIZER_REVEAL_DISTANCE;
@@ -160,21 +124,21 @@ export default function PanelEdge(props: {
     >
       {props.children}
       <div class="panel-edge-buttons before">
-        <For each={props.before ?? []}>{(action) => <EdgeButton action={action} />}</For>
+        <For each={props.before}>{(action) => <EdgeButton action={action} />}</For>
       </div>
       <div class="panel-edge-buttons after">
-        <For each={props.after ?? []}>{(action) => <EdgeButton action={action} />}</For>
+        <For each={props.after}>{(action) => <EdgeButton action={action} />}</For>
       </div>
     </div>
   );
 }
 
 function EdgeButton(props: { action: EdgeAction }) {
-  // Out of the tab order: the toolbar has the same controls.
   return (
     <button
       type="button"
       class="icon-button panel-edge-button"
+      // Out of the tab order: the toolbar has the same controls.
       tabindex="-1"
       title={props.action.label}
       aria-label={props.action.label}

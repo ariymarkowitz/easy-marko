@@ -7,7 +7,7 @@ import type { Extension } from '@codemirror/state';
 import { drawSelection, EditorView, highlightActiveLine, keymap } from '@codemirror/view';
 import { classHighlighter, tagHighlighter, tags } from '@lezer/highlight';
 import { carriesFiles } from '../lib/files';
-import { formattingExtensions, formattingKeymap } from './formatting';
+import { formattingExtensions } from './formatting';
 import { mathSyntax, mathTag } from './math';
 
 // classHighlighter covers code in fenced blocks; this adds classes for the
@@ -82,9 +82,8 @@ export const editorExtensions: Extension[] = [
   syntaxHighlighting(classHighlighter),
   syntaxHighlighting(markdownHighlighter),
   EditorView.lineWrapping,
-  formattingExtensions,
   // Before the default keymap, whose Mod-i selects the parent syntax node.
-  formattingKeymap,
+  formattingExtensions,
   keymap.of([indentWithTab, ...defaultKeymap, ...historyKeymap, ...searchKeymap]),
   theme,
 ];

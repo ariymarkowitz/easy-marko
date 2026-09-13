@@ -11,11 +11,11 @@ export interface ResizerRange {
 
 /**
  * A vertical drag handle that sizes the element before it, following the
- * ARIA window splitter pattern. Dragging reports the pointer's clientX to
- * the handler that `onDragStart` returns;
- * Left/Right (Shift for larger steps), Home and End report a new value, which
- * the receiver clamps to the range. A drag carries on if the resizer is
- * removed during it, so the receiver can hide a panel and show it again.
+ * ARIA window splitter pattern. Dragging reports the pointer's clientX to the
+ * handler that `onDragStart` returns. Left/Right (Shift for larger steps),
+ * Home and End report a new value, which the receiver clamps to the range.
+ * A drag carries on if the resizer is removed during it, so the receiver can
+ * hide a panel and show it again.
  */
 export default function Resizer(props: {
   label: string;
@@ -41,8 +41,9 @@ export default function Resizer(props: {
         return min;
       case 'End':
         return max;
+      default:
+        return undefined;
     }
-    return undefined;
   }
 
   return (

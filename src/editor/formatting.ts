@@ -1,5 +1,6 @@
 // Markdown editing helpers: formatting shortcuts, wrapping a selection in a
-// typed marker, and pasting a URL over selected text as a link.
+// typed marker, pasting a URL over selected text as a link, and bracket
+// auto-closing.
 
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { markdownLanguage } from '@codemirror/lang-markdown';
@@ -7,8 +8,10 @@ import { syntaxTree } from '@codemirror/language';
 import { EditorSelection, type EditorState, type Extension, type SelectionRange } from '@codemirror/state';
 import { EditorView, keymap, type Command } from '@codemirror/view';
 
-type Change = { from: number; to?: number; insert: string };
-type RangeEdit = { changes: Change[]; range: SelectionRange };
+/** Edits each selection range as one transaction, scrolled into view. */
+function editRanges(view: EditorView, userEvent: string, edit: Parameters<EditorState['changeByRange']>[0]): void {
+  view.dispatch(view.state.changeByRange(edit), { scrollIntoView: true, userEvent });
+}
 
 interface Format {
   /** The marker characters that make this format; the first is used to add it. */
@@ -27,7 +30,7 @@ const strikethrough: Format = { chars: ['~'], width: 2, wraps: (run) => run >= 2
 const isWordChar = (char: string) => /[\p{L}\p{N}]/u.test(char);
 
 /** How many `char`s are next to `pos`, looking forwards (`dir` 1) or backwards (-1), up to `limit`. */
-function runLength(state: EditorState, pos: number, char: string, dir: 1 | -1, limit: number): number {
+function runLength(state: EditorState, pos: number, char: string, dir: 1 | -1, limit = Infinity): number {
   let count = 0;
   while (count < limit) {
     const at = dir === 1 ? pos + count : pos - count - 1;
@@ -48,20 +51,20 @@ function findMarkers(
   from: number,
   to: number,
   format: Format,
-): { open: number; close: number; inside: boolean } | null {
+): { open: number; close: number } | null {
   for (const char of format.chars) {
     const flanked = (open: number, close: number) =>
       char !== '_' || !(isWordChar(state.sliceDoc(open - 1, open)) || isWordChar(state.sliceDoc(close, close + 1)));
     // Markers just outside the selection.
-    const outside = Math.min(runLength(state, from, char, -1, from), runLength(state, to, char, 1, state.doc.length));
+    const outside = Math.min(runLength(state, from, char, -1), runLength(state, to, char, 1));
     if (outside > 0 && format.wraps(outside) && flanked(from - outside, to + outside)) {
-      return { open: from - format.width, close: to, inside: false };
+      return { open: from - format.width, close: to };
     }
     // Markers at the ends of the selection.
     const half = Math.floor((to - from) / 2);
     const inside = Math.min(runLength(state, from, char, 1, half), runLength(state, to, char, -1, half));
     if (inside > 0 && format.wraps(inside) && flanked(from, to)) {
-      return { open: from + inside - format.width, close: to - inside, inside: true };
+      return { open: from + inside - format.width, close: to - inside };
     }
   }
   return null;
@@ -71,18 +74,17 @@ function findMarkers(
 function toggleFormat(format: Format): Command {
   return (view) => {
     const { state } = view;
-    const edit = state.changeByRange((range): RangeEdit => {
+    const w = format.width;
+    editRanges(view, 'input.format', (range) => {
       const markers = findMarkers(state, range.from, range.to, format);
-      const w = format.width;
       if (markers) {
-        const { open, close, inside } = markers;
+        const changes = state.changes([
+          { from: markers.open, to: markers.open + w },
+          { from: markers.close, to: markers.close + w },
+        ]);
         return {
-          changes: [
-            { from: open, to: open + w, insert: '' },
-            { from: close, to: close + w, insert: '' },
-          ],
-          // A selection that included the markers keeps what's left of them.
-          range: inside ? EditorSelection.range(range.from, range.to - 2 * w) : EditorSelection.range(open, close - w),
+          changes,
+          range: EditorSelection.range(changes.mapPos(range.from, 1), changes.mapPos(range.to, -1)),
         };
       }
       const marker = format.chars[0].repeat(w);
@@ -94,14 +96,31 @@ function toggleFormat(format: Format): Command {
         range: EditorSelection.range(range.from + w, range.to + w),
       };
     });
-    view.dispatch(state.update(edit, { scrollIntoView: true, userEvent: 'input.format' }));
     return true;
   };
 }
 
-// A link whose text is the selection, or the whole link selected.
-const linkAfterText = /^\]\((?:<[^>\n]*>|[^\s)]*(?:\([^\s)]*\)[^\s)]*)*)(?:\s+"[^"\n]*")?\)/;
-const wholeLink = /^\[([^\]\n]*)\]\((?:<[^>\n]*>|[^\s)]*(?:\([^\s)]*\)[^\s)]*)*)(?:\s+"[^"\n]*")?\)$/;
+/** Whether `text` is a single web or mail URL. */
+export function isUrl(text: string): boolean {
+  return /^(?:https?:\/\/[^\s/?#]+[^\s]*|mailto:[^\s@]+@[^\s@]+)$/i.test(text);
+}
+
+/** `url` as a link destination: in angle brackets when its parentheses don't balance. */
+function linkDestination(url: string): string {
+  let depth = 0;
+  for (const char of url) {
+    if (char === '(') depth++;
+    else if (char === ')' && --depth < 0) break;
+  }
+  return depth === 0 && !/[<>]/.test(url) ? url : `<${url.replace(/[<>]/g, encodeURIComponent)}>`;
+}
+
+/** A link's `(destination "optional title")`, as regex source. */
+const linkTarget = String.raw`\((?:<[^>\n]*>|[^\s)]*(?:\([^\s)]*\)[^\s)]*)*)(?:\s+"[^"\n]*")?\)`;
+/** What follows a link's text: `](destination)`. */
+const linkAfterText = new RegExp(String.raw`^\]${linkTarget}`);
+/** A whole link, capturing its text. */
+const wholeLink = new RegExp(String.raw`^\[([^\]\n]*)\]${linkTarget}$`);
 
 /**
  * Makes each selection range a link, with the cursor where the URL goes (or in
@@ -110,15 +129,14 @@ const wholeLink = /^\[([^\]\n]*)\]\((?:<[^>\n]*>|[^\s)]*(?:\([^\s)]*\)[^\s)]*)*)
  */
 const toggleLink: Command = (view) => {
   const { state } = view;
-  const edit = state.changeByRange((range): RangeEdit => {
+  editRanges(view, 'input.format', (range) => {
     const text = state.sliceDoc(range.from, range.to);
-    const line = state.doc.lineAt(range.to);
-    const rest = linkAfterText.exec(state.sliceDoc(range.to, line.to));
+    const rest = linkAfterText.exec(state.sliceDoc(range.to, state.doc.lineAt(range.to).to));
     if (state.sliceDoc(range.from - 1, range.from) === '[' && rest && !text.includes(']')) {
       return {
         changes: [
-          { from: range.from - 1, to: range.from, insert: '' },
-          { from: range.to, to: range.to + rest[0].length, insert: '' },
+          { from: range.from - 1, to: range.from },
+          { from: range.to, to: range.to + rest[0].length },
         ],
         range: EditorSelection.range(range.from - 1, range.to - 1),
       };
@@ -145,31 +163,8 @@ const toggleLink: Command = (view) => {
       range: EditorSelection.cursor(cursor),
     };
   });
-  view.dispatch(state.update(edit, { scrollIntoView: true, userEvent: 'input.format' }));
   return true;
 };
-
-export const formattingKeymap = keymap.of([
-  { key: 'Mod-b', run: toggleFormat(bold) },
-  { key: 'Mod-i', run: toggleFormat(italic) },
-  { key: 'Mod-k', run: toggleLink },
-  { key: 'Mod-Shift-x', run: toggleFormat(strikethrough) },
-]);
-
-/** Whether `text` is a single web or mail URL. */
-export function isUrl(text: string): boolean {
-  return /^(?:https?:\/\/[^\s/?#]+[^\s]*|mailto:[^\s@]+@[^\s@]+)$/i.test(text);
-}
-
-/** `url` as a link destination: in angle brackets when its parentheses don't balance. */
-function linkDestination(url: string): string {
-  let depth = 0;
-  for (const char of url) {
-    if (char === '(') depth++;
-    else if (char === ')' && --depth < 0) break;
-  }
-  return depth === 0 && !/[<>]/.test(url) ? url : `<${url.replace(/[<>]/g, encodeURIComponent)}>`;
-}
 
 // Markdown text isn't code, so quotes (apostrophes) don't auto-close there.
 // Fenced code keeps its own language's brackets.
@@ -188,21 +183,25 @@ function inCode(state: EditorState, pos: number): boolean {
 
 const wrapMarkers = new Set(['*', '_', '`', '~']);
 
-/** What goes on each side of `text` to wrap it in `marker`; code spans need a backtick run longer than any inside. */
+/**
+ * The opening marker that wraps `text` in `marker`; the closing one is its
+ * reverse. Code spans need a backtick run longer than any inside, padded when
+ * the text starts or ends with a backtick.
+ */
 function wrapping(text: string, marker: string): string {
   if (marker !== '`') return marker;
   const longest = Math.max(0, ...(text.match(/`+/g) ?? []).map((run) => run.length));
   return '`'.repeat(longest + 1) + (/^`|`$/.test(text) ? ' ' : '');
 }
 
-/** Typing `*`, `_` or `` ` `` over selected text wraps it instead of replacing it. */
+/** Typing `*`, `_`, `~` or `` ` `` over selected text wraps it instead of replacing it. */
 const wrapSelection = EditorView.inputHandler.of((view, from, to, text) => {
   const { state } = view;
   if (view.composing || !wrapMarkers.has(text) || state.readOnly) return false;
   if (state.selection.ranges.every((range) => range.empty)) return false;
   if (from !== state.selection.main.from || to !== state.selection.main.to) return false;
   if (state.selection.ranges.some((range) => !range.empty && inCode(state, range.from))) return false;
-  const edit = state.changeByRange((range): RangeEdit => {
+  editRanges(view, 'input.type', (range) => {
     if (range.empty) {
       return { changes: [{ from: range.from, insert: text }], range: EditorSelection.cursor(range.from + 1) };
     }
@@ -217,7 +216,6 @@ const wrapSelection = EditorView.inputHandler.of((view, from, to, text) => {
       range: EditorSelection.range(range.from + open.length, range.to + open.length),
     };
   });
-  view.dispatch(state.update(edit, { scrollIntoView: true, userEvent: 'input.type' }));
   return true;
 });
 
@@ -227,25 +225,30 @@ const pasteLink = EditorView.domEventHandlers({
     const url = event.clipboardData?.getData('text/plain').trim() ?? '';
     const { state } = view;
     if (!isUrl(url) || state.readOnly) return false;
-    const ranges = state.selection.ranges;
     const linkable = (range: SelectionRange) => {
       const text = state.sliceDoc(range.from, range.to);
       return !range.empty && !text.includes('\n') && !isUrl(text.trim()) && !inCode(state, range.from);
     };
-    if (!ranges.every(linkable)) return false;
+    if (!state.selection.ranges.every(linkable)) return false;
     const destination = linkDestination(url);
-    const edit = state.changeByRange((range): RangeEdit => {
+    editRanges(view, 'input.paste', (range) => {
       const insert = `[${state.sliceDoc(range.from, range.to)}](${destination})`;
       return {
         changes: [{ from: range.from, to: range.to, insert }],
         range: EditorSelection.cursor(range.from + insert.length),
       };
     });
-    view.dispatch(state.update(edit, { scrollIntoView: true, userEvent: 'input.paste' }));
     event.preventDefault();
     return true;
   },
 });
+
+const formattingKeymap = keymap.of([
+  { key: 'Mod-b', run: toggleFormat(bold) },
+  { key: 'Mod-i', run: toggleFormat(italic) },
+  { key: 'Mod-k', run: toggleLink },
+  { key: 'Mod-Shift-x', run: toggleFormat(strikethrough) },
+]);
 
 export const formattingExtensions: Extension[] = [
   markdownBrackets,
@@ -253,4 +256,5 @@ export const formattingExtensions: Extension[] = [
   keymap.of(closeBracketsKeymap),
   wrapSelection,
   pasteLink,
+  formattingKeymap,
 ];
