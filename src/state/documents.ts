@@ -11,6 +11,7 @@ import { parseJSON, readText, STORAGE_KEYS, writeText } from '../lib/storage';
 import { useListeners } from '../reactive';
 import { showNotice } from './notices';
 import { forgetFile, rememberFile } from './recent-files';
+import { theme } from './theme';
 import welcome from '../content/welcome.md?raw';
 
 export interface MarkdownDocument {
@@ -357,15 +358,17 @@ export async function saveActiveDocument(): Promise<void> {
 /**
  * Saves a standalone HTML copy of the active document. Its markdown file stays
  * the one Save writes to. Local images are embedded if their folder is granted.
+ * The copy keeps the app's current colour scheme.
  */
 export async function exportActiveDocument(): Promise<void> {
   const doc = activeDocument();
   if (!doc) return;
   const { name, content } = doc;
+  const colorScheme = theme();
   await handlesLoaded;
   const file = linkedFileHandle(doc);
   const readImage = file && localImageReader(readFolders().then((folders) => folders ?? []), file);
-  await exportHtml(name, content, { readImage }).catch((error) => reportFileError('export', error));
+  await exportHtml(name, content, { readImage, colorScheme }).catch((error) => reportFileError('export', error));
 }
 
 /** The file linked to the document with `id`, once the stored handles have loaded. */

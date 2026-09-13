@@ -1,6 +1,6 @@
 // Exports a document as a standalone HTML file: the rendered, sanitised
 // markdown with the CSS it needs inlined, so it looks like the preview in any
-// browser, offline, in light or dark (following prefers-color-scheme).
+// browser, offline, in the colour scheme it was exported in.
 
 import katexCss from 'katex/dist/katex.min.css?raw';
 import syntaxCss from '../styles/editor.css?raw';
@@ -95,13 +95,15 @@ async function katexCssWithFonts(): Promise<string> {
 export interface ExportOptions {
   /** Reads an image with a relative path as a data URL to embed, or gives undefined to leave it as written. */
   readImage?: (src: string) => Promise<string | undefined>;
+  /** The colour scheme to show the document in. Without one, it follows prefers-color-scheme. */
+  colorScheme?: 'light' | 'dark';
 }
 
 /** A standalone HTML document for markdown `source`, titled after the document's `name`. */
 export async function buildHtmlDocument(
   name: string,
   source: string,
-  { readImage }: ExportOptions = {},
+  { readImage, colorScheme }: ExportOptions = {},
 ): Promise<string> {
   const rendered = await renderMarkdown(source);
   const body = readImage ? await embedLocalImages(rendered, readImage) : rendered;
@@ -110,11 +112,11 @@ export async function buildHtmlDocument(
     .join('\n')
     .trim();
   return `<!doctype html>
-<html lang="en">
+<html lang="en"${colorScheme ? ` data-theme="${colorScheme}"` : ''}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="${colorScheme ?? 'light dark'}">
 <title>${escapeHtml(baseName(name))}</title>
 <style>
 ${css}

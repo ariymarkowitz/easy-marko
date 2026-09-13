@@ -38,6 +38,13 @@ describe('buildHtmlDocument', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  test('fixes the colour scheme when given one', async () => {
+    const doc = parseDocument(await buildHtmlDocument('Dark.md', '# Dark', { colorScheme: 'dark' }));
+    expect(doc.documentElement.dataset.theme).toBe('dark');
+    expect(doc.querySelector('meta[name="color-scheme"]')?.getAttribute('content')).toBe('dark');
+    expect(doc.querySelector('style')?.textContent).toContain(":root[data-theme='dark']");
+  });
+
   test('embeds KaTeX styles and fonts when the document has maths', async () => {
     const fetch = vi.fn(async () => new Response(new Uint8Array([1, 2, 3])));
     vi.stubGlobal('fetch', fetch);
