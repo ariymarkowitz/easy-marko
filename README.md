@@ -1,19 +1,7 @@
+![Banner](/public/welcome-banner.svg)
+
 # Easy Marko
 
 A minimal markdown editor that runs entirely in the browser, works offline, and installs as a Progressive Web App.
 
-Built with Solid 2, Vite, CodeMirror 6, markdown-it and KaTeX.
-
-## Development
-
-```bash
-npm install
-npm run dev        # http://localhost:3000
-npm test
-npm run typecheck
-npm run build      # static site in dist/client
-npm run serve      # preview the build (service worker included)
-npm run deploy     # build for GitHub Pages and push it to the gh-pages branch
-```
-
-See `FEATURES.md` for what's built, and `AGENTS.md` for the code structure and conventions.
+Built with Solid 2, Vite, CodeMirror 6, markdown-it and KaTeX. Co-written with Claude.
