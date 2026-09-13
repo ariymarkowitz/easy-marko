@@ -12,6 +12,12 @@ interface FilePickerOptions {
   suggestedName?: string;
 }
 
+interface DirectoryPickerOptions {
+  mode?: 'read' | 'readwrite';
+  /** A handle whose folder the picker opens in, or a well-known folder. */
+  startIn?: FileSystemHandle | string;
+}
+
 interface FileSystemHandlePermissionDescriptor {
   mode?: 'read' | 'readwrite';
 }
@@ -40,5 +46,6 @@ interface LaunchQueue {
 interface Window {
   showOpenFilePicker?(options?: FilePickerOptions): Promise<FileSystemFileHandle[]>;
   showSaveFilePicker?(options?: FilePickerOptions): Promise<FileSystemFileHandle>;
+  showDirectoryPicker?(options?: DirectoryPickerOptions): Promise<FileSystemDirectoryHandle>;
   launchQueue?: LaunchQueue;
 }

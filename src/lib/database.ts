@@ -13,11 +13,13 @@ export const STORES = {
   fileHandles: 'file-handles',
   /** The recently opened files, as one list (recent-store.ts). */
   recentFiles: 'recent-files',
+  /** The folders granted for showing local images, as one list (folder-store.ts). */
+  folders: 'folders',
 } as const;
 
 type Store = (typeof STORES)[keyof typeof STORES];
 
-const VERSION = 2;
+const VERSION = 3;
 
 let database: Promise<IDBDatabase> | undefined;
 

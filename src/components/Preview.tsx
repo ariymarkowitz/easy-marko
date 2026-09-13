@@ -1,6 +1,7 @@
 import { createMemo, createSignal, For } from 'solid-js';
 import { createMarkdownRenderer } from '../lib/markdown';
 import { activeDocument } from '../state/documents';
+import { allowImageAccess, withLocalImages } from '../state/local-images';
 import { jumpToSource, previewPaneRef } from '../state/pane-link';
 
 /** The element a fragment (`#id`, already decoded) points to: an element with that id, or an anchor with that name. */
@@ -55,6 +56,7 @@ export default function Preview() {
       onClick={(event) => {
         jumpToSource(event);
         followFragmentLink(event);
+        if ((event.target as Element).closest('.local-image-allow')) void allowImageAccess();
       }}
     >
       <article class="markdown">
@@ -64,8 +66,8 @@ export default function Preview() {
               class="md-block"
               data-line={block().line}
               data-end-line={block().endLine}
-              // eslint-disable-next-line solid/no-innerhtml -- the renderer sanitises every block
-              innerHTML={block().html}
+              // eslint-disable-next-line solid/no-innerhtml -- the renderer sanitises every block; local images only change image sources and add placeholders
+              innerHTML={withLocalImages(block().html)}
             />
           )}
         </For>

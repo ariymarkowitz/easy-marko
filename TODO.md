@@ -95,10 +95,10 @@ What's built, and the behaviour decisions behind each item.
 - [x] Recent files
   - The sidebar lists the 10 files opened or saved most recently, newest first, below the open documents; a file can be both. Clicking one opens it, or switches to it if it's open, asking for permission to read it first after a reload. A file that was moved or deleted is reported and removed; the X button removes one by hand.
   - Only files with handles are listed (Chromium). The list is kept in IndexedDB with the handles, shared by all tabs, and reloaded when the window gains focus.
-- [ ] Show local images with relative paths, once the file's folder is granted
-  - An image that can't load shows a placeholder with an "Allow access" button, which calls `showDirectoryPicker({ startIn: fileHandle })`. `dirHandle.resolve(fileHandle)` gives the file's path in the folder (or `null` if it's outside); relative paths resolve from there.
-  - Images are read into `blob:` URLs and swapped in after sanitising. Folder handles persist in IndexedDB, so later files inside a granted folder show their images straight away.
-  - Chromium only. `../` paths need a higher folder to be granted; absolute paths aren't supported. HTML export inlines the images as data URIs.
+- [x] Show local images with relative paths, once the file's folder is granted
+  - Only for documents linked to a file. An image that can't load shows a placeholder with an "Allow access" button, which calls `showDirectoryPicker({ startIn: fileHandle })`, or asks for permission again when a stored folder already contains the file. `dirHandle.resolve(fileHandle)` gives the file's path in the folder (a folder that doesn't contain it is reported); relative paths resolve from there, using the highest granted folder that contains the file. A granted folder without the image shows "not found".
+  - Images are read into `blob:` URLs and swapped in after sanitising, and kept while the page is open, so an image changed on disk shows after a reload. Folder handles persist in IndexedDB, so later files inside a granted folder show their images straight away.
+  - Chromium only. `../` paths need a higher folder to be granted; absolute paths aren't supported. HTML export inlines the images it can already read as data URIs, and leaves the rest as written. `src/lib/local-images.ts`, `src/state/local-images.ts`.
 
 ## Hardening
 

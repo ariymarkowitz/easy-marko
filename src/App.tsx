@@ -19,6 +19,7 @@ import { useDocumentsBackup, useWindowTitle } from './state/documents';
 import { useFileChanges } from './state/file-changes';
 import { useFileDrop } from './state/file-drop';
 import { useLaunchQueue } from './state/launch-queue';
+import { useLocalImages } from './state/local-images';
 import { narrowScreen, sidebarOpen, startSidebarDrag, useLayout, viewMode } from './state/layout';
 import { useScrollSync } from './state/pane-link';
 import { useRecentFiles } from './state/recent-files';
@@ -35,6 +36,7 @@ export default function App() {
   useWindowTitle();
   useFileChanges();
   useRecentFiles();
+  useLocalImages();
   useLaunchQueue();
   useFileDrop();
   useShortcuts();

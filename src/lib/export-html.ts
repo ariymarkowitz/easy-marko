@@ -8,6 +8,7 @@ import markdownCss from '../styles/markdown.css?raw';
 import tokensCss from '../styles/tokens.css?raw';
 import { escapeHtml } from './escape-html';
 import { htmlFile, saveFile } from './files';
+import { embedLocalImages } from './local-images';
 import { createMarkdownRenderer } from './markdown';
 
 /** URLs of KaTeX's WOFF2 fonts, keyed by path. Embedded only in documents with maths. */
@@ -87,9 +88,19 @@ async function katexCssWithFonts(): Promise<string> {
   });
 }
 
+export interface ExportOptions {
+  /** Reads an image with a relative path as a data URL to embed, or gives undefined to leave it as written. */
+  readImage?: (src: string) => Promise<string | undefined>;
+}
+
 /** A standalone HTML document for markdown `source`, titled after the document's `name`. */
-export async function buildHtmlDocument(name: string, source: string): Promise<string> {
-  const body = await renderMarkdown(source);
+export async function buildHtmlDocument(
+  name: string,
+  source: string,
+  { readImage }: ExportOptions = {},
+): Promise<string> {
+  const rendered = await renderMarkdown(source);
+  const body = readImage ? await embedLocalImages(rendered, readImage) : rendered;
   const hasMaths = body.includes('class="katex');
   const css = [documentCss, tokensCss, syntaxCss, markdownCss, hasMaths ? await katexCssWithFonts() : '']
     .join('\n')
@@ -118,6 +129,6 @@ ${body}</article>
  * chosen, so the save dialog opens straight from the click, and nothing is
  * built if it's cancelled.
  */
-export async function exportHtml(name: string, source: string): Promise<void> {
-  await saveFile(`${baseName(name)}.html`, () => buildHtmlDocument(name, source), { type: htmlFile });
+export async function exportHtml(name: string, source: string, options: ExportOptions = {}): Promise<void> {
+  await saveFile(`${baseName(name)}.html`, () => buildHtmlDocument(name, source, options), { type: htmlFile });
 }

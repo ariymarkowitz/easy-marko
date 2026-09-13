@@ -2,8 +2,10 @@ import { createEffect, createStore, deep, flush, reconcile, snapshot } from 'sol
 import { clamp } from '../lib/clamp';
 import { exportHtml } from '../lib/export-html';
 import { type OpenedFile, openFile, readFileHandle, requestAccess, saveFile } from '../lib/files';
+import { readFolders } from '../lib/folder-store';
 import { deleteHandles, readHandles, storeHandle } from '../lib/handle-store';
 import { hashText } from '../lib/hash';
+import { localImageReader } from '../lib/local-images';
 import { mergeById } from '../lib/merge';
 import { parseJSON, readText, STORAGE_KEYS, writeText } from '../lib/storage';
 import { useListeners } from '../reactive';
@@ -338,11 +340,24 @@ export async function saveActiveDocument(): Promise<void> {
   }
 }
 
-/** Saves a standalone HTML copy of the active document. Its markdown file stays the one Save writes to. */
+/**
+ * Saves a standalone HTML copy of the active document. Its markdown file stays
+ * the one Save writes to. Local images are embedded if their folder is granted.
+ */
 export async function exportActiveDocument(): Promise<void> {
   const doc = activeDocument();
   if (!doc) return;
-  await exportHtml(doc.name, doc.content).catch((error) => reportFileError('export', error));
+  const { name, content } = doc;
+  await handlesLoaded;
+  const file = linkedFileHandle(doc);
+  const readImage = file && localImageReader(readFolders().then((folders) => folders ?? []), file);
+  await exportHtml(name, content, { readImage }).catch((error) => reportFileError('export', error));
+}
+
+/** The file linked to the document with `id`, once the stored handles have loaded. */
+export async function loadDocumentFile(id: string): Promise<FileSystemFileHandle | undefined> {
+  await handlesLoaded;
+  return documentFile(id);
 }
 
 const sameDocument = (a: MarkdownDocument, b: MarkdownDocument): boolean =>
