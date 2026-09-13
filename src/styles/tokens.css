@@ -22,6 +22,9 @@
   --color-accent: light-dark(#3464e0, #7a9ff7);
   --color-accent-soft: light-dark(rgb(52 100 224 / 12%), rgb(122 159 247 / 16%));
   --color-selection: light-dark(rgb(52 100 224 / 22%), rgb(122 159 247 / 30%));
+  /* The border of front matter in rendered markdown. Light is the accent, a little desaturated. */
+  --color-front-matter-border: light-dark(rgba(35, 81, 172, 0.5), rgb(122 159 247 / 30%));
+  --color-front-matter-background: light-dark(#f3f3f3, #1e1e1e);
   --color-danger: light-dark(#c9372c, #f47c72);
   --color-backdrop: light-dark(rgb(0 0 0 / 15%), rgb(0 0 0 / 45%));
 

@@ -198,6 +198,19 @@
   background: none;
 }
 
+/* YAML front matter: a code block whose lines wrap, set apart by a dashed border. */
+.markdown .front-matter {
+  border: 2px dashed var(--color-front-matter-border);
+  border-radius: 0;
+  white-space: pre-wrap;
+  background-color: var(--color-front-matter-background);
+}
+
+/* YAML leaves plain values untyped, so the keys carry the highlighting. */
+.markdown .front-matter .tok-propertyName {
+  color: var(--color-accent);
+}
+
 .markdown hr {
   margin: 2em 0;
   border: 0;

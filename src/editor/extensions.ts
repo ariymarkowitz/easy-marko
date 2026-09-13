@@ -1,5 +1,6 @@
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
+import { yamlFrontmatter } from '@codemirror/lang-yaml';
 import { bracketMatching, indentOnInput, syntaxHighlighting } from '@codemirror/language';
 import { languages } from '@codemirror/language-data';
 import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/search';
@@ -72,7 +73,10 @@ export const editorExtensions: Extension[] = [
   highlightSelectionMatches(),
   search({ top: true, createPanel: createSearchPanel }),
   // Pasting a URL as a link is in ./formatting, which also trims and checks the URL.
-  markdown({ base: markdownLanguage, codeLanguages: languages, extensions: mathSyntax, pasteURLAsLink: false }),
+  // YAML front matter at the top parses as YAML, as the preview renders it.
+  yamlFrontmatter({
+    content: markdown({ base: markdownLanguage, codeLanguages: languages, extensions: mathSyntax, pasteURLAsLink: false }),
+  }),
   syntaxHighlighting(classHighlighter),
   syntaxHighlighting(markdownHighlighter),
   EditorView.lineWrapping,

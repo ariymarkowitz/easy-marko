@@ -529,3 +529,30 @@ describe('GitHub alerts', () => {
     expect(root.querySelector('blockquote')).not.toBeNull();
   });
 });
+
+describe('front matter', () => {
+  test('renders a YAML block at the top of the document as its own block', () => {
+    const blocks = createMarkdownRenderer()('---\ntitle: <Hi>\ntags: [a]\n---\n# Heading\n');
+    expect(blocks.map((block) => [block.line, block.endLine])).toEqual([
+      [0, 4],
+      [4, 5],
+    ]);
+    const pre = parse(blocks[0].html).querySelector('pre.front-matter')!;
+    expect(pre.textContent).toBe('title: <Hi>\ntags: [a]\n');
+    expect(blocks[1].html).toContain('<h1');
+  });
+
+  test('accepts `...` as the closing line, and empty front matter', () => {
+    expect(joined(createMarkdownRenderer()('---\na: 1\n...\ntext\n'))).toContain('class="front-matter"');
+    expect(joined(createMarkdownRenderer()('---\n---\ntext\n'))).toContain('class="front-matter"');
+  });
+
+  test.each([
+    ['not at the top', 'text\n\n---\na: 1\n---\n'],
+    ['never closed', '---\na: 1\n'],
+    ['indented', ' ---\na: 1\n---\n'],
+    ['inside a blockquote', '> ---\n> a: 1\n> ---\n'],
+  ])('is ordinary markdown when %s', (_, source) => {
+    expect(joined(createMarkdownRenderer()(source))).not.toContain('front-matter');
+  });
+});

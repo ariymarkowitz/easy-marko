@@ -13,6 +13,7 @@ import {
   type FootnoteEnv,
   type FootnoteRefMeta,
 } from './markdown-footnotes';
+import { frontMatterBlock } from './markdown-front-matter';
 import { maths } from './markdown-math';
 import { taskLists } from './markdown-tasks';
 import { sanitizeHtml } from './sanitize';
@@ -45,6 +46,7 @@ function selectTokens(state: StateCore): void {
 
 // Raw HTML is allowed because every rendered block goes through sanitizeHtml.
 export const markdown = new MarkdownIt({ html: true, linkify: true, typographer: true })
+  .use(frontMatterBlock)
   .use(maths)
   .use(footnotes)
   .use(githubAlerts)
