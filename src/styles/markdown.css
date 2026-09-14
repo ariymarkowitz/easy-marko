@@ -14,10 +14,8 @@
   max-width: var(--content-width);
   margin-inline: auto;
   padding: var(--space-6) var(--space-4);
-  --fs-base: clamp(1rem, 1rem + (100cqi - 22.5rem) * 0.125 / 27.5, 1.125rem);
-  --lh-base: clamp(1.4rem, 1.4rem + (100cqi - 22.5rem) * 0.4 / 27.5, 1.8rem);
-  font-size: var(--fs-base);
-  line-height: var(--lh-base);
+  font-size: clamp(1rem, 1rem + (100cqi - 22.5rem) * 0.125 / 27.5, 1.125rem);
+  line-height: clamp(1.4rem, 1.4rem + (100cqi - 22.5rem) * 0.4 / 27.5, 1.8rem);
   overflow-wrap: break-word;
   /*
    * Raw HTML can carry inline styles (KaTeX needs them, so they aren't
@@ -205,8 +203,8 @@
   border-bottom: 1px solid var(--color-border);
   border-radius: 0;
   white-space: pre-wrap;
-  font-size: calc(0.9 * var(--fs-base));
-  line-height: calc(0.9 * var(--lh-base));
+  font-size: 0.9em;
+  line-height: 0.9lh;
   padding-block: var(--space-6);
 }
 
