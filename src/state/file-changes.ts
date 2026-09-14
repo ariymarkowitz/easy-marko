@@ -67,7 +67,6 @@ async function checkDocument(id: string, handle: FileSystemFileHandle): Promise<
   entry.notice = {
     hash,
     dismiss: showNotice(message, {
-      timeout: 0,
       actions: [{ label: 'Reload', run: () => reloadDocument(id, content) }],
     }),
   };

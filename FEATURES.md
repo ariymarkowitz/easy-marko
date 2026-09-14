@@ -42,7 +42,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 ## Editor
 
 - CodeMirror 6 with markdown syntax highlighting, including fenced code languages and `$…$`/`$$…$$` maths. Maths highlighting follows the preview's delimiter rules. One difference: a `$$` block in a blockquote ends at the last `>` line, where the preview also takes lazy lines.
-- Line wrapping, active line highlight, bracket matching, selection match highlighting, and Tab to indent.
+- Line wrapping, active line highlight, bracket matching, selection match highlighting, and Tab to indent. Escape then Tab moves focus out of the editor (CodeMirror's escape hatch, mentioned in the welcome document). The editor is labelled "Markdown source" for screen readers.
 - Find and replace (Cmd/Ctrl+F) opens a panel at the top of the editor, in place of CodeMirror's default. Toggles for match case, whole word and regular expressions sit inside the find field. The panel shows the match count ("2 of 5", counted up to 1000). Enter finds the next match, Shift+Enter the previous one, and Alt+Enter selects all. In the replace field, Enter replaces the next match and Cmd/Ctrl+Enter replaces all. An invalid regular expression turns the find text red. Toolbar buttons for undo, redo and find. The find button is a toggle: it shows as pressed while the panel is open, and clicking it again closes the panel and returns focus to the editor. It's disabled in preview mode, where the browser's own find works; an open panel stays open and shows again on returning to the source.
 - Formatting shortcuts: Cmd/Ctrl+B bold, Cmd/Ctrl+I italic, Cmd/Ctrl+K link, Cmd/Ctrl+Shift+X strikethrough.
   - These wrap the selection, or unwrap it if it's already wrapped (markers just outside or at the ends of the selection). `*` and `_` both count, and in `***x***` bold and italic can be removed separately. Underscores inside words aren't emphasis. At a cursor, the shortcut inserts empty markers, or removes them if the cursor sits between empty markers.
@@ -57,7 +57,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 - YAML front matter: a `---` line at the very top, up to a closing `---` or `...` line, renders as a YAML-highlighted code block whose lines wrap, in slightly smaller type, with square corners, rules above and below, and keys in the accent colour. The source pane highlights it as YAML too. YAML keys are in the accent colour in both panes, in front matter and fenced YAML alike. Unclosed, indented or nested front matter stays ordinary markdown.
 - KaTeX maths. Inline `$…$` follows Pandoc's rules, so amounts like `$5 and $10` stay text.
 - Fenced code highlighting uses the editor's Lezer parsers and colours. Code shows plain until its language loads, and then only the blocks waiting on that language re-render.
-- Task lists: `- [ ]` and `- [x]` render as disabled checkboxes. An item with only a marker shows just the checkbox.
+- Task lists: `- [ ]` and `- [x]` render as disabled checkboxes, labelled by the item's text. An item with only a marker shows just the checkbox.
 - Heading anchors use GitHub's ids: lowercase, punctuation dropped, spaces to hyphens, repeats numbered (`notes`, `notes-1`). Headings in raw HTML don't get ids. Clicking a fragment link scrolls the preview (and the source, with scroll sync) without changing the URL. `#` and `#top` go to the top.
 - Footnotes: `[^label]` references and `[^label]: text` definitions, with indented continuation lines. Labels are case-insensitive and can't contain spaces. A reference to an undefined note stays text. Notes are numbered by first reference and listed at the end with back links. Unreferenced notes and repeat definitions are hidden.
 - GitHub alerts: `> [!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`. The marker must be alone on the first line of a top-level blockquote (any case) and have content after it. Note, tip and important use the accent colour. Warning and caution use the danger colour.
@@ -77,7 +77,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 - The preview clips raw HTML (`contain: paint`), so `position: fixed` can't cover the app.
 - A raw HTML block that leaves elements open (like `<details>` around markdown) is grouped with the blocks up to the one that closes them.
 - Optional browser APIs are feature-detected by type, so an element id in the preview can't pose as one.
-- Messages and errors show as in-app notices. Info notices close after 6s, pausing while hovered or focused. Errors stay until dismissed. Escape dismisses a focused notice. The only native dialog left is the unsaved-changes `confirm()`.
+- Messages and errors show as in-app notices. Info notices close after 6s, pausing while hovered or focused. Errors and notices with actions stay until dismissed. Screen readers hear messages through two live regions (status for info, alert for errors) that stay in the page, since a region added along with its message is often missed. Escape dismisses a focused notice. The only native dialog left is the unsaved-changes `confirm()`.
 
 ## Offline and install
 

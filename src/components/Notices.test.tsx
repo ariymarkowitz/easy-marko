@@ -24,51 +24,64 @@ function show(...args: Parameters<typeof showNotice>) {
   return dismiss;
 }
 
+/** The shown notices, which are labelled groups. */
+const shown = () => screen.queryAllByRole('group');
+
 describe('Notices', () => {
+  test('keeps its live regions in the page with no notices', () => {
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(screen.getByRole('alert')).toBeEmptyDOMElement();
+  });
+
   test('announces errors as alerts and info as status', () => {
     show("Couldn't save the file", { tone: 'error' });
     show('Ready to work offline');
-    expect(screen.getByRole('alert')).toHaveTextContent("Couldn't save the file");
-    expect(screen.getByRole('status')).toHaveTextContent('Ready to work offline');
+    expect(screen.getByRole('alert')).toHaveTextContent(/^Couldn't save the file$/);
+    expect(screen.getByRole('status')).toHaveTextContent(/^Ready to work offline$/);
+    expect(screen.getByRole('group', { name: 'Error' })).toHaveTextContent("Couldn't save the file");
   });
 
   test('closes when dismissed', () => {
     show('Failed', { tone: 'error' });
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
     flush();
-    expect(screen.queryByRole('alert')).toBeNull();
+    expect(shown()).toHaveLength(0);
+    expect(screen.getByRole('alert')).toBeEmptyDOMElement();
   });
 
   test('runs an action and closes', () => {
     const run = vi.fn();
-    show('New version', { timeout: 0, actions: [{ label: 'Reload', run }] });
+    show('New version', { actions: [{ label: 'Reload', run }] });
     fireEvent.click(screen.getByRole('button', { name: 'Reload' }));
     flush();
     expect(run).toHaveBeenCalledOnce();
-    expect(screen.queryByRole('status')).toBeNull();
+    expect(shown()).toHaveLength(0);
   });
 
   test('closes info notices after the timeout, but not while hovered', () => {
     show('Saved');
-    const notice = screen.getByRole('status');
+    const [notice] = shown();
     // Pausing takes effect on the flush, which in a browser runs as soon as
     // the handler returns, before any timer.
     fireEvent.pointerEnter(notice);
     flush();
     vi.advanceTimersByTime(INFO_NOTICE_TIMEOUT * 2);
-    expect(screen.queryByRole('status')).not.toBeNull();
+    expect(shown()).toHaveLength(1);
 
     fireEvent.pointerLeave(notice);
     flush();
     vi.advanceTimersByTime(INFO_NOTICE_TIMEOUT);
     flush();
-    expect(screen.queryByRole('status')).toBeNull();
+    expect(shown()).toHaveLength(0);
   });
 
-  test('keeps errors open', () => {
-    show('Failed', { tone: 'error' });
+  test.each([
+    ['errors', { tone: 'error' as const }],
+    ['notices with actions', { actions: [{ label: 'Reload', run: () => {} }] }],
+  ])('keeps %s open', (_, options) => {
+    show('Failed', options);
     vi.advanceTimersByTime(INFO_NOTICE_TIMEOUT * 10);
     flush();
-    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(shown()).toHaveLength(1);
   });
 });

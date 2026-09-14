@@ -1,15 +1,28 @@
 import { createEffect, createSignal, For } from 'solid-js';
 import { CircleAlert, Info, X } from 'lucide';
-import { dismissNotice, type Notice, notices } from '../state/notices';
+import { dismissNotice, type Notice, notices, type NoticeTone } from '../state/notices';
 import Icon from './Icon';
 import IconButton from './IconButton';
 
 /** The stack of notices from state/notices.ts. Render once from the app root. */
 export default function Notices() {
+  const messages = (tone: NoticeTone) => notices().filter((notice) => notice.tone === tone);
   return (
-    <div class="notices">
-      <For each={notices()}>{(notice) => <NoticeItem notice={notice} />}</For>
-    </div>
+    <>
+      {/*
+        Screen readers often miss a live region that appears with its content,
+        so these stay in the page and announce each message added to them.
+      */}
+      <div class="visually-hidden" role="status">
+        <For each={messages('info')}>{(notice) => <p>{notice.message}</p>}</For>
+      </div>
+      <div class="visually-hidden" role="alert">
+        <For each={messages('error')}>{(notice) => <p>{notice.message}</p>}</For>
+      </div>
+      <div class="notices">
+        <For each={notices()}>{(notice) => <NoticeItem notice={notice} />}</For>
+      </div>
+    </>
   );
 }
 
@@ -34,7 +47,8 @@ function NoticeItem(props: { notice: Notice }) {
   return (
     <div
       class={['notice', `notice-${props.notice.tone}`]}
-      role={props.notice.tone === 'error' ? 'alert' : 'status'}
+      role="group"
+      aria-label={props.notice.tone === 'error' ? 'Error' : 'Notice'}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
       onFocusIn={() => setFocused(true)}

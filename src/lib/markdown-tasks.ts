@@ -20,7 +20,9 @@ function taskItems(state: StateCore): void {
     text.content = text.content.slice(marker[0].length);
     const checkbox = new state.Token('task_checkbox', 'input', 0);
     checkbox.meta = { checked: marker[1] !== ' ' };
-    children.unshift(checkbox);
+    // The item's text labels the checkbox, so screen readers name it.
+    children.unshift(new state.Token('task_label_open', 'label', 1), checkbox);
+    children.push(new state.Token('task_label_close', 'label', -1));
     tokens[i - 2].attrJoin('class', 'task-list-item');
   }
 }
@@ -28,6 +30,8 @@ function taskItems(state: StateCore): void {
 export function taskLists(md: MarkdownIt): void {
   // Last, once inline parsing has made the item's text token.
   md.core.ruler.push('task_lists', taskItems);
+  md.renderer.rules.task_label_open = () => '<label>';
+  md.renderer.rules.task_label_close = () => '</label>';
   md.renderer.rules.task_checkbox = (tokens, idx) =>
     `<input class="task-list-item-checkbox" type="checkbox" disabled${tokens[idx].meta?.checked ? ' checked' : ''}>`;
 }

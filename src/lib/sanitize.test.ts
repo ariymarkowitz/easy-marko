@@ -29,6 +29,10 @@ test('removes the ids the app styles, from headings too', () => {
   );
 });
 
+test('makes code blocks focusable, so the keyboard can scroll them', () => {
+  expect(sanitizeHtml('<pre><code>a</code></pre>')).toBe('<pre tabindex="0"><code>a</code></pre>');
+});
+
 test('keeps heading ids that name document properties', () => {
   expect(sanitizeHtml('<h1 id="title">a</h1>')).toBe('<h1 id="title">a</h1>');
 });

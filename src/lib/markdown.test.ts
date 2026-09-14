@@ -182,7 +182,7 @@ describe('code highlighting', () => {
     const source = '# Title\n\n```python\nimport os\n```\n';
 
     const [, before] = render(source);
-    expect(before.html).toBe('<pre><code class="language-python">import os\n</code></pre>\n');
+    expect(before.html).toBe('<pre tabindex="0"><code class="language-python">import os\n</code></pre>\n');
     expect(loads).toHaveLength(1);
 
     await Promise.all(loads);
@@ -213,7 +213,7 @@ describe('code highlighting', () => {
     const [block] = createMarkdownRenderer({ onLanguageLoad: (loaded) => loads.push(loaded) })(
       '```not-a-language\n<b>x</b>\n```',
     );
-    expect(block.html).toBe('<pre><code class="language-not-a-language">&lt;b&gt;x&lt;/b&gt;\n</code></pre>\n');
+    expect(block.html).toBe('<pre tabindex="0"><code class="language-not-a-language">&lt;b&gt;x&lt;/b&gt;\n</code></pre>\n');
     expect(loads).toHaveLength(0);
   });
 });
@@ -230,6 +230,7 @@ describe('task lists', () => {
     expect([...checkboxes].every((box) => box.disabled)).toBe(true);
     expect(items[0]).toHaveClass('task-list-item');
     expect(items[0]).toHaveTextContent(/^todo$/);
+    expect(checkboxes[0].labels?.[0]).toHaveTextContent(/^todo$/);
     expect(items[3]).not.toHaveClass('task-list-item');
   });
 
@@ -250,7 +251,7 @@ describe('task lists', () => {
   test('works in ordered, loose and nested lists', () => {
     const root = render('1. [x] first\n\n2. [ ] second\n   - [x] nested\n');
     expect(root.querySelectorAll('.task-list-item')).toHaveLength(3);
-    expect(root.querySelector('ol > li > p > input')).toBeChecked();
+    expect(root.querySelector('ol > li > p > label > input')).toBeChecked();
   });
 
   test.each([

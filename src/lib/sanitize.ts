@@ -39,6 +39,12 @@ purifier.addHook('afterSanitizeAttributes', (node) => {
   node.setAttribute('rel', 'noopener noreferrer');
 });
 
+// Code blocks can scroll sideways, so keyboard users need to focus them to
+// scroll. Chrome and Firefox make scrolling elements focusable; Safari doesn't.
+purifier.addHook('afterSanitizeAttributes', (node) => {
+  if (node.localName === 'pre') node.setAttribute('tabindex', '0');
+});
+
 purifier.addHook('uponSanitizeAttribute', (node, data) => {
   if (data.attrName === 'class') {
     data.attrValue = data.attrValue

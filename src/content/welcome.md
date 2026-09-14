@@ -133,6 +133,7 @@ Relative image paths like `![](images/photo.png)` work for documents opened from
 ### Editing
 
 - `Mod-F` opens find and replace.
+- (Accessibility) `Tab` indents. To move focus out of the editor with the keyboard, press `Escape` and then `Tab`.
 - Paste a URL over selected text to turn it into a link.
 
 ### Exporting

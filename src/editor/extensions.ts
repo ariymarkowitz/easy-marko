@@ -66,6 +66,7 @@ const ignoreFileDrops = EditorView.domEventHandlers({
 
 export const editorExtensions: Extension[] = [
   ignoreFileDrops,
+  EditorView.contentAttributes.of({ 'aria-label': 'Markdown source' }),
   history(),
   drawSelection(),
   highlightActiveLine(),

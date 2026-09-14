@@ -6,12 +6,12 @@ import { createSignal } from 'solid-js';
  *
  *   const dismiss = showNotice("Couldn't open the file.", { tone: 'error' });
  *   showNotice('A new version is available.', {
- *     timeout: 0,
  *     actions: [{ label: 'Reload', run: reload }],
  *   });
  *
  * Info notices close on their own after `timeout` ms (paused while hovered or
- * focused); errors, and notices with `timeout: 0`, stay until dismissed.
+ * focused); errors, notices with actions, and notices with `timeout: 0` stay
+ * until dismissed, so there's time to reach their buttons.
  * Every notice has a dismiss button, and clicking an action also dismisses it.
  */
 
@@ -26,7 +26,7 @@ export interface NoticeOptions {
   /** 'info' (the default) is announced politely; 'error' is announced straight away. */
   tone?: NoticeTone;
   actions?: NoticeAction[];
-  /** Milliseconds before the notice closes on its own; 0 keeps it open. Errors default to 0. */
+  /** Milliseconds before the notice closes on its own; 0 keeps it open. Errors and notices with actions default to 0. */
   timeout?: number;
 }
 
@@ -54,7 +54,7 @@ export function showNotice(message: string, options: NoticeOptions = {}): () => 
     message,
     tone,
     actions: options.actions ?? [],
-    timeout: options.timeout ?? (tone === 'error' ? 0 : INFO_NOTICE_TIMEOUT),
+    timeout: options.timeout ?? (tone === 'error' || options.actions?.length ? 0 : INFO_NOTICE_TIMEOUT),
   };
   setNotices((list) => [...list, notice]);
   return () => dismissNotice(notice.id);

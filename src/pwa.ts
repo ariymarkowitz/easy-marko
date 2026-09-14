@@ -22,7 +22,6 @@ export function registerServiceWorker(): void {
     onNeedRefresh() {
       dismissUpdateNotice?.();
       dismissUpdateNotice = showNotice('A new version of Easy Marko is available.', {
-        timeout: 0,
         actions: [{ label: 'Reload', run: () => void updateServiceWorker(true) }],
       });
     },

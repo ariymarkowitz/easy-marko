@@ -53,6 +53,8 @@ export default function Preview() {
       id="preview-pane"
       class="pane preview-pane"
       aria-label="Preview"
+      // Focusable so the keyboard can scroll it, even with no links inside.
+      tabindex="0"
       onClick={(event) => {
         jumpToSource(event);
         followFragmentLink(event);
