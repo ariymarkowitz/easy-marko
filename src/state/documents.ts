@@ -455,7 +455,7 @@ export function useDocumentsBackup(): void {
   handlesLoaded = loadFileHandles(true);
 
   createEffect(
-    () => JSON.stringify(snapshot(deep(state))),
+    () => deep(state),
     () => {
       const timer = setTimeout(syncBackup, 300);
       return () => clearTimeout(timer);

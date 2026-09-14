@@ -1,4 +1,4 @@
-import { createEffect, createStore, deep, snapshot } from 'solid-js';
+import { createEffect, createStore, deep } from 'solid-js';
 import { clamp } from '../lib/clamp';
 import { readJSON, STORAGE_KEYS, writeText } from '../lib/storage';
 
@@ -84,9 +84,9 @@ export function setSplitRatio(ratio: number): void {
 /** Persists settings whenever they change. Call once from the app root. */
 export function useSettingsPersistence(): void {
   createEffect(
-    () => JSON.stringify(snapshot(deep(settings))),
-    (json) => {
-      writeText(STORAGE_KEYS.settings, json);
+    () => deep(settings),
+    (value) => {
+      writeText(STORAGE_KEYS.settings, JSON.stringify(value));
     },
   );
 }

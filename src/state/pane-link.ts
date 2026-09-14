@@ -238,11 +238,11 @@ export function previewPaneRef(): (pane: HTMLElement) => void {
     if (pendingPreviewJump) {
       jumpPreviewToLine(pane, pendingPreviewJump.line, pendingPreviewJump.offset);
       pendingPreviewJump = undefined;
-    } else if (untrack(() => settings.syncScroll && viewMode() === 'preview')) {
+    } else if (settings.syncScroll && viewMode() === 'preview') {
       // Shown in place of the editor, so open where it was. Split view's linking aligns a preview shown beside it.
       showPreviewAtAnchor(pane);
     } else {
-      showPreviewAtLine(pane, untrack(activeScrollPosition).preview);
+      showPreviewAtLine(pane, activeScrollPosition().preview);
     }
     const unlisten = listen(pane, { scroll: () => onScroll('preview', pane) }, { passive: true });
     return () => {
@@ -434,7 +434,7 @@ export function useScrollSync(): void {
       if (!previous || mode === previous.mode) return;
       if (!sync) {
         // Unlinked panes each open where they were for this document. The preview does when it mounts.
-        if (previous.mode === 'preview' && view) scrollSourceToLine(view, untrack(activeScrollPosition).source);
+        if (previous.mode === 'preview' && view) scrollSourceToLine(view, activeScrollPosition().source);
         return;
       }
       if (mode === 'source' && previous.mode === 'preview' && view) {

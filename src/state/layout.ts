@@ -26,8 +26,11 @@ export const NARROW_WIDTH = 700;
 
 export const narrowScreen = createMediaQuery(`(width < ${NARROW_WIDTH}px)`);
 
-/** Whether the sidebar is open over the workspace on a narrow screen. Starts closed. */
-const [overlayOpen, setOverlayOpen] = createSignal(false);
+/**
+ * Whether the sidebar is open over the workspace on a narrow screen. Starts
+ * closed, and closes again whenever the window crosses NARROW_WIDTH.
+ */
+const [overlayOpen, setOverlayOpen] = createSignal(() => (narrowScreen(), false));
 
 /** The panes shown. Narrow screens show the last single-pane view instead of split view. */
 export const viewMode = (): ViewMode =>
@@ -120,18 +123,10 @@ function workspaceRatioAt(clientX: number): number {
 }
 
 /**
- * Closes the sidebar overlay on Escape, on a click outside it, when the window
- * is resized, and when a document is selected. Call once from the app root.
+ * Closes the sidebar overlay on Escape, on a click outside it, and when a
+ * document is selected. Call once from the app root.
  */
 export function useLayout(): void {
-  createEffect(
-    narrowScreen,
-    () => {
-      setOverlayOpen(false);
-    },
-    { defer: true, name: 'closeOverlayOnResize' },
-  );
-
   createEffect(
     () => narrowScreen() && overlayOpen(),
     (open) => {
