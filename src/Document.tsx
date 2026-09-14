@@ -1,6 +1,6 @@
 import type { ParentProps } from 'solid-js';
 import { HydrationScript } from '@solidjs/web';
-import { APP_COLORS, APP_DESCRIPTION, APP_NAME } from './app-info';
+import { APP_COLORS, APP_DESCRIPTION, APP_NAME, APP_URL } from './app-info';
 import { STORAGE_KEYS } from './lib/storage';
 
 // Applies a saved theme override before first paint, so there's no flash of
@@ -17,6 +17,16 @@ export default function Document(props: ParentProps) {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="description" content={APP_DESCRIPTION} />
+        {/* Link previews. public/og-image.png is generated from banner.svg by scripts/og-image.mjs. */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={APP_NAME} />
+        <meta property="og:description" content={APP_DESCRIPTION} />
+        <meta property="og:url" content={APP_URL} />
+        <meta property="og:image" content={`${APP_URL}og-image.png`} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content={`${APP_NAME} markdown editor`} />
+        <meta name="twitter:card" content="summary_large_image" />
         <meta name="theme-color" media="(prefers-color-scheme: light)" content={APP_COLORS.surface.light} />
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content={APP_COLORS.surface.dark} />
         <link rel="icon" href={`${import.meta.env.BASE_URL}icon.svg`} type="image/svg+xml" />

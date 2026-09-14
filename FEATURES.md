@@ -82,6 +82,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 ## Offline and install
 
 - PWA with a web manifest and a precaching service worker. PNG and maskable icons are generated from `public/icon.svg` by `node scripts/icons.mjs`, which needs `rsvg-convert`.
+- Link previews: Open Graph and Twitter card tags with `public/og-image.png` (1200×630), generated from `public/banner.svg` by `node scripts/og-image.mjs` (needs `rsvg-convert` and the Outfit font). Preview URLs are absolute, from `APP_URL` in `src/app-info.ts`.
 - Update prompt: a new service worker waits until Reload is clicked, then every open tab reloads. Unsaved edits survive through the backup. The app checks for updates hourly and when the page becomes visible, and says once when it's ready to work offline.
 - Once installed, `.md` files open from the OS through `file_handlers` and `launchQueue`. `launch_handler` is `focus-existing`, so files open in an existing window.
 

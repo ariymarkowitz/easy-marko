@@ -3,6 +3,8 @@
 
 export const APP_NAME = 'Easy Marko';
 export const APP_DESCRIPTION = 'A minimal markdown editor that works offline.';
+/** Where `npm run deploy` publishes the app. Link previews need absolute URLs. */
+export const APP_URL = 'https://ariymarkowitz.github.io/easy-marko/';
 
 /**
  * Colours shared by the app and the browser and OS around it. vite.config.ts
