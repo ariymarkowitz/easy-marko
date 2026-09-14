@@ -36,8 +36,8 @@ function render(source, size, file) {
 render(svg, 192, 'icon-192.png');
 render(svg, 512, 'icon-512.png');
 // Maskable icons are cropped to as little as a centred circle 80% as wide as
-// the icon. The artwork's corners reach 38% of the width from the centre, so
-// at 80% scale they stay well inside that circle's 40% radius.
+// the icon. The artwork's corners reach 44% of the width from the centre, so
+// at 80% scale (35%) they stay inside that circle's 40% radius.
 render(fullBleed(0.8), 512, 'icon-maskable-512.png');
 // iOS rounds the corners itself and fills transparent pixels with black.
 render(fullBleed(1), 180, 'apple-touch-icon.png');
