@@ -45,3 +45,7 @@
 .tok-comment {
   font-style: italic;
 }
+
+.tok-yamlKey {
+  color: var(--color-accent);
+}

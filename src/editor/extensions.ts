@@ -1,6 +1,6 @@
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
-import { yamlFrontmatter } from '@codemirror/lang-yaml';
+import { yamlFrontmatter, yamlLanguage } from '@codemirror/lang-yaml';
 import { bracketMatching, indentOnInput, syntaxHighlighting } from '@codemirror/language';
 import { languages } from '@codemirror/language-data';
 import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/search';
@@ -21,6 +21,12 @@ const markdownHighlighter = tagHighlighter([
   { tag: tags.quote, class: 'tok-quote' },
   { tag: tags.strikethrough, class: 'tok-strikethrough' },
 ]);
+
+// YAML leaves plain values untyped, so its keys carry the highlighting, as in
+// the preview's front matter. Applies to front matter and fenced YAML alike.
+const yamlHighlighter = tagHighlighter([{ tag: tags.propertyName, class: 'tok-yamlKey' }], {
+  scope: (node) => node === yamlLanguage.parser.topNode,
+});
 
 // Colours come from CSS custom properties, so the editor follows the app
 // theme without being reconfigured.
@@ -72,13 +78,14 @@ export const editorExtensions: Extension[] = [
   bracketMatching(),
   highlightSelectionMatches(),
   search({ top: true, createPanel: createSearchPanel }),
-  // Pasting a URL as a link is in ./formatting, which also trims and checks the URL.
   // YAML front matter at the top parses as YAML, as the preview renders it.
   yamlFrontmatter({
+    // Pasting a URL as a link is in ./formatting, which also trims and checks the URL.
     content: markdown({ base: markdownLanguage, codeLanguages: languages, extensions: mathSyntax, pasteURLAsLink: false }),
   }),
   syntaxHighlighting(classHighlighter),
   syntaxHighlighting(markdownHighlighter),
+  syntaxHighlighting(yamlHighlighter),
   EditorView.lineWrapping,
   // Before the default keymap, whose Mod-i selects the parent syntax node.
   formattingExtensions,

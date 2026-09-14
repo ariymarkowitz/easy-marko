@@ -54,7 +54,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 ## Preview
 
 - markdown-it with raw HTML, linkify and typographer, plus tables and strikethrough.
-- YAML front matter: a `---` line at the very top, up to a closing `---` or `...` line, renders as a YAML-highlighted code block whose lines wrap, with square corners, a dashed border in its own translucent accent colour, and keys in the accent colour. The source pane highlights it as YAML too. Unclosed, indented or nested front matter stays ordinary markdown.
+- YAML front matter: a `---` line at the very top, up to a closing `---` or `...` line, renders as a YAML-highlighted code block whose lines wrap, in slightly smaller type, with square corners, rules above and below, and keys in the accent colour. The source pane highlights it as YAML too, with keys in the accent colour (as in fenced YAML there). Unclosed, indented or nested front matter stays ordinary markdown.
 - KaTeX maths. Inline `$…$` follows Pandoc's rules, so amounts like `$5 and $10` stay text.
 - Fenced code highlighting uses the editor's Lezer parsers and colours. Code shows plain until its language loads, and then only the blocks waiting on that language re-render.
 - Task lists: `- [ ]` and `- [x]` render as disabled checkboxes. An item with only a marker shows just the checkbox.

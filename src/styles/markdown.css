@@ -14,8 +14,10 @@
   max-width: var(--content-width);
   margin-inline: auto;
   padding: var(--space-6) var(--space-4);
-  font-size: clamp(1rem, 1rem + (100cqi - 22.5rem) * 0.125 / 27.5, 1.125rem);
-  line-height: clamp(1.4rem, 1.4rem + (100cqi - 22.5rem) * 0.4 / 27.5, 1.8rem);
+  --fs-base: clamp(1rem, 1rem + (100cqi - 22.5rem) * 0.125 / 27.5, 1.125rem);
+  --lh-base: clamp(1.4rem, 1.4rem + (100cqi - 22.5rem) * 0.4 / 27.5, 1.8rem);
+  font-size: var(--fs-base);
+  line-height: var(--lh-base);
   overflow-wrap: break-word;
   /*
    * Raw HTML can carry inline styles (KaTeX needs them, so they aren't
@@ -189,7 +191,6 @@
   padding: var(--space-3) var(--space-4);
   overflow-x: auto;
   border-radius: var(--radius);
-  line-height: 1.5;
   background-color: var(--color-code-bg);
 }
 
@@ -198,12 +199,15 @@
   background: none;
 }
 
-/* YAML front matter: a code block whose lines wrap, set apart by a dashed border. */
+/* YAML front matter: a code block whose lines wrap, set apart by rules above and below. */
 .markdown .front-matter {
-  border: 2px dashed var(--color-front-matter-border);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
   border-radius: 0;
   white-space: pre-wrap;
-  background-color: var(--color-front-matter-background);
+  font-size: calc(0.9 * var(--fs-base));
+  line-height: calc(0.9 * var(--lh-base));
+  padding-block: var(--space-6);
 }
 
 /* YAML leaves plain values untyped, so the keys carry the highlighting. */
