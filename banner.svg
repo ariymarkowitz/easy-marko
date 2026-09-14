@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 1600 400"
+   version="1.1"
+   id="svg2"
+   sodipodi:docname="wordmark.svg"
+   inkscape:version="1.4.3 (0d15f750, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="namedview2"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showguides="true"
+     inkscape:zoom="0.18285387"
+     inkscape:cx="937.90739"
+     inkscape:cy="295.31778"
+     inkscape:window-width="1390"
+     inkscape:window-height="623"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg2" />
+  <title
+     id="title1">Easy Marko</title>
+  <rect
+     width="1600"
+     height="400"
+     rx="0"
+     fill="#1c1c1c"
+     id="rect1"
+     x="0"
+     y="0" />
+  <text
+     xml:space="preserve"
+     style="font-size:85.3333px;line-height:1.25;font-family:serif;-inkscape-font-specification:'serif, Normal'"
+     x="470.52814"
+     y="321.04028"
+     id="text4"><tspan
+       sodipodi:role="line"
+       id="tspan4"
+       x="470.52814"
+       y="321.04028"
+       style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:85.3333px;font-family:Outfit;-inkscape-font-specification:'Outfit Medium';fill:#e5e5e5;fill-opacity:1">markdown editor</tspan></text>
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>Easy Marko</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <path
+     d="m 250.6,82 h 87.9 v 27.1 h -56.9 v 21.3 h 25.9 L 321,144 307.5,157.6 h -25.9 v 21.3 h 56.9 V 206 h -87.9 z"
+     style="display:none;fill:#4c7bf4"
+     id="path1-5"
+     inkscape:label="E-l" />
+  <g
+     id="g1"
+     transform="translate(73.139724)">
+    <path
+       fill="#4c7bf4"
+       d="M 346.9,206 395.1,82 h 30.2 L 473,206 H 440.3 L 404.4,101.9 h 11.3 L 379,206 Z m 29.3,-27.1 V 154 h 68.5 v 24.9 z M 524.6,208 c -10.33333,0 -19.3,-1.6 -26.9,-4.8 -7.6,-3.2 -14.56667,-8.16667 -20.9,-14.9 l 19.8,-19.8 c 4.26667,4.46667 8.55238,7.974 13.8,10.3 5.12359,2.27102 10.89807,3.39389 16.5,3.22929 4.19751,-0.12333 8.85256,-0.6059 12.2,-3.14143 2.22157,-1.68273 4.03324,-4.44736 4.2,-7.22929 0.15635,-2.60832 -1.36796,-5.24352 -3.1,-7.2 -2.19241,-2.4765 -5.56467,-3.62037 -8.57071,-5 -3.74044,-1.71668 -7.80999,-2.60359 -11.67072,-4.02928 -3.95152,-1.45922 -7.6919,-2.69596 -11.75857,-4.62929 -4.13333,-1.93333 -7.9,-4.26667 -11.3,-7 -3.46667,-2.8 -6.23333,-6.3 -8.3,-10.5 -2.13333,-4.26667 -3.2,-9.5 -3.2,-15.7 0,-7.8 1.9,-14.53333 5.7,-20.2 3.73333,-5.6 9,-9.9 15.8,-12.9 6.73333,-3 14.56667,-4.5 23.5,-4.5 9.06667,0 17.36667,1.5 24.9,4.5 7.6,3 13.86667,7.16667 18.8,12.5 l -20,19.8 c -3.73333,-3.73333 -7.0981,-6.45741 -11.4,-8.4 -3.63276,-1.64043 -7.70208,-2.62451 -11.68696,-2.53116 -3.50666,0.0821 -7.36222,0.60265 -10.16884,2.70652 -2.0793,1.55866 -3.88839,4.07449 -4.03768,6.66884 -0.15033,2.61254 1.44475,5.26134 3.26884,7.13768 1.97486,2.03143 5.00658,2.67295 7.62464,3.7558 3.70756,1.53347 7.63506,2.4757 11.4,3.86232 4.14141,1.52528 8.23333,3.03333 12.3,4.9 4.13333,1.86667 7.93333,4.26667 11.4,7.2 3.4,2.86667 6.16667,6.53333 8.3,11 2.06667,4.4 3.1,9.76667 3.1,16.1 0,12.26667 -4.36667,21.8 -13.1,28.6 -8.66667,6.8 -20.83333,10.2 -36.5,10.2 z M 628.1,161.6 580.6,82 h 36 l 36.2,64.6 H 627.5 L 663.7,82 H 699 l -47.9,79.6 z m -3.7,44.4 v -57.1 h 31.2 V 206 Z"
+       id="path1"
+       sodipodi:nodetypes="ccccccccccccccssccaaaaaaacccsccscccaaaaaaacccscscccccccccccccc" />
+    <g
+       id="g4">
+      <path
+         fill="#fafafa"
+         d="M 711.5,206 V 82 h 25.8 l 36.2,46.5 36.2,-46.5 h 25.8 v 124 h -31 v -72.3 l -31,38.7 -31,-38.7 V 206 Z m 136.9,0 48.1,-124 h 30.3 l 47.7,124 H 941.7 L 905.9,101.9 h 11.2 L 880.5,206 Z m 29.3,-27.1 V 154 h 68.4 v 24.9 z m 134.4,-23.1 v -22.3 h 23.6 c 5.1333,0 9.0667,-1.26667 11.8,-3.8 2.7333,-2.53333 4.1,-5.96667 4.1,-10.3 0,-4.2 -1.3667,-7.6 -4.1,-10.2 -2.7333,-2.6 -6.6333,-3.9 -11.7,-3.9 h -23.7 V 82 h 28.1 c 8.4,0 15.7667,1.56667 22.1,4.7 6.3333,3.13333 11.3,7.46667 14.9,13 3.6,5.53333 5.4,11.93333 5.4,19.2 0,7.4 -1.8,13.83333 -5.4,19.3 -3.6667,5.53333 -8.7667,9.83333 -15.3,12.9 -6.5333,3.13333 -14.2,4.7 -23,4.7 z M 987.4,206 V 82 h 31.3 v 124 z m 67.2,0 -36.2,-53.2 28.3,-6.8 44,60 z m 123.9,0 -46.8,-64.6 44.9,-59.4 h 38.1 l -51.3,64.4 v -11.1 l 53.2,70.7 z m -75.1,0 V 82 h 31.2 v 124 z"
+         id="path2"
+         sodipodi:nodetypes="cccccccccccccccccccccccccccccsssssccssssccscccccccccccccccccccccccc" />
+      <path
+         id="path4"
+         style="opacity:1;fill:#fafafa;fill-opacity:1;stroke:none;stroke-width:4.93698;stroke-miterlimit:100;stroke-opacity:1;paint-order:stroke fill markers"
+         d="m 1276.7897,80.80675 c -34.9007,0 -63.1933,28.29258 -63.1933,63.19325 0,34.90067 28.2926,63.19325 63.1933,63.19325 34.9007,0 63.1933,-28.29258 63.1933,-63.19325 0,-34.90067 -28.2926,-63.19325 -63.1933,-63.19325 z m 0,30.4507 c 18.0833,0 32.7424,14.65934 32.7424,32.74255 0,18.08321 -14.6591,32.74255 -32.7424,32.74255 -18.0833,0 -32.7424,-14.65934 -32.7424,-32.74255 0,-18.08321 14.6591,-32.74255 32.7424,-32.74255 z"
+         sodipodi:nodetypes="ssssssssss" />
+    </g>
+    <path
+       d="m 250.6,82 h 87.83333 v 26.47917 h -56.94614 v 22.28125 h 25.83333 L 320.5601,144 307.32052,157.23958 h -25.83333 v 22.28125 h 56.94614 V 206 H 250.6 Z"
+       fill="#4c7bf4"
+       id="path1-9"
+       style="display:inline;stroke-width:0.645833"
+       inkscape:label="E-m"
+       sodipodi:nodetypes="cccccccccccccc" />
+  </g>
+  <text
+     xml:space="preserve"
+     style="font-size:184px;line-height:1.25;font-family:serif;-inkscape-font-specification:'serif, Normal';fill:#4c7bf4;fill-opacity:0.499237"
+     x="181.17325"
+     y="209.8179"
+     id="text1"><tspan
+       sodipodi:role="line"
+       id="tspan1"
+       x="181.17325"
+       y="209.8179"
+       style="font-style:normal;font-variant:normal;font-weight:800;font-stretch:normal;font-size:184px;font-family:Outfit;-inkscape-font-specification:'Outfit Ultra-Bold';fill:#4c7bf4;fill-opacity:0.499237">#</tspan></text>
+</svg>
