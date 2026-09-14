@@ -9,7 +9,9 @@ import { EditorView } from '@codemirror/view';
 import { editorView } from '../editor/controller';
 import { listen } from '../lib/events';
 import { createScrollMap, mapOffset } from '../lib/scroll-map';
+import { readJSON, STORAGE_KEYS, writeText } from '../lib/storage';
 import { createAttachment } from '../reactive';
+import { documentsState } from './documents';
 import { revealPane, viewMode } from './layout';
 import { type PanelMode, settings } from './settings';
 
@@ -19,11 +21,59 @@ const [previewPane, attachPane] = createAttachment<HTMLElement>();
 let pendingPreviewJump: { line: number; offset: number } | undefined;
 
 /**
+ * Where a document's panes were scrolled to: the source line at the top of
+ * each pane, fractional for a place partway through, and the pane scrolled
+ * last.
+ */
+interface ScrollPosition {
+  pane: PanelMode;
+  source: number;
+  preview: number;
+}
+
+const topPosition: ScrollPosition = { pane: 'source', source: 0, preview: 0 };
+
+function isScrollPosition(value: unknown): value is ScrollPosition {
+  const position = value as ScrollPosition;
+  return (
+    (position?.pane === 'source' || position?.pane === 'preview') &&
+    Number.isFinite(position.source) &&
+    Number.isFinite(position.preview)
+  );
+}
+
+/** Each document's scroll position, by id. Saved to localStorage, so documents reopen where they were after a reload. */
+const scrollPositions = new Map(
+  Object.entries(readJSON<Record<string, unknown>>(STORAGE_KEYS.scrollPositions, {})).filter(
+    (entry): entry is [string, ScrollPosition] => isScrollPosition(entry[1]),
+  ),
+);
+
+let saveTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Saves the scroll positions of open documents, at most twice a second. */
+function saveScrollPositions(): void {
+  if (saveTimer !== undefined) return;
+  saveTimer = setTimeout(() => {
+    saveTimer = undefined;
+    const ids = new Set(documentsState.documents.map((doc) => doc.id));
+    for (const id of scrollPositions.keys()) if (!ids.has(id)) scrollPositions.delete(id);
+    writeText(STORAGE_KEYS.scrollPositions, JSON.stringify(Object.fromEntries(scrollPositions)));
+  }, 500);
+}
+
+const activeScrollPosition = (): ScrollPosition => scrollPositions.get(documentsState.activeId) ?? topPosition;
+
+/**
  * Where the user last scrolled: the pane, and the source line at its top,
  * fractional for a place partway through. A pane that's shown with scroll
  * sync on opens here, and split view's panes follow this pane when linked.
  */
-const scrollAnchor: { pane: PanelMode; line: number } = { pane: 'source', line: 0 };
+const scrollAnchor: { pane: PanelMode; line: number } = anchorFor(activeScrollPosition());
+
+function anchorFor(position: ScrollPosition): { pane: PanelMode; line: number } {
+  return { pane: position.pane, line: position[position.pane] };
+}
 
 interface PreviewBlock {
   element: HTMLElement;
@@ -98,11 +148,16 @@ function scrollPreviewToLine(pane: HTMLElement, line: number, offset: number, { 
   if (highlight) flash(block.element);
 }
 
+/** Scrolls the preview so source `line` is at its top. */
+function showPreviewAtLine(pane: HTMLElement, line: number): void {
+  if (line <= 0) scrollElement(pane, 0);
+  else scrollPreviewToLine(pane, line, 0, { flash: false });
+}
+
 /** Scrolls the preview to the scroll anchor's line, and makes it the pane the anchor follows. */
 function showPreviewAtAnchor(pane: HTMLElement): void {
   scrollAnchor.pane = 'preview';
-  if (scrollAnchor.line <= 0) scrollElement(pane, 0);
-  else scrollPreviewToLine(pane, scrollAnchor.line, 0, { flash: false });
+  showPreviewAtLine(pane, scrollAnchor.line);
 }
 
 /** The source line at the top of the preview, fractional within a block. */
@@ -175,6 +230,8 @@ export function previewPaneRef(): (pane: HTMLElement) => void {
     } else if (untrack(() => settings.syncScroll && viewMode() === 'preview')) {
       // Shown in place of the editor, so open where it was. Split view's linking aligns a preview shown beside it.
       showPreviewAtAnchor(pane);
+    } else {
+      showPreviewAtLine(pane, untrack(activeScrollPosition).preview);
     }
     const unlisten = listen(pane, { scroll: () => onScroll('preview', pane) }, { passive: true });
     return () => {
@@ -259,8 +316,39 @@ function onScroll(pane: PanelMode, element: HTMLElement): void {
         const view = editorView();
         if (view && viewMode() !== 'preview') scrollAnchor.line = sourceLineAtTop(view);
       }
+      recordScrollPosition();
     }),
   );
+}
+
+/** Records where the active document's visible panes are scrolled to. */
+function recordScrollPosition(): void {
+  const view = editorView();
+  const pane = previewPane();
+  const { activeId } = documentsState;
+  const previous = scrollPositions.get(activeId) ?? topPosition;
+  scrollPositions.set(activeId, {
+    pane: scrollAnchor.pane,
+    source: view && viewMode() !== 'preview' ? sourceLineAtTop(view) : previous.source,
+    preview: pane?.isConnected ? previewLineAtTop(pane) : previous.preview,
+  });
+  saveScrollPositions();
+}
+
+/**
+ * Scrolls the panes to where the active document was scrolled. <Editor> calls
+ * this once it shows a document. A hidden pane goes there when it's shown.
+ */
+export function restoreScrollPosition(view: EditorView): void {
+  untrack(() => {
+    const position = activeScrollPosition();
+    Object.assign(scrollAnchor, anchorFor(position));
+    // Linked panes follow the pane scrolled last, since the other may not have been showing.
+    const lineFor = (pane: PanelMode) => (settings.syncScroll ? scrollAnchor.line : position[pane]);
+    if (viewMode() !== 'preview') scrollSourceToLine(view, lineFor('source'));
+    const pane = previewPane();
+    if (pane) showPreviewAtLine(pane, lineFor('preview'));
+  });
 }
 
 /** Keeps both panes scrolled to the same place, following the pane last scrolled, and returns the cleanup. */
@@ -307,6 +395,13 @@ function linkScrolling(view: EditorView, pane: HTMLElement): () => void {
  * was scrolled to. Call once from the app root.
  */
 export function useScrollSync(): void {
+  // Drops closed documents' scroll positions.
+  createEffect(
+    () => documentsState.documents.map((doc) => doc.id).join(),
+    () => saveScrollPositions(),
+    { name: 'pruneScrollPositions' },
+  );
+
   createEffect(
     () => editorView(),
     (view) => view && listen(view.scrollDOM, { scroll: () => onScroll('source', view.scrollDOM) }, { passive: true }),
@@ -331,7 +426,12 @@ export function useScrollSync(): void {
   createEffect(
     () => ({ mode: viewMode(), view: editorView(), pane: previewPane(), sync: settings.syncScroll }),
     ({ mode, view, pane, sync }, previous) => {
-      if (!sync || !previous || mode === previous.mode) return;
+      if (!previous || mode === previous.mode) return;
+      if (!sync) {
+        // Unlinked panes each open where they were for this document. The preview does when it mounts.
+        if (previous.mode === 'preview' && view) scrollSourceToLine(view, untrack(activeScrollPosition).source);
+        return;
+      }
       if (mode === 'source' && previous.mode === 'preview' && view) {
         scrollAnchor.pane = 'source';
         scrollSourceToLine(view, scrollAnchor.line);

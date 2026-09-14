@@ -6,7 +6,7 @@ import { attachEditor, syncEditorState } from '../editor/controller';
 import { editorExtensions } from '../editor/extensions';
 import { textChange } from '../lib/text-change';
 import { activeDocument, documentsState, updateContent } from '../state/documents';
-import { jumpToPreview } from '../state/pane-link';
+import { jumpToPreview, restoreScrollPosition } from '../state/pane-link';
 
 export default function Editor() {
   /** One state per document, so each keeps its own undo history and selection. */
@@ -63,6 +63,7 @@ export default function Editor() {
         documentId = id;
         // setState doesn't notify update listeners.
         syncEditorState(view.state);
+        restoreScrollPosition(view);
       }
       // Equal after typing. They differ when another tab changed the document,
       // even while it wasn't active here.

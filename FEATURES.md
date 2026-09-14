@@ -67,6 +67,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 ## Linking the panes
 
 - Scroll sync in split view, with a toolbar toggle.
+- Each document keeps its scroll position: the source line at the top of each pane, and which pane was scrolled last. Switching documents, showing a hidden pane, and reloading all return to it. With scroll sync on, both panes follow the pane scrolled last. Positions persist in localStorage and are dropped when a document closes.
 - With scroll sync on, changing the view keeps the place. The app records the source line at the top of the pane the user last scrolled. A pane that's shown, alone or beside the other, opens at that line, and split view follows the pane that was showing. The preview also returns to that line when split view narrows or widens it.
 - Alt-click in the preview jumps to that spot in the source, and vice versa. If the other pane is hidden, this opens split view. Narrow windows switch panes instead. A jump into the preview briefly highlights the block it lands on, unless the system asks for reduced motion.
 

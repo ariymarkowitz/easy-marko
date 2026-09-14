@@ -6,6 +6,7 @@ export const STORAGE_KEYS = {
   settings: 'easy-marko:settings',
   documents: 'easy-marko:documents',
   activeDocument: 'easy-marko:active-document',
+  scrollPositions: 'easy-marko:scroll-positions',
 } as const;
 
 export function readText(key: string): string | null {
