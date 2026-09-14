@@ -11,7 +11,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 - Hide a panel by dragging its edge. Dragging the sidebar resizer below half its minimum width closes the sidebar. Dragging a split pane closer to the edge than half its minimum hides that pane. Dragging back in the same drag shows it again, and a hidden panel keeps its earlier size.
 - Buttons appear on edges after the pointer rests near them for 0.2s (inside a resizer's hit area, or within 16px of the window's left or right edge). They hide once the pointer is 20px away or leaves the window. Resizers get a hide button for each collapsible side. Window edges and the sidebar resizer get a show button for each panel hidden on that side. Clicking a button runs it, and dragging it drags the edge, so a hidden panel can be pulled open. These buttons aren't in the tab order, since the toolbar has the same controls.
 - Narrow windows (below about 700px) show the sidebar as an overlay, which closes on Escape, an outside click, or picking a document. Split view isn't available there. A stored split view shows the last single pane, and picking a pane keeps split view stored, so widening the window brings it back. Narrow windows have no edge buttons.
-- The window title shows the active document's name.
+- The window title shows the active document's name, followed by the app's name except in the installed app, whose window already shows it first.
 
 ## Presentation
 

@@ -1,4 +1,5 @@
 import { createEffect, createStore, deep, flush, reconcile, snapshot } from 'solid-js';
+import { APP_NAME } from '../app-info';
 import { clamp } from '../lib/clamp';
 import { exportHtml } from '../lib/export-html';
 import { isDomError, requestAccess } from '../lib/file-access';
@@ -8,7 +9,7 @@ import { hashText } from '../lib/hash';
 import { localImageReader } from '../lib/local-images';
 import { mergeById } from '../lib/merge';
 import { parseJSON, readText, STORAGE_KEYS, writeText } from '../lib/storage';
-import { useListeners } from '../reactive';
+import { createMediaQuery, useListeners } from '../reactive';
 import { grantedFolders } from './granted-folders';
 import { errorMessage, showNotice } from './notices';
 import { forgetFile, rememberFile } from './recent-files';
@@ -484,12 +485,19 @@ export function useDocumentsBackup(): void {
   useListeners(document, { visibilitychange: syncBackup });
 }
 
-/** Shows the active document's name in the window title. */
+/** Whether the app runs in its own window, installed as a PWA. */
+const installed = createMediaQuery('(display-mode: standalone)');
+
+/**
+ * Shows the active document's name in the window title. An installed app's
+ * window already puts the app's name before the title, so it's left out there.
+ */
 export function useWindowTitle(): void {
   createEffect(
     () => {
       const doc = activeDocument();
-      return doc ? `${doc.name} — Easy Marko` : 'Easy Marko';
+      if (!doc) return APP_NAME;
+      return installed() ? doc.name : `${doc.name} — ${APP_NAME}`;
     },
     (title) => {
       document.title = title;

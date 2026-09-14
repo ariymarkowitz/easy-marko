@@ -17,6 +17,7 @@ import {
   selectDocument,
   updateContent,
   useDocumentsBackup,
+  useWindowTitle,
 } from './documents';
 
 vi.mock('../lib/files', () => ({ openFile: vi.fn(), saveFile: vi.fn() }));
@@ -438,5 +439,30 @@ describe('useDocumentsBackup', () => {
       expect(storedHandles.has(doc.id)).toBe(true);
       dispose();
     });
+  });
+});
+
+describe('window title', () => {
+  /** Opens or closes the app as an installed app, as the stand-in matchMedia in vitest-setup.ts sees it. */
+  function setInstalled(installed: boolean) {
+    const list = window.matchMedia('(display-mode: standalone)') as { matches: boolean } & EventTarget;
+    list.matches = installed;
+    list.dispatchEvent(new Event('change'));
+    flush();
+  }
+
+  test("shows the active document's name, and the app's name outside the installed app", () => {
+    const dispose = createRoot((dispose) => {
+      useWindowTitle();
+      return dispose;
+    });
+    const doc = addDocument();
+    expect(document.title).toBe(`${doc.name} — Easy Marko`);
+
+    setInstalled(true);
+    expect(document.title).toBe(doc.name);
+
+    setInstalled(false);
+    dispose();
   });
 });
