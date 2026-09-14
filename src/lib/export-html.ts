@@ -1,5 +1,5 @@
 // Exports a document as a standalone HTML file: the rendered, sanitised
-// markdown with the CSS it needs inlined, so it looks like the preview in any
+// Markdown with the CSS it needs inlined, so it looks like the preview in any
 // browser, offline, in the colour scheme it was exported in.
 
 import katexCss from 'katex/dist/katex.min.css?raw';
@@ -44,7 +44,7 @@ body {
 }
 `;
 
-/** The document's name without its markdown extension. */
+/** The document's name without its Markdown extension. */
 function baseName(name: string): string {
   return name.replace(/\.(md|markdown|mdown|txt)$/i, '') || name;
 }
@@ -95,7 +95,7 @@ export interface ExportOptions {
   colorScheme?: 'light' | 'dark';
 }
 
-/** A standalone HTML document for markdown `source`, titled after the document's `name`. */
+/** A standalone HTML document for Markdown `source`, titled after the document's `name`. */
 export async function buildHtmlDocument(
   name: string,
   source: string,

@@ -25,7 +25,7 @@ export default function Document(props: ParentProps) {
         <meta property="og:image" content={`${APP_URL}og-image.png`} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta property="og:image:alt" content={`${APP_NAME} markdown editor`} />
+        <meta property="og:image:alt" content={`${APP_NAME} Markdown editor`} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="theme-color" media="(prefers-color-scheme: light)" content={APP_COLORS.surface.light} />
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content={APP_COLORS.surface.dark} />

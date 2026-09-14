@@ -14,7 +14,7 @@ import { mathSyntax, mathTag } from './math';
 import { createSearchPanel } from './search-panel';
 
 // classHighlighter covers code in fenced blocks; this adds classes for the
-// markdown syntax it doesn't know about. Colours live in styles/editor.css.
+// Markdown syntax it doesn't know about. Colours live in styles/editor.css.
 const markdownHighlighter = tagHighlighter([
   { tag: tags.processingInstruction, class: 'tok-mark' },
   { tag: mathTag, class: 'tok-math' },

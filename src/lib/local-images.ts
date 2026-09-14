@@ -1,4 +1,4 @@
-// Images with paths relative to a markdown file, read through the File System
+// Images with paths relative to a Markdown file, read through the File System
 // Access API from a folder the user has granted. Chromium only.
 
 import { ImageOff } from 'lucide';
@@ -175,7 +175,7 @@ export async function embedLocalImages(
 }
 
 /**
- * Reads the images of the markdown file `file` as data URLs, from the
+ * Reads the images of the Markdown file `file` as data URLs, from the
  * highest of `folders` that contains it, if the page may already read it.
  */
 export function localImageReader(

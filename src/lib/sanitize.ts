@@ -1,4 +1,4 @@
-// Sanitises rendered markdown before it reaches the preview's innerHTML or an
+// Sanitises rendered Markdown before it reaches the preview's innerHTML or an
 // exported file. Markdown can contain raw HTML and opened files are untrusted,
 // so scripts, event handlers and javascript: URLs have to go.
 

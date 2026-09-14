@@ -276,7 +276,7 @@ describe('raw HTML', () => {
     expect(blocks[1].html).toBe('<p>Press <kbd>Ctrl</kbd></p>\n');
   });
 
-  test('keeps markdown between an opening and closing HTML block in one block', () => {
+  test('keeps Markdown between an opening and closing HTML block in one block', () => {
     const blocks = createMarkdownRenderer()(
       '<details>\n<summary>More</summary>\n\nHidden *text*\n\n</details>\n\nAfter\n',
     );
@@ -340,8 +340,8 @@ describe('raw HTML', () => {
     ['an inline event handler', 'text <b onmouseover="alert(1)">b</b>'],
     ['a javascript: link in HTML', '<a href="javascript:alert(1)">x</a>'],
     ['an obfuscated javascript: link', '<a href="jav&#x09;ascript:alert(1)">x</a>'],
-    ['a javascript: markdown link', '[x](javascript:alert(1))'],
-    ['a javascript: markdown image', '![x](javascript:alert(1))'],
+    ['a javascript: Markdown link', '[x](javascript:alert(1))'],
+    ['a javascript: Markdown image', '![x](javascript:alert(1))'],
     ['a data: HTML link', '<a href="data:text/html,<script>alert(1)</script>">x</a>'],
     ['an SVG script', '<svg><script>alert(1)</script></svg>'],
     ['an SVG onload', '<svg onload="alert(1)"></svg>'],
@@ -553,7 +553,7 @@ describe('front matter', () => {
     ['never closed', '---\na: 1\n'],
     ['indented', ' ---\na: 1\n---\n'],
     ['inside a blockquote', '> ---\n> a: 1\n> ---\n'],
-  ])('is ordinary markdown when %s', (_, source) => {
+  ])('is ordinary Markdown when %s', (_, source) => {
     expect(joined(createMarkdownRenderer()(source))).not.toContain('front-matter');
   });
 });

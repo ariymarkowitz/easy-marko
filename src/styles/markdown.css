@@ -1,6 +1,6 @@
 /*
  * Preview typography, shared with exported HTML. Styles for the app around or
- * inside the preview go in base.css, whose classes and ids markdown can't use
+ * inside the preview go in base.css, whose classes and ids Markdown can't use
  * (lib/sanitize.ts).
  *
  * The pane is a size container, so type scales with the pane's width (not

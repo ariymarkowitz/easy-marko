@@ -1,6 +1,6 @@
 # Agent Guide
 
-Easy Marko is a single-page, client-only markdown editor that works offline and installs as a PWA. `FEATURES.md` lists what's built and the behaviour decisions behind each feature; `TODO.md` holds planned work.
+Easy Marko is a single-page, client-only Markdown editor that works offline and installs as a PWA. `FEATURES.md` lists what's built and the behaviour decisions behind each feature; `TODO.md` holds planned work.
 
 This is a SolidJS 2.x project. Solid is not React: components run once (there is no re-render), reactivity is fine-grained through signals, and effects/memos have Solid-specific semantics. Do not port React patterns.
 
@@ -33,7 +33,7 @@ This is a SolidJS 2.x project. Solid is not React: components run once (there is
   - `pane-link.ts`: scroll sync and alt-click jumps between the source and preview. Relies on the preview blocks' `data-line`/`data-end-line` attributes.
   - `scroll-positions.ts`: each document's saved scroll position, which `pane-link.ts` restores.
 - `src/editor/`: CodeMirror extensions/theme, plus the controller other modules use to reach the editor.
-- `src/lib/`: framework-free helpers (markdown rendering in `markdown.ts`, with syntax plugins (maths, task lists, footnotes, alerts) and top-level block splitting (`markdown-blocks.ts`) in `markdown-*.ts`, HTML sanitising, code highlighting, HTML export, local images (`local-images.ts`), files, file handle permissions and identity (`file-access.ts`), storage (localStorage in `storage.ts`, IndexedDB stores in `database.ts`), backup merging, scroll mapping, text stats, pointer drags that outlive their element (`drag.ts`), `events.ts` for adding and removing a group of DOM listeners together).
+- `src/lib/`: framework-free helpers (Markdown rendering in `markdown.ts`, with syntax plugins (maths, task lists, footnotes, alerts) and top-level block splitting (`markdown-blocks.ts`) in `markdown-*.ts`, HTML sanitising, code highlighting, HTML export, local images (`local-images.ts`), files, file handle permissions and identity (`file-access.ts`), storage (localStorage in `storage.ts`, IndexedDB stores in `database.ts`), backup merging, scroll mapping, text stats, pointer drags that outlive their element (`drag.ts`), `events.ts` for adding and removing a group of DOM listeners together).
 - `src/reactive.ts`: Solid primitives with no app knowledge: `createMediaQuery` for a media query as a signal, `createAttachment` for publishing something a component mounts, `useListeners` for DOM listeners that last as long as the current owner.
 - `src/shortcuts.ts`: app-wide keyboard shortcuts. `src/pwa.ts`: service worker registration.
 - `src/content/welcome.md`: the document opened on first run.
@@ -46,8 +46,8 @@ This is a SolidJS 2.x project. Solid is not React: components run once (there is
 - Solid 2 conventions are in the cheatsheet.
 - Icons: import icon data from `lucide` and render it with `<Icon>`/`<IconButton>`.
 - The UI is minimalist: greyscale plus one accent colour, and a small toolbar and status bar so the editor and preview are nearly fullscreen.
-- CSS: use the tokens in `tokens.css` and add new ones only when needed. `markdown.css` is only for rendered markdown (it's also used in exported HTML); app UI in or around the preview goes in `base.css`, and the sanitiser strips `base.css` classes and ids from markdown. Prefer semantic class names; keep utility classes (like `.spacer`) for cases where they make the code simpler. Colours use `light-dark()`.
-- The preview is written with `innerHTML` and markdown may contain raw HTML: pass rendered HTML through `sanitizeHtml` (`src/lib/sanitize.ts`) before it's shown or exported.
+- CSS: use the tokens in `tokens.css` and add new ones only when needed. `markdown.css` is only for rendered Markdown (it's also used in exported HTML); app UI in or around the preview goes in `base.css`, and the sanitiser strips `base.css` classes and ids from Markdown. Prefer semantic class names; keep utility classes (like `.spacer`) for cases where they make the code simpler. Colours use `light-dark()`.
+- The preview is written with `innerHTML` and Markdown may contain raw HTML: pass rendered HTML through `sanitizeHtml` (`src/lib/sanitize.ts`) before it's shown or exported.
 - Feature-detect optional browser APIs by type (`typeof window.showOpenFilePicker === 'function'`), not truthiness: where a browser lacks one, an element in the preview with that id or name appears as `window.<name>`.
 - Keep `AGENTS.md` short: only include locations of important files and instructions. No extraneous information.
 

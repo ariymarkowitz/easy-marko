@@ -122,7 +122,7 @@ async function saveTarget(
  * Saves to `handle` if given, otherwise asks where to save. Also asks if the
  * user doesn't allow writing to `handle`. `content` can be a function, called
  * once there's somewhere to save to, so slow content doesn't delay the dialog.
- * `type` defaults to markdown. Resolves undefined if cancelled.
+ * `type` defaults to Markdown. Resolves undefined if cancelled.
  */
 export async function saveFile(
   name: string,

@@ -6,7 +6,7 @@
 import { Tag, tags } from '@lezer/highlight';
 import type { BlockParser, InlineContext, InlineParser, Line, MarkdownConfig } from '@lezer/markdown';
 
-/** Highlight tag for maths content. The delimiters are tagged like other markdown marks. */
+/** Highlight tag for maths content. The delimiters are tagged like other Markdown marks. */
 export const mathTag = Tag.define('math');
 
 const DOLLAR = 36;

@@ -6,9 +6,9 @@
 >
 > *--- John Grube, Introducing Markdown*
 
-Easy Marko is a simple markdown editor and viewer. It runs in the browser or on your device as a Progressive Web App. This page is an ordinary document. Edit it, break it, or close it from the sidebar when you're done. You can bring it back by clicking the About button in the toolbar.
+Easy Marko is a simple Markdown editor and viewer. It runs in the browser or on your device as a Progressive Web App. This page is an ordinary document. Edit it, break it, or close it from the sidebar when you're done. You can bring it back by clicking the About button in the toolbar.
 
-The first half shows the markdown features Easy Marko supports. The second half covers the parts of the app that are easy to miss. Jump to [the guide](#using-the-app) if you already know markdown.
+The first half shows the Markdown features Easy Marko supports. The second half covers the parts of the app that are easy to miss. Jump to [the guide](#using-the-app) if you already know Markdown.
 
 ---
 
@@ -88,12 +88,12 @@ You can create footnotes[^label]. Define each one anywhere in the document, and 
 
 ### HTML
 
-Raw HTML works, and markdown inside it still renders if you leave blank lines around it.
+Raw HTML works, and Markdown inside it still renders if you leave blank lines around it.
 
 <details>
 <summary>Click to expand</summary>
 
-This is **markdown** inside a `<details>` element.
+This is **Markdown** inside a `<details>` element.
 </details>
 
 Scripts, styles and forms get stripped, so pasting HTML from elsewhere can't break the app.

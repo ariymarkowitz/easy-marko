@@ -49,7 +49,7 @@ describe('saveFile', () => {
     expect(picked.written).toEqual(['Hello']);
   });
 
-  test('downloads when showSaveFilePicker is an element that markdown put on window', async () => {
+  test('downloads when showSaveFilePicker is an element that Markdown put on window', async () => {
     // Browsers without the API expose an element with id="showSaveFilePicker" as window.showSaveFilePicker.
     window.showSaveFilePicker = document.createElement('div') as unknown as typeof window.showSaveFilePicker;
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});

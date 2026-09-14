@@ -1,5 +1,5 @@
 // Splits a document's block tokens into top-level blocks for the preview,
-// keeping markdown wrapped in raw HTML in one block.
+// keeping Markdown wrapped in raw HTML in one block.
 
 import type { Token } from 'markdown-it';
 
@@ -62,7 +62,7 @@ function blockEnd(tokens: Token[], start: number): number {
 
 /**
  * Joins a raw HTML block that leaves elements open with the blocks up to the
- * HTML block that closes them, so markdown wrapped in `<details>` and the like
+ * HTML block that closes them, so Markdown wrapped in `<details>` and the like
  * renders inside it. Each preview block is parsed on its own, which would
  * otherwise close the element straight away. Unclosed elements that nothing
  * later closes are left alone.
@@ -92,7 +92,7 @@ function mergeOpenHtml(tokens: Token[], blocks: BlockRange[]): BlockRange[] {
   return merged;
 }
 
-/** Splits a document's tokens into its top-level blocks, keeping markdown wrapped in raw HTML in one block. */
+/** Splits a document's tokens into its top-level blocks, keeping Markdown wrapped in raw HTML in one block. */
 export function topLevelBlocks(tokens: Token[]): BlockRange[] {
   const blocks: BlockRange[] = [];
   for (let start = 0, end = 0; start < tokens.length; start = end) {

@@ -106,7 +106,7 @@ export default defineConfig(({ mode }) => {
             { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
             { src: 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
           ],
-          // Open markdown files from the OS once installed; see state/launch-queue.ts.
+          // Open Markdown files from the OS once installed; see state/launch-queue.ts.
           file_handlers: [{ action: '.', accept: fileTypes }],
           // Every window shows every document, so open launched files in an existing window.
           launch_handler: { client_mode: 'focus-existing' },

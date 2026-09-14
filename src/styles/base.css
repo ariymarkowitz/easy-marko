@@ -404,7 +404,7 @@ button,
   }
 }
 
-/* Preview: the layout around the rendered markdown. Its typography is in markdown.css. */
+/* Preview: the layout around the rendered Markdown. Its typography is in markdown.css. */
 
 .preview-pane {
   container-type: inline-size;

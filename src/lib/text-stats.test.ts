@@ -6,7 +6,7 @@ describe('textStats', () => {
     expect(textStats('')).toEqual({ words: 0, characters: 0, lines: 1 });
   });
 
-  test('ignores markdown punctuation when counting words', () => {
+  test('ignores Markdown punctuation when counting words', () => {
     expect(textStats('Hello, world!\nIt’s  **bold**')).toEqual({
       words: 4,
       characters: 28,

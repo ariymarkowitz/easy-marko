@@ -368,7 +368,7 @@ export async function saveActiveDocument(): Promise<void> {
 }
 
 /**
- * Saves a standalone HTML copy of the active document. Its markdown file stays
+ * Saves a standalone HTML copy of the active document. Its Markdown file stays
  * the one Save writes to. Local images are embedded if their folder is granted.
  * The copy keeps the app's current colour scheme.
  */

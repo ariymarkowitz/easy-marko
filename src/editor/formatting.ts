@@ -180,7 +180,7 @@ const codeNodes = new Set([
   'FrontmatterContent',
 ]);
 
-/** Whether `pos` is in code, where markdown markers are literal. */
+/** Whether `pos` is in code, where Markdown markers are literal. */
 function inCode(state: EditorState, pos: number): boolean {
   const cursor = syntaxTree(state).cursorAt(pos, -1);
   do {

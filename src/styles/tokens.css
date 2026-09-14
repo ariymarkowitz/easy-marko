@@ -9,14 +9,14 @@
   color-scheme: light dark;
 
   /* --color-bg and --color-surface come from src/app-info.ts (virtual:app-colors.css). */
-  /* Code in rendered markdown: fenced blocks, and inline code spans. */
+  /* Code in rendered Markdown: fenced blocks, and inline code spans. */
   --color-code-bg: light-dark(#f3f3f3, #202020);
   --color-code-inline-bg: light-dark(#ececec, #292929);
   --color-hover: light-dark(#e6e6e6, #2c2c2c);
   --color-hover-soft: light-dark(rgb(0 0 0 / 3%), rgb(255 255 255 / 3%));
   --color-border: light-dark(#e1e1e1, #2e2e2e);
   --color-text: light-dark(#2a2a2a, #e8e8e8);
-  /* Headings and bold text in rendered markdown. */
+  /* Headings and bold text in rendered Markdown. */
   --color-text-strong: light-dark(#161616, #f3f3f3);
   --color-text-muted: light-dark(#6e6e6e, #9a9a9a);
   --color-accent: light-dark(#3464e0, #7a9ff7);
@@ -44,7 +44,7 @@
   --radius: 6px;
   --content-width: 800px;
 
-  /* Rendered markdown (markdown.css). Em sizes follow the element's own font size. */
+  /* Rendered Markdown (markdown.css). Em sizes follow the element's own font size. */
   --md-block-gap: calc(1cap + 0.5lh);
   --md-heading-margin: 1.7em;
   /* Above a heading that starts the document. */
