@@ -275,17 +275,19 @@ function reportFileError(action: 'open' | 'save' | 'export', error: unknown): un
   return undefined;
 }
 
+/** Switches to the document of the file behind `handle`, if it's open, and returns whether it was. */
+async function selectFileDocument(handle: FileSystemFileHandle): Promise<boolean> {
+  const openId = await findDocumentForFile(handle);
+  if (!openId) return false;
+  selectDocument(openId);
+  void rememberFile(handle);
+  return true;
+}
+
 /** Opens `file` as a new document, or switches to its document if the file is already open. */
 async function openFileDocument(file: OpenedFile): Promise<void> {
   const { handle } = file;
-  if (handle) {
-    void rememberFile(handle);
-    const openId = await findDocumentForFile(handle);
-    if (openId) {
-      selectDocument(openId);
-      return;
-    }
-  }
+  if (handle && (await selectFileDocument(handle))) return;
   const doc = createDocument(file.name, file.content);
   addDocument(doc);
   if (handle) {
@@ -294,6 +296,7 @@ async function openFileDocument(file: OpenedFile): Promise<void> {
     flush();
     syncBackup();
     setFileHandle(doc.id, handle);
+    void rememberFile(handle);
   }
 }
 
@@ -308,12 +311,7 @@ export async function openDocument(): Promise<void> {
  * has been moved or deleted is reported and removed from the recent files.
  */
 export async function openRecentFile(handle: FileSystemFileHandle): Promise<void> {
-  const openId = await findDocumentForFile(handle);
-  if (openId) {
-    selectDocument(openId);
-    void rememberFile(handle);
-    return;
-  }
+  if (await selectFileDocument(handle)) return;
   try {
     if (!(await requestAccess(handle, 'read'))) return;
     await openFileDocument(await readFileHandle(handle));

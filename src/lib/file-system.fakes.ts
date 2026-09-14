@@ -35,12 +35,31 @@ export function fakeFolder(name: string, files: Record<string, string>, prefix: 
   return folder as unknown as FileSystemDirectoryHandle;
 }
 
-/** A stand-in file handle at `path` from the root of the fake folders. */
-export const fakeFileHandle = (path: string) =>
-  ({
+/**
+ * A stand-in file handle at `path` from the root of the fake folders; handles
+ * with the same path are the same file. Named after the path's last part
+ * unless given a `name`. Reading it rejects with a NotFoundError if `missing`.
+ */
+export function fakeFileHandle(
+  path: string,
+  {
+    name = path.split('/').pop()!,
+    content = `# ${name}`,
+    permission = 'granted',
+    missing = false,
+  }: { name?: string; content?: string; permission?: PermissionState; missing?: boolean } = {},
+): FileSystemFileHandle {
+  return {
     kind: 'file',
-    name: path.split('/').pop(),
+    name,
     path: path.split('/'),
+    getFile: async () => {
+      if (missing) throw new DOMException('Not found', 'NotFoundError');
+      return { name, lastModified: 0, text: async () => content };
+    },
+    queryPermission: async () => permission,
+    requestPermission: async () => permission,
     isSameEntry: async (other: { kind?: string; path?: string[] }) =>
       other.kind === 'file' && other.path?.join('/') === path,
-  }) as unknown as FileSystemFileHandle;
+  } as unknown as FileSystemFileHandle;
+}

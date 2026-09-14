@@ -79,19 +79,14 @@ export function listStore<T>(store: StoreName): {
   write: (list: readonly T[]) => Promise<void>;
 } {
   return {
-    read: async () => {
-      try {
-        return (await transaction<T[] | undefined>(store, 'readonly', (s) => s.get(LIST_KEY))) ?? [];
-      } catch {
-        return undefined;
-      }
-    },
+    read: () =>
+      transaction<T[] | undefined>(store, 'readonly', (s) => s.get(LIST_KEY)).then(
+        (list) => list ?? [],
+        () => undefined,
+      ),
+    // Best effort: see each store for what's lost.
     write: async (list) => {
-      try {
-        await transaction(store, 'readwrite', (s) => s.put(list, LIST_KEY));
-      } catch {
-        // Best effort: see each store for what's lost.
-      }
+      await transaction(store, 'readwrite', (s) => s.put(list, LIST_KEY)).catch(() => {});
     },
   };
 }

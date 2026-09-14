@@ -1,18 +1,14 @@
 import { createRoot, flush } from 'solid-js';
 import { afterAll, afterEach, beforeAll, expect, test, vi } from 'vitest';
 import { openFile } from '../lib/files';
-import { fakeFileHandle, fakeFolder } from '../lib/local-images.fakes';
+import { fakeFileHandle, fakeFolder } from '../lib/file-system.fakes';
 import { closeDocument, documentsState, newDocument, openDocument } from './documents';
 import { allowImageAccess, useLocalImages, withLocalImages } from './local-images';
 import { dismissNotice, notices } from './notices';
 
-vi.mock('../lib/files', () => ({ openFile: vi.fn(), saveFile: vi.fn() }));
+vi.mock('../lib/files');
 
-vi.mock('../lib/handle-store', () => ({
-  readHandles: async () => new Map(),
-  storeHandle: async () => {},
-  deleteHandles: async () => {},
-}));
+vi.mock('../lib/handle-store');
 
 const storedFolders = vi.hoisted(() => ({ list: [] as FileSystemDirectoryHandle[] }));
 

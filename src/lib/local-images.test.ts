@@ -7,7 +7,7 @@ import {
   resolvePath,
   showLocalImages,
 } from './local-images';
-import { fakeFileHandle, fakeFolder } from './local-images.fakes';
+import { fakeFileHandle, fakeFolder } from './file-system.fakes';
 
 test('isRelativePath accepts document-relative paths only', () => {
   for (const src of ['image.png', './a/b.png', '../b.png', 'a%20b.png']) expect(isRelativePath(src)).toBe(true);

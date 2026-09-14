@@ -35,3 +35,11 @@ export async function withoutEntry<T>(
 export function isDomError(error: unknown, name: string): boolean {
   return error instanceof DOMException && error.name === name;
 }
+
+/** `promise`, resolving undefined instead of rejecting when a picker is cancelled (an AbortError). */
+export function unlessAborted<T>(promise: Promise<T>): Promise<T | undefined> {
+  return promise.catch((error: unknown) => {
+    if (isDomError(error, 'AbortError')) return undefined;
+    throw error;
+  });
+}

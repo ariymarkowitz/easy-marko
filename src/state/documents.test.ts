@@ -1,5 +1,7 @@
 import { createRoot, flush } from 'solid-js';
 import { afterEach, describe, expect, test, vi } from 'vitest';
+import { storedHandles } from '../lib/__mocks__/handle-store';
+import { fakeFileHandle } from '../lib/file-system.fakes';
 import { openFile, saveFile } from '../lib/files';
 import { STORAGE_KEYS } from '../lib/storage';
 import welcome from '../content/welcome.md?raw';
@@ -20,20 +22,9 @@ import {
   useWindowTitle,
 } from './documents';
 
-vi.mock('../lib/files', () => ({ openFile: vi.fn(), saveFile: vi.fn() }));
+vi.mock('../lib/files');
 
-/** The handles in IndexedDB, which all tabs share. */
-const storedHandles = vi.hoisted(() => new Map<string, FileSystemFileHandle>());
-
-vi.mock('../lib/handle-store', () => ({
-  readHandles: async () => new Map(storedHandles),
-  storeHandle: async (id: string, handle: FileSystemFileHandle) => {
-    storedHandles.set(id, handle);
-  },
-  deleteHandles: async (ids: Iterable<string>) => {
-    for (const id of ids) storedHandles.delete(id);
-  },
-}));
+vi.mock('../lib/handle-store');
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -54,15 +45,6 @@ function edit(id: string, content: string) {
 }
 
 const isOpen = (id: string) => documentsState.documents.some((doc) => doc.id === id);
-
-/** A stand-in for a file handle; handles with the same path are the same file. */
-function fakeHandle(name: string, path = name): FileSystemFileHandle {
-  return {
-    name,
-    path,
-    isSameEntry: async (other: { path?: string }) => other.path === path,
-  } as unknown as FileSystemFileHandle;
-}
 
 describe('unsaved changes', () => {
   test('follow edits away from and back to the saved content', () => {
@@ -107,7 +89,7 @@ describe('renameDocument', () => {
   });
 
   test('unlinks a document from its file until it gets the file name back', async () => {
-    const handle = fakeHandle('Linked.md');
+    const handle = fakeFileHandle('Linked.md');
     vi.mocked(openFile).mockResolvedValueOnce({ name: 'Linked.md', content: '', handle });
     await openDocument();
     flush();
@@ -120,7 +102,7 @@ describe('renameDocument', () => {
     expect(saveFile).toHaveBeenLastCalledWith('Renamed.md', '', { handle: undefined });
 
     // Opening the file again opens a new document.
-    vi.mocked(openFile).mockResolvedValueOnce({ name: 'Linked.md', content: '', handle: fakeHandle('Linked.md') });
+    vi.mocked(openFile).mockResolvedValueOnce({ name: 'Linked.md', content: '', handle: fakeFileHandle('Linked.md') });
     await openDocument();
     flush();
     expect(activeDocument()?.id).not.toBe(doc.id);
@@ -189,7 +171,7 @@ describe('openDocument', () => {
       vi.mocked(openFile).mockResolvedValueOnce({
         name: 'Notes.md',
         content: '# Notes',
-        handle: fakeHandle('Notes.md'),
+        handle: fakeFileHandle('Notes.md'),
       });
 
     pickNotes();
@@ -348,7 +330,7 @@ describe('useDocumentsBackup', () => {
 
   describe('file handles', () => {
     async function openWithHandle(name: string) {
-      vi.mocked(openFile).mockResolvedValueOnce({ name, content: '', handle: fakeHandle(name) });
+      vi.mocked(openFile).mockResolvedValueOnce({ name, content: '', handle: fakeFileHandle(name) });
       await openDocument();
       flush();
       return activeDocument()!;
@@ -367,9 +349,9 @@ describe('useDocumentsBackup', () => {
 
     test('are restored at startup, and those of closed documents are removed', async () => {
       const doc = addDocument();
-      const handle = fakeHandle(doc.name, 'Restored.md');
+      const handle = fakeFileHandle('Restored.md', { name: doc.name });
       storedHandles.set(doc.id, handle);
-      storedHandles.set('closed-document', fakeHandle('Closed.md'));
+      storedHandles.set('closed-document', fakeFileHandle('Closed.md'));
 
       const dispose = useBackup();
       await settle();
@@ -384,7 +366,7 @@ describe('useDocumentsBackup', () => {
       hidePage();
 
       // The other tab saved the document to a file.
-      const handle = fakeHandle(doc.name, 'Saved in other tab.md');
+      const handle = fakeFileHandle('Saved in other tab.md', { name: doc.name });
       storedHandles.set(doc.id, handle);
       changeInOtherTab(changeDocument(doc.id, { savedHash: 'saved' }));
       syncFromOtherTab();
@@ -405,7 +387,7 @@ describe('useDocumentsBackup', () => {
         updatedAt: 0,
       };
       changeInOtherTab((documents) => [...documents, shared]);
-      storedHandles.set(shared.id, fakeHandle('Shared.md'));
+      storedHandles.set(shared.id, fakeFileHandle('Shared.md'));
       syncFromOtherTab();
       await settle();
 

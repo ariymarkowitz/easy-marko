@@ -1,5 +1,6 @@
 import { flush } from 'solid-js';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { fakeFileHandle } from '../lib/file-system.fakes';
 import type { RecentFile } from '../lib/recent-store';
 import { activeDocument, closeDocument, documentsState, openRecentFile } from './documents';
 import { dismissNotice, notices } from './notices';
@@ -15,30 +16,7 @@ vi.mock('../lib/recent-store', () => ({
   },
 }));
 
-vi.mock('../lib/handle-store', () => ({
-  readHandles: async () => new Map(),
-  storeHandle: async () => {},
-  deleteHandles: async () => {},
-}));
-
-/** A stand-in for a file handle; handles with the same path are the same file. */
-function fakeHandle(
-  name: string,
-  { path = name, permission = 'granted' as PermissionState, missing = false } = {},
-): FileSystemFileHandle {
-  return {
-    kind: 'file',
-    name,
-    path,
-    getFile: async () => {
-      if (missing) throw new DOMException('Not found', 'NotFoundError');
-      return { name, lastModified: 0, text: async () => `# ${name}` };
-    },
-    queryPermission: async () => permission,
-    requestPermission: async () => permission,
-    isSameEntry: async (other: { path?: string }) => other.path === path,
-  } as unknown as FileSystemFileHandle;
-}
+vi.mock('../lib/handle-store');
 
 const names = () => recentFiles().map((file) => file.name);
 
@@ -55,13 +33,13 @@ afterEach(() => {
 });
 
 test('lists files newest first, once each, up to the limit', async () => {
-  await rememberFile(fakeHandle('A.md'));
-  await rememberFile(fakeHandle('B.md'));
-  await rememberFile(fakeHandle('A.md'));
+  await rememberFile(fakeFileHandle('A.md'));
+  await rememberFile(fakeFileHandle('B.md'));
+  await rememberFile(fakeFileHandle('A.md'));
   flush();
   expect(names()).toEqual(['A.md', 'B.md']);
 
-  for (let i = 0; i < RECENT_FILES_LIMIT; i++) await rememberFile(fakeHandle(`${i}.md`));
+  for (let i = 0; i < RECENT_FILES_LIMIT; i++) await rememberFile(fakeFileHandle(`${i}.md`));
   flush();
   expect(names()).toHaveLength(RECENT_FILES_LIMIT);
   expect(names()[0]).toBe(`${RECENT_FILES_LIMIT - 1}.md`);
@@ -69,27 +47,27 @@ test('lists files newest first, once each, up to the limit', async () => {
 });
 
 test('keeps every file remembered at the same time, as when several are dropped', async () => {
-  await Promise.all(['A.md', 'B.md', 'C.md', 'D.md'].map((name) => rememberFile(fakeHandle(name))));
+  await Promise.all(['A.md', 'B.md', 'C.md', 'D.md'].map((name) => rememberFile(fakeFileHandle(name))));
   flush();
   expect(names()).toEqual(['D.md', 'C.md', 'B.md', 'A.md']);
   expect(stored.list.map((file) => file.name)).toEqual(names());
 });
 
 test('keeps same-named files in different folders apart, and forgets one', async () => {
-  await rememberFile(fakeHandle('Notes.md', { path: 'work/Notes.md' }));
-  await rememberFile(fakeHandle('Notes.md', { path: 'home/Notes.md' }));
+  await rememberFile(fakeFileHandle('work/Notes.md'));
+  await rememberFile(fakeFileHandle('home/Notes.md'));
   flush();
   expect(names()).toEqual(['Notes.md', 'Notes.md']);
 
-  await forgetFile(fakeHandle('Notes.md', { path: 'work/Notes.md' }));
+  await forgetFile(fakeFileHandle('work/Notes.md'));
   flush();
-  expect(recentFiles().map((file) => (file.handle as unknown as { path: string }).path)).toEqual([
+  expect(recentFiles().map((file) => (file.handle as unknown as { path: string[] }).path.join('/'))).toEqual([
     'home/Notes.md',
   ]);
 });
 
 test('opens a recent file, and switches to it when it is already open', async () => {
-  await openRecentFile(fakeHandle('Recent.md'));
+  await openRecentFile(fakeFileHandle('Recent.md'));
   flush();
   const doc = activeDocument()!;
   expect(doc.name).toBe('Recent.md');
@@ -97,7 +75,7 @@ test('opens a recent file, and switches to it when it is already open', async ()
   await vi.waitFor(() => expect(names()).toEqual(['Recent.md']));
 
   const count = documentsState.documents.length;
-  await openRecentFile(fakeHandle('Recent.md'));
+  await openRecentFile(fakeFileHandle('Recent.md'));
   flush();
   expect(documentsState.documents).toHaveLength(count);
   expect(activeDocument()?.id).toBe(doc.id);
@@ -105,14 +83,14 @@ test('opens a recent file, and switches to it when it is already open', async ()
 
 test('does nothing when reading the file is not allowed', async () => {
   const count = documentsState.documents.length;
-  await openRecentFile(fakeHandle('Denied.md', { permission: 'denied' }));
+  await openRecentFile(fakeFileHandle('Denied.md', { permission: 'denied' }));
   flush();
   expect(documentsState.documents).toHaveLength(count);
   expect(notices()).toHaveLength(0);
 });
 
 test('reports and forgets a file that has been moved or deleted', async () => {
-  const handle = fakeHandle('Gone.md', { missing: true });
+  const handle = fakeFileHandle('Gone.md', { missing: true });
   await rememberFile(handle);
   await openRecentFile(handle);
   await vi.waitFor(() => expect(names()).toEqual([]));

@@ -2,7 +2,7 @@
 // Access API from a folder the user has granted. Chromium only.
 
 import { ImageOff } from 'lucide';
-import { hasAccess, isDomError } from './file-access';
+import { hasAccess, unlessAborted } from './file-access';
 import { iconSvg } from './icon-markup';
 
 /** Whether `src` is a path relative to the document, rather than a URL, an absolute path or a fragment. */
@@ -67,13 +67,8 @@ export async function locateFile(
 }
 
 /** Asks for a folder to read, starting at `file`'s. Resolves undefined if cancelled. */
-export async function pickFolder(file: FileSystemFileHandle): Promise<FileSystemDirectoryHandle | undefined> {
-  try {
-    return await window.showDirectoryPicker!({ startIn: file, mode: 'read' });
-  } catch (error) {
-    if (isDomError(error, 'AbortError')) return undefined;
-    throw error;
-  }
+export function pickFolder(file: FileSystemFileHandle): Promise<FileSystemDirectoryHandle | undefined> {
+  return unlessAborted(window.showDirectoryPicker!({ startIn: file, mode: 'read' }));
 }
 
 /** Reads `blob` as a data URL, for embedding in exported HTML. */

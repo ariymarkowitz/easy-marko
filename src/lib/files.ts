@@ -3,7 +3,7 @@
 // download link elsewhere.
 
 // With its extension, because vite.config.ts loads this file through Node, which needs one.
-import { isDomError, requestAccess } from './file-access.ts';
+import { requestAccess, unlessAborted } from './file-access.ts';
 
 export interface SavedFile {
   name: string;
@@ -81,13 +81,8 @@ async function readDroppedFile(
 /** Asks for a file to open. Resolves undefined if cancelled; rejects if it isn't a text file. */
 export async function openFile(): Promise<OpenedFile | undefined> {
   if (typeof window.showOpenFilePicker !== 'function') return openWithInput();
-  try {
-    const [handle] = await window.showOpenFilePicker({ types: pickerTypes(markdownFile) });
-    return await readFileHandle(handle);
-  } catch (error) {
-    if (isDomError(error, 'AbortError')) return undefined;
-    throw error;
-  }
+  const [handle] = (await unlessAborted(window.showOpenFilePicker({ types: pickerTypes(markdownFile) }))) ?? [];
+  return handle && readFileHandle(handle);
 }
 
 function openWithInput(): Promise<OpenedFile | undefined> {
@@ -105,17 +100,15 @@ function openWithInput(): Promise<OpenedFile | undefined> {
   });
 }
 
-/** Where to save: `handle` if writing to it is allowed, else a picked file, else undefined to download. */
+/** Where to save: `handle` if writing to it is allowed, else a picked file, else null to download. Undefined if cancelled. */
 async function saveTarget(
   name: string,
   type: FileType,
   handle: FileSystemFileHandle | undefined,
-): Promise<FileSystemFileHandle | undefined> {
+): Promise<FileSystemFileHandle | null | undefined> {
   if (handle && (await requestAccess(handle, 'readwrite'))) return handle;
-  if (typeof window.showSaveFilePicker === 'function') {
-    return window.showSaveFilePicker({ suggestedName: name, types: pickerTypes(type) });
-  }
-  return undefined;
+  if (typeof window.showSaveFilePicker !== 'function') return null;
+  return unlessAborted(window.showSaveFilePicker({ suggestedName: name, types: pickerTypes(type) }));
 }
 
 /**
@@ -129,21 +122,17 @@ export async function saveFile(
   content: string | (() => Promise<string>),
   { handle, type = markdownFile }: { handle?: FileSystemFileHandle; type?: FileType } = {},
 ): Promise<SavedFile | undefined> {
-  try {
-    const target = await saveTarget(name, type, handle);
-    const text = typeof content === 'string' ? content : await content();
-    if (!target) {
-      download(name, text, type.mimeType);
-      return { name };
-    }
-    const writable = await target.createWritable();
-    await writable.write(text);
-    await writable.close();
-    return { name: target.name, handle: target };
-  } catch (error) {
-    if (isDomError(error, 'AbortError')) return undefined;
-    throw error;
+  const target = await saveTarget(name, type, handle);
+  if (target === undefined) return undefined;
+  const text = typeof content === 'string' ? content : await content();
+  if (!target) {
+    download(name, text, type.mimeType);
+    return { name };
   }
+  const writable = await target.createWritable();
+  await writable.write(text);
+  await writable.close();
+  return { name: target.name, handle: target };
 }
 
 function download(name: string, content: string, mimeType: string): void {

@@ -12,13 +12,9 @@ import {
 import { checkFiles } from './file-changes';
 import { dismissNotice, notices } from './notices';
 
-vi.mock('../lib/files', () => ({ openFile: vi.fn(), saveFile: vi.fn() }));
+vi.mock('../lib/files');
 
-vi.mock('../lib/handle-store', () => ({
-  readHandles: async () => new Map(),
-  storeHandle: async () => {},
-  deleteHandles: async () => {},
-}));
+vi.mock('../lib/handle-store');
 
 /** A file on disk, and a handle to it whose read permission can be withdrawn. */
 function fakeFile(name: string, content: string) {
