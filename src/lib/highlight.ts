@@ -2,10 +2,20 @@
 // loaded Lezer parsers as the source pane and the same tok-* classes, so code
 // is coloured alike in both (styles/editor.css).
 
+import { yamlLanguage } from '@codemirror/lang-yaml';
 import { LanguageDescription } from '@codemirror/language';
 import { languages } from '@codemirror/language-data';
-import { classHighlighter, highlightCode } from '@lezer/highlight';
+import { classHighlighter, highlightCode, tagHighlighter, tags } from '@lezer/highlight';
 import { escapeHtml } from './escape-html';
+
+/**
+ * Adds `tok-yamlKey` to YAML keys, so they carry the highlighting: YAML leaves
+ * plain values untyped. Scoped to YAML, since other languages have property
+ * names too.
+ */
+export const yamlKeyHighlighter = tagHighlighter([{ tag: tags.propertyName, class: 'tok-yamlKey' }], {
+  scope: (node) => node === yamlLanguage.parser.topNode,
+});
 
 /** The language a fence names. Matches fuzzily, like the source pane, so `js` finds JavaScript. */
 export function findLanguage(name: string): LanguageDescription | undefined {
@@ -20,7 +30,7 @@ export function highlight(code: string, language: LanguageDescription): string |
   highlightCode(
     code,
     language.support.language.parser.parse(code),
-    classHighlighter,
+    [classHighlighter, yamlKeyHighlighter],
     (text, classes) => {
       html += classes ? `<span class="${classes}">${escapeHtml(text)}</span>` : escapeHtml(text);
     },

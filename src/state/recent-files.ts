@@ -27,7 +27,8 @@ let queue: Promise<unknown> = Promise.resolve();
 /**
  * Runs `change(...args)` after the changes queued before it. Each change reads the list
  * and writes it back, so changes that overlap, like remembering several
- * dropped files, would otherwise drop each other's files.
+ * dropped files, would otherwise drop each other's files. Takes `args` rather
+ * than a closure, which the Solid lint rule reads as a reactive scope.
  */
 function enqueue<A extends unknown[]>(change: (...args: A) => Promise<void>, ...args: A): Promise<void> {
   const result = queue.then(() => change(...args));

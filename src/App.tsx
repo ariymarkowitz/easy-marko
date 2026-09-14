@@ -24,6 +24,7 @@ import { useLocalImages } from './state/local-images';
 import { narrowScreen, sidebarOpen, startSidebarDrag, useLayout, viewMode } from './state/layout';
 import { useScrollSync } from './state/pane-link';
 import { useRecentFiles } from './state/recent-files';
+import { useScrollPositions } from './state/scroll-positions';
 import { setSidebarWidth, settings, SIDEBAR_WIDTH, useSettingsPersistence } from './state/settings';
 import { useTheme } from './state/theme';
 
@@ -42,6 +43,7 @@ export default function App() {
   useLaunchQueue();
   useFileDrop();
   useShortcuts();
+  useScrollPositions();
   useScrollSync();
   onSettled(registerServiceWorker);
 

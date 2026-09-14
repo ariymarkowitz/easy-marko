@@ -208,11 +208,6 @@
   padding-block: var(--space-6);
 }
 
-/* YAML leaves plain values untyped, so the keys carry the highlighting. */
-.markdown .front-matter .tok-propertyName {
-  color: var(--color-accent);
-}
-
 .markdown hr {
   margin: 2em 0;
   border: 0;

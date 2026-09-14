@@ -3,10 +3,10 @@
 // browser, offline, in the colour scheme it was exported in.
 
 import katexCss from 'katex/dist/katex.min.css?raw';
+import appColorsCss from 'virtual:app-colors.css?raw';
 import syntaxCss from '../styles/editor.css?raw';
 import markdownCss from '../styles/markdown.css?raw';
 import tokensCss from '../styles/tokens.css?raw';
-import appColorsCss from 'virtual:app-colors.css?raw';
 import { escapeHtml } from './escape-html';
 import { htmlFile, saveFile } from './files';
 import { embedLocalImages } from './local-images';

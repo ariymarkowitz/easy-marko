@@ -306,9 +306,6 @@ button,
 }
 
 .search-grid {
-  --search-button-size: 1.25rem;
-  --search-count-width: calc(7 * var(--text-small));
-
   display: grid;
   /* A zero minimum, so the rows and their fields can be narrower than the fields' natural widths. */
   grid-template-columns: minmax(0, 1fr);
@@ -323,13 +320,10 @@ button,
   gap: var(--space-1);
 }
 
-.search-row > .search-input {
-  flex: 1;
-}
-
 /* A text field with its toggles inside it. */
 .search-input {
   display: flex;
+  flex: 1;
   align-items: center;
   gap: 2px;
   min-width: 0;
@@ -379,14 +373,14 @@ button,
 
 .search-row > .icon-button {
   flex: none;
-  width: var(--search-button-size);
-  height: var(--search-button-size);
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .search-count {
   flex: none;
   /* A fixed width, so the replace field doesn't move as the count changes. */
-  width: var(--search-count-width);
+  width: calc(7 * var(--text-small));
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: end;

@@ -2,6 +2,7 @@
 // (so saves go back to the same file) and falls back to a file input and a
 // download link elsewhere.
 
+// With its extension, because vite.config.ts loads this file through Node, which needs one.
 import { isDomError, requestAccess } from './file-access.ts';
 
 export interface SavedFile {

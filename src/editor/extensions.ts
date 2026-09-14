@@ -1,6 +1,6 @@
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
-import { yamlFrontmatter, yamlLanguage } from '@codemirror/lang-yaml';
+import { yamlFrontmatter } from '@codemirror/lang-yaml';
 import { bracketMatching, indentOnInput, syntaxHighlighting } from '@codemirror/language';
 import { languages } from '@codemirror/language-data';
 import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/search';
@@ -8,6 +8,7 @@ import type { Extension } from '@codemirror/state';
 import { drawSelection, EditorView, highlightActiveLine, keymap } from '@codemirror/view';
 import { classHighlighter, tagHighlighter, tags } from '@lezer/highlight';
 import { carriesFiles } from '../lib/files';
+import { yamlKeyHighlighter } from '../lib/highlight';
 import { formattingExtensions } from './formatting';
 import { mathSyntax, mathTag } from './math';
 import { createSearchPanel } from './search-panel';
@@ -21,12 +22,6 @@ const markdownHighlighter = tagHighlighter([
   { tag: tags.quote, class: 'tok-quote' },
   { tag: tags.strikethrough, class: 'tok-strikethrough' },
 ]);
-
-// YAML leaves plain values untyped, so its keys carry the highlighting, as in
-// the preview's front matter. Applies to front matter and fenced YAML alike.
-const yamlHighlighter = tagHighlighter([{ tag: tags.propertyName, class: 'tok-yamlKey' }], {
-  scope: (node) => node === yamlLanguage.parser.topNode,
-});
 
 // Colours come from CSS custom properties, so the editor follows the app
 // theme without being reconfigured.
@@ -85,7 +80,7 @@ export const editorExtensions: Extension[] = [
   }),
   syntaxHighlighting(classHighlighter),
   syntaxHighlighting(markdownHighlighter),
-  syntaxHighlighting(yamlHighlighter),
+  syntaxHighlighting(yamlKeyHighlighter),
   EditorView.lineWrapping,
   // Before the default keymap, whose Mod-i selects the parent syntax node.
   formattingExtensions,

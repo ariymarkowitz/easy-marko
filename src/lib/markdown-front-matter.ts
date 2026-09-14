@@ -7,16 +7,17 @@ import { escapeHtml } from './escape-html';
 
 function frontMatter(state: StateBlock, startLine: number, endLine: number, silent: boolean): boolean {
   if (startLine !== 0 || state.parentType !== 'root') return false;
-  const line = (index: number) => state.src.slice(state.bMarks[index] + state.tShift[index], state.eMarks[index]).trimEnd();
-  if (state.tShift[0] !== 0 || line(0) !== '---') return false;
+  /** Whether line `index` is unindented and, apart from trailing spaces, one of `markers`. */
+  const isFence = (index: number, ...markers: string[]) =>
+    state.tShift[index] === 0 && markers.includes(state.src.slice(state.bMarks[index], state.eMarks[index]).trimEnd());
+  if (!isFence(0, '---')) return false;
 
   let close = 1;
-  while (close < endLine && !(state.tShift[close] === 0 && (line(close) === '---' || line(close) === '...'))) close++;
+  while (close < endLine && !isFence(close, '---', '...')) close++;
   if (close >= endLine) return false;
   if (silent) return true;
 
   const token = state.push('front_matter', 'pre', 0);
-  token.block = true;
   token.markup = '---';
   token.map = [startLine, close + 1];
   token.content = state.getLines(startLine + 1, close, 0, true);

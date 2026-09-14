@@ -170,7 +170,15 @@ const toggleLink: Command = (view) => {
 // Fenced code keeps its own language's brackets.
 const markdownBrackets = markdownLanguage.data.of({ closeBrackets: { brackets: ['(', '[', '{'] } });
 
-const codeNodes = new Set(['FencedCode', 'CodeBlock', 'InlineCode', 'CodeText', 'HTMLBlock', 'CommentBlock', 'FrontmatterContent']);
+const codeNodes = new Set([
+  'FencedCode',
+  'CodeBlock',
+  'InlineCode',
+  'CodeText',
+  'HTMLBlock',
+  'CommentBlock',
+  'FrontmatterContent',
+]);
 
 /** Whether `pos` is in code, where markdown markers are literal. */
 function inCode(state: EditorState, pos: number): boolean {

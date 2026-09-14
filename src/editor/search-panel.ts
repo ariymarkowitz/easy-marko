@@ -22,18 +22,16 @@ const COUNT_LIMIT = 1000;
 
 function element<K extends keyof HTMLElementTagNameMap>(
   tag: K,
-  props: Partial<HTMLElementTagNameMap[K]> & { class?: string },
+  props: Partial<HTMLElementTagNameMap[K]>,
   children: Node[] = [],
 ): HTMLElementTagNameMap[K] {
-  const { class: className, ...rest } = props;
-  const node = Object.assign(document.createElement(tag), rest);
-  if (className) node.className = className;
+  const node = Object.assign(document.createElement(tag), props);
   node.append(...children);
   return node;
 }
 
 function iconButton(icon: IconNode, label: string, onClick: () => void, className = ''): HTMLButtonElement {
-  const button = element('button', { type: 'button', title: label, class: `icon-button ${className}`.trim() });
+  const button = element('button', { type: 'button', title: label, className: `icon-button ${className}`.trim() });
   button.setAttribute('aria-label', label);
   button.innerHTML = iconSvg(icon, 'icon');
   button.addEventListener('click', onClick);
@@ -61,8 +59,8 @@ function matchCount(state: EditorState, query: SearchQuery): string {
 export function createSearchPanel(view: EditorView): Panel {
   let query = getSearchQuery(view.state);
 
-  const searchField = element('input', { class: 'search-field', placeholder: 'Find', value: query.search });
-  const replaceField = element('input', { class: 'search-field', placeholder: 'Replace', value: query.replace });
+  const searchField = element('input', { className: 'search-field', placeholder: 'Find', value: query.search });
+  const replaceField = element('input', { className: 'search-field', placeholder: 'Replace', value: query.replace });
   searchField.setAttribute('aria-label', 'Find');
   replaceField.setAttribute('aria-label', 'Replace');
   // openSearchPanel focuses and selects the element with this attribute.
@@ -73,7 +71,7 @@ export function createSearchPanel(view: EditorView): Panel {
     wholeWord: iconButton(WholeWord, 'Match whole word', () => toggle('wholeWord'), 'search-toggle'),
     regexp: iconButton(Regex, 'Use regular expression', () => toggle('regexp'), 'search-toggle'),
   };
-  const count = element('span', { class: 'search-count' });
+  const count = element('span', { className: 'search-count' });
   count.setAttribute('aria-live', 'polite');
 
   const commit = (changes: Partial<SearchQuery> = {}) => {
@@ -113,28 +111,29 @@ export function createSearchPanel(view: EditorView): Panel {
   // of it when it's narrow.
   const readOnly = view.state.readOnly;
   const replaceControls = [
-    element('div', { class: 'search-input' }, [replaceField]),
+    element('div', { className: 'search-input' }, [replaceField]),
     iconButton(Replace, 'Replace', () => replaceNext(view)),
     iconButton(ReplaceAll, 'Replace all', () => replaceAll(view)),
   ];
   for (const control of replaceControls) control.hidden = readOnly;
-  const grid = element('div', { class: 'search-grid' }, [
-    element('div', { class: 'search-row' }, [
-      element('div', { class: 'search-input' }, [searchField, ...Object.values(toggles)]),
+  const grid = element('div', { className: 'search-grid' }, [
+    element('div', { className: 'search-row' }, [
+      element('div', { className: 'search-input' }, [searchField, ...Object.values(toggles)]),
       iconButton(ChevronUp, 'Previous match', () => findPrevious(view)),
       iconButton(ChevronDown, 'Next match', () => findNext(view)),
       iconButton(X, 'Close', () => closeSearchPanel(view)),
     ]),
-    element('div', { class: 'search-row' }, [...replaceControls, count]),
+    element('div', { className: 'search-row' }, [...replaceControls, count]),
   ]);
-  const dom = element('div', { class: 'search-panel' }, [grid]);
+  const dom = element('div', { className: 'search-panel' }, [grid]);
 
   dom.addEventListener('keydown', (event) => {
     if (runScopeHandlers(view, event, 'search-panel')) {
       event.preventDefault();
-    } else if (event.key !== 'Enter' || event.isComposing) {
       return;
-    } else if (event.target === searchField) {
+    }
+    if (event.key !== 'Enter' || event.isComposing) return;
+    if (event.target === searchField) {
       event.preventDefault();
       if (event.altKey) selectMatches(view);
       else (event.shiftKey ? findPrevious : findNext)(view);
@@ -151,15 +150,11 @@ export function createSearchPanel(view: EditorView): Panel {
     top: true,
     mount: () => searchField.select(),
     update: (update: ViewUpdate) => {
-      let changed = update.docChanged || update.selectionSet;
-      for (const transaction of update.transactions) {
-        for (const effect of transaction.effects) {
-          if (!effect.is(setSearchQuery)) continue;
-          changed = true;
-          if (!effect.value.eq(query)) query = effect.value;
-        }
-      }
-      if (changed) show();
+      // Each setSearchQuery effect stores its own query object, so a new object means a new query was set.
+      const next = getSearchQuery(update.state);
+      if (next === getSearchQuery(update.startState) && !update.docChanged && !update.selectionSet) return;
+      query = next;
+      show();
     },
   };
 }

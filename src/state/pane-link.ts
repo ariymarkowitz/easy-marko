@@ -9,10 +9,9 @@ import { EditorView } from '@codemirror/view';
 import { editorView } from '../editor/controller';
 import { listen } from '../lib/events';
 import { createScrollMap, mapOffset } from '../lib/scroll-map';
-import { readJSON, STORAGE_KEYS, writeText } from '../lib/storage';
 import { createAttachment } from '../reactive';
-import { documentsState } from './documents';
 import { revealPane, viewMode } from './layout';
+import { activeScrollPosition, type ScrollPosition, setActiveScrollPosition } from './scroll-positions';
 import { type PanelMode, settings } from './settings';
 
 const [previewPane, attachPane] = createAttachment<HTMLElement>();
@@ -21,59 +20,20 @@ const [previewPane, attachPane] = createAttachment<HTMLElement>();
 let pendingPreviewJump: { line: number; offset: number } | undefined;
 
 /**
- * Where a document's panes were scrolled to: the source line at the top of
- * each pane, fractional for a place partway through, and the pane scrolled
- * last.
- */
-interface ScrollPosition {
-  pane: PanelMode;
-  source: number;
-  preview: number;
-}
-
-const topPosition: ScrollPosition = { pane: 'source', source: 0, preview: 0 };
-
-function isScrollPosition(value: unknown): value is ScrollPosition {
-  const position = value as ScrollPosition;
-  return (
-    (position?.pane === 'source' || position?.pane === 'preview') &&
-    Number.isFinite(position.source) &&
-    Number.isFinite(position.preview)
-  );
-}
-
-/** Each document's scroll position, by id. Saved to localStorage, so documents reopen where they were after a reload. */
-const scrollPositions = new Map(
-  Object.entries(readJSON<Record<string, unknown>>(STORAGE_KEYS.scrollPositions, {})).filter(
-    (entry): entry is [string, ScrollPosition] => isScrollPosition(entry[1]),
-  ),
-);
-
-let saveTimer: ReturnType<typeof setTimeout> | undefined;
-
-/** Saves the scroll positions of open documents, at most twice a second. */
-function saveScrollPositions(): void {
-  if (saveTimer !== undefined) return;
-  saveTimer = setTimeout(() => {
-    saveTimer = undefined;
-    const ids = new Set(documentsState.documents.map((doc) => doc.id));
-    for (const id of scrollPositions.keys()) if (!ids.has(id)) scrollPositions.delete(id);
-    writeText(STORAGE_KEYS.scrollPositions, JSON.stringify(Object.fromEntries(scrollPositions)));
-  }, 500);
-}
-
-const activeScrollPosition = (): ScrollPosition => scrollPositions.get(documentsState.activeId) ?? topPosition;
-
-/**
  * Where the user last scrolled: the pane, and the source line at its top,
  * fractional for a place partway through. A pane that's shown with scroll
  * sync on opens here, and split view's panes follow this pane when linked.
  */
-const scrollAnchor: { pane: PanelMode; line: number } = anchorFor(activeScrollPosition());
+interface ScrollAnchor {
+  pane: PanelMode;
+  line: number;
+}
 
-function anchorFor(position: ScrollPosition): { pane: PanelMode; line: number } {
+function anchorFor(position: ScrollPosition): ScrollAnchor {
   return { pane: position.pane, line: position[position.pane] };
 }
+
+const scrollAnchor: ScrollAnchor = anchorFor(activeScrollPosition());
 
 interface PreviewBlock {
   element: HTMLElement;
@@ -96,6 +56,19 @@ function measurePreviewBlocks(pane: HTMLElement): PreviewBlock[] {
       bottom: rect.bottom - contentTop,
     };
   });
+}
+
+/** The offset of source `line` (which can be fractional) in `block`: its bottom from the block's end line on. */
+function offsetInBlock(block: PreviewBlock, line: number): number {
+  if (line >= block.endLine) return block.bottom;
+  return block.top + ((block.bottom - block.top) * (line - block.line)) / (block.endLine - block.line);
+}
+
+/** The source line at offset `y` in `block`, fractional: its end line from the block's bottom on. */
+function lineInBlock(block: PreviewBlock, y: number): number {
+  if (y >= block.bottom) return block.endLine;
+  const fraction = Math.max(0, (y - block.top) / (block.bottom - block.top));
+  return block.line + (block.endLine - block.line) * fraction;
 }
 
 /**
@@ -133,25 +106,26 @@ function flash(element: HTMLElement): void {
 
 /**
  * Scrolls the preview so source `line` (which can be fractional) sits `offset`
- * pixels below the pane's top, and highlights the block there unless `flash`
- * is false.
+ * pixels below the pane's top, and returns the element of the block there.
  */
-function scrollPreviewToLine(pane: HTMLElement, line: number, offset: number, { flash: highlight = true } = {}): void {
+function scrollPreviewToLine(pane: HTMLElement, line: number, offset: number): HTMLElement | undefined {
   const blocks = measurePreviewBlocks(pane);
   const block = blocks.findLast((b) => b.line <= line) ?? blocks[0];
-  if (!block) return;
-  const top =
-    line >= block.endLine
-      ? block.bottom
-      : block.top + ((block.bottom - block.top) * (line - block.line)) / (block.endLine - block.line);
-  scrollElement(pane, top - offset);
-  if (highlight) flash(block.element);
+  if (!block) return undefined;
+  scrollElement(pane, offsetInBlock(block, line) - offset);
+  return block.element;
+}
+
+/** Scrolls the preview so source `line` sits `offset` pixels below its top, and highlights the block there. */
+function jumpPreviewToLine(pane: HTMLElement, line: number, offset: number): void {
+  const element = scrollPreviewToLine(pane, line, offset);
+  if (element) flash(element);
 }
 
 /** Scrolls the preview so source `line` is at its top. */
 function showPreviewAtLine(pane: HTMLElement, line: number): void {
   if (line <= 0) scrollElement(pane, 0);
-  else scrollPreviewToLine(pane, line, 0, { flash: false });
+  else scrollPreviewToLine(pane, line, 0);
 }
 
 /** Scrolls the preview to the scroll anchor's line, and makes it the pane the anchor follows. */
@@ -165,9 +139,7 @@ function previewLineAtTop(pane: HTMLElement): number {
   const y = pane.scrollTop;
   if (y <= 0) return 0;
   const block = measurePreviewBlocks(pane).findLast((b) => b.top <= y);
-  if (!block) return 0;
-  if (y >= block.bottom) return block.endLine;
-  return block.line + ((block.endLine - block.line) * (y - block.top)) / (block.bottom - block.top);
+  return block ? lineInBlock(block, y) : 0;
 }
 
 /** The source line at the top of the editor, fractional within a line. */
@@ -211,9 +183,7 @@ function previewLineAt(pane: HTMLElement, clientY: number): number | undefined {
   const block = blocks.findLast((b) => b.top <= y) ?? blocks[0];
   if (!block) return undefined;
   if (y >= block.bottom) return block.endLine;
-  const fraction = Math.max(0, (y - block.top) / (block.bottom - block.top));
-  const line = block.line + Math.floor(fraction * (block.endLine - block.line));
-  return Math.min(line, Math.max(block.line, block.endLine - 1));
+  return Math.min(Math.floor(lineInBlock(block, y)), Math.max(block.line, block.endLine - 1));
 }
 
 /**
@@ -225,7 +195,7 @@ export function previewPaneRef(): (pane: HTMLElement) => void {
   onSettled(() => {
     const detach = attachPane(pane);
     if (pendingPreviewJump) {
-      scrollPreviewToLine(pane, pendingPreviewJump.line, pendingPreviewJump.offset);
+      jumpPreviewToLine(pane, pendingPreviewJump.line, pendingPreviewJump.offset);
       pendingPreviewJump = undefined;
     } else if (untrack(() => settings.syncScroll && viewMode() === 'preview')) {
       // Shown in place of the editor, so open where it was. Split view's linking aligns a preview shown beside it.
@@ -255,7 +225,7 @@ export function jumpToPreview(line: number, offset: number): void {
     revealPane('preview');
     return;
   }
-  scrollPreviewToLine(pane, line, offset);
+  jumpPreviewToLine(pane, line, offset);
 }
 
 /**
@@ -310,29 +280,29 @@ function onScroll(pane: PanelMode, element: HTMLElement): void {
     requestAnimationFrame(() => {
       anchorFrames.delete(pane);
       if (scrollAnchor.pane !== pane) return;
-      if (pane === 'preview') {
-        if (element.isConnected) scrollAnchor.line = previewLineAtTop(element);
-      } else {
-        const view = editorView();
-        if (view && viewMode() !== 'preview') scrollAnchor.line = sourceLineAtTop(view);
-      }
-      recordScrollPosition();
+      scrollAnchor.line = recordScrollPosition()[pane] ?? scrollAnchor.line;
     }),
   );
 }
 
-/** Records where the active document's visible panes are scrolled to. */
-function recordScrollPosition(): void {
+/**
+ * Records where the active document's shown panes are scrolled to, and
+ * returns the source line at the top of each pane it could measure.
+ */
+function recordScrollPosition(): Partial<Record<PanelMode, number>> {
   const view = editorView();
   const pane = previewPane();
-  const { activeId } = documentsState;
-  const previous = scrollPositions.get(activeId) ?? topPosition;
-  scrollPositions.set(activeId, {
+  const lines = {
+    source: view && viewMode() !== 'preview' ? sourceLineAtTop(view) : undefined,
+    preview: pane?.isConnected ? previewLineAtTop(pane) : undefined,
+  };
+  const previous = activeScrollPosition();
+  setActiveScrollPosition({
     pane: scrollAnchor.pane,
-    source: view && viewMode() !== 'preview' ? sourceLineAtTop(view) : previous.source,
-    preview: pane?.isConnected ? previewLineAtTop(pane) : previous.preview,
+    source: lines.source ?? previous.source,
+    preview: lines.preview ?? previous.preview,
   });
-  saveScrollPositions();
+  return lines;
 }
 
 /**
@@ -395,13 +365,6 @@ function linkScrolling(view: EditorView, pane: HTMLElement): () => void {
  * was scrolled to. Call once from the app root.
  */
 export function useScrollSync(): void {
-  // Drops closed documents' scroll positions.
-  createEffect(
-    () => documentsState.documents.map((doc) => doc.id).join(),
-    () => saveScrollPositions(),
-    { name: 'pruneScrollPositions' },
-  );
-
   createEffect(
     () => editorView(),
     (view) => view && listen(view.scrollDOM, { scroll: () => onScroll('source', view.scrollDOM) }, { passive: true }),

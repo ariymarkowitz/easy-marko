@@ -19,8 +19,12 @@
   text-decoration: line-through;
 }
 
-/* Maths content; its $ delimiters are marks. */
+/*
+ * Maths content (its $ delimiters are marks), and YAML keys, since YAML leaves
+ * plain values untyped.
+ */
 .tok-math,
+.tok-yamlKey,
 .tok-link,
 .tok-url,
 .tok-keyword,
@@ -44,8 +48,4 @@
 
 .tok-comment {
   font-style: italic;
-}
-
-.tok-yamlKey {
-  color: var(--color-accent);
 }
