@@ -73,23 +73,6 @@ export default function PanelEdge(props: {
     return Math.abs(event.clientX - (bounds.left + bounds.width / 2));
   }
 
-  /**
-   * Where a pointer that left the window left it, as a distance from the edge.
-   * A pointer that overshoots the window's side is last seen some way inside
-   * it, so leaving closer to this edge's side than to the top or bottom counts
-   * as reaching the edge.
-   */
-  function exitDistance(event: PointerEvent): number | undefined {
-    const toSide =
-      props.position === 'start'
-        ? event.clientX
-        : props.position === 'end'
-          ? window.innerWidth - event.clientX
-          : Infinity;
-    const toTopOrBottom = Math.min(event.clientY, window.innerHeight - event.clientY);
-    return toSide < toTopOrBottom && toSide < window.innerWidth / 2 ? 0 : undefined;
-  }
-
   function update(event: PointerEvent, distance: number | undefined) {
     if (event.pointerType === 'touch') return;
     if (revealed()) {
@@ -110,9 +93,10 @@ export default function PanelEdge(props: {
   // Tracked on the window rather than with a hover area, so the area near the
   // window's edges still takes clicks (on a scrollbar, for example).
   useListeners(window, { pointermove: (event) => update(event, distanceTo(event)) });
+  // A pointer that leaves the window is away from every edge.
   useListeners(document, {
     pointerout: (event) => {
-      if (!event.relatedTarget) update(event, exitDistance(event));
+      if (!event.relatedTarget) update(event, undefined);
     },
   });
   onSettled(() => cancelReveal);
