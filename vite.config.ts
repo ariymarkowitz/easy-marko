@@ -113,8 +113,8 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],
-          // Only link previews use these, so they don't need to work offline.
-          globIgnores: ['banner.svg', 'og-image.png'],
+          // Only link previews use this, so it doesn't need to work offline.
+          globIgnores: ['og-image.png'],
           navigateFallback: `${base}index.html`,
         },
       }),

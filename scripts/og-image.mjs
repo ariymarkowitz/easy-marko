@@ -1,4 +1,4 @@
-// Generates public/og-image.png, the link preview image, from public/banner.svg:
+// Generates public/og-image.png, the link preview image, from assets/banner.svg:
 // the banner centred on a 1200×630 background. Run it after changing the
 // banner, and commit the PNG.
 //
@@ -12,7 +12,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const publicDir = fileURLToPath(new URL('../public/', import.meta.url));
-const banner = readFileSync(`${publicDir}banner.svg`, 'utf8').replace(/^<\?xml[^>]*>\s*/, '');
+const bannerFile = fileURLToPath(new URL('../assets/banner.svg', import.meta.url));
+const banner = readFileSync(bannerFile, 'utf8').replace(/^<\?xml[^>]*>\s*/, '');
 
 const width = 1200;
 const height = 630;

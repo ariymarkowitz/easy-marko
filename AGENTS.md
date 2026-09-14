@@ -39,7 +39,7 @@ This is a SolidJS 2.x project. Solid is not React: components run once (there is
 - `src/content/welcome.md`: the document opened on first run.
 - `src/styles/`: `tokens.css` (palette, type, spacing, transitions), `base.css` (layout and controls), `editor.css` (syntax colours), `markdown.css` (preview typography).
 - `public/`: static assets.
-- `scripts/`: development scripts (`server.mjs` lists and stops this folder's local servers; `icons.mjs` regenerates the PNG icons from `public/icon.svg`; `og-image.mjs` regenerates `public/og-image.png`, the link preview, from `public/banner.svg`; `banner.mjs` generates `public/welcome-banner.svg`).
+- `scripts/`: development scripts (`server.mjs` lists and stops this folder's local servers; `icons.mjs` regenerates the PNG icons from `public/icon.svg`; `og-image.mjs` regenerates `public/og-image.png`, the link preview, from `assets/banner.svg`; `banner.mjs` generates `public/welcome-banner.svg`).
 
 ## Code conventions
 
