@@ -1,4 +1,4 @@
-![Banner](/public/welcome-banner.svg)
+![Screenshot](/assets/screenshot.png)
 
 # Easy Marko
 
