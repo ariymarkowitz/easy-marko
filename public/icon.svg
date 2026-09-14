@@ -2,7 +2,7 @@
   <rect width="512" height="512" rx="96" fill="#1c1c1c"/>
   <!-- The letters are drawn 328 wide and scaled about the centre to 384, leaving a 64 margin at the sides. -->
   <g transform="translate(256 256) scale(1.1707) translate(-256 -256)">
-    <path d="M92 160h136v40h-96v36h40l20 20-20 20h-40v36h96v40H92z" fill="#4c7bf4"/>
+    <path d="M92 160h136v41h-88v34.5h40l20.5 20.5-20.5 20.5h-40v34.5h88v41H92z" fill="#4c7bf4"/>
     <path d="M228 352V160h40l56 72 56-72h40v192h-48V240l-48 60-48-60v112z" fill="#fafafa"/>
   </g>
 </svg>
