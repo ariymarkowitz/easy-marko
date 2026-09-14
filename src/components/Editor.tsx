@@ -6,7 +6,7 @@ import { attachEditor, syncEditorState } from '../editor/controller';
 import { editorExtensions } from '../editor/extensions';
 import { textChange } from '../lib/text-change';
 import { activeDocument, documentsState, updateContent } from '../state/documents';
-import { jumpToPreview, restoreScrollPosition } from '../state/pane-link';
+import { jumpToPreview, restoreScrollPosition, sourceScrollTracking } from '../state/pane-link';
 
 export default function Editor() {
   /** One state per document, so each keeps its own undo history and selection. */
@@ -15,6 +15,7 @@ export default function Editor() {
 
   const extensions = [
     editorExtensions,
+    sourceScrollTracking,
     EditorView.updateListener.of((update) => {
       if (update.docChanged && documentId) {
         updateContent(documentId, update.state.doc.toString());

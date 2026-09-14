@@ -87,14 +87,54 @@ function sourceLineTops(view: EditorView): (line: number) => number {
 /** The scroll position this module last gave each element, so the scroll events it causes can be told apart. */
 const programmaticScrolls = new WeakMap<Element, number>();
 
+/** Records `element`'s current scroll position as one this module gave it. */
+function markProgrammaticScroll(element: HTMLElement): void {
+  programmaticScrolls.set(element, element.scrollTop);
+}
+
 function scrollElement(element: HTMLElement, top: number): void {
   element.scrollTop = top;
-  programmaticScrolls.set(element, element.scrollTop);
+  markProgrammaticScroll(element);
+}
+
+/**
+ * Scrolls the editor to `top`. CodeMirror moves the scroll position as it
+ * measures lines whose heights it had estimated, to keep the same content at
+ * the top, so the position is recorded again after its next measure, and
+ * `onCorrected` runs if CodeMirror moved it.
+ */
+function scrollSource(view: EditorView, top: number, onCorrected?: () => void): void {
+  const { scrollDOM } = view;
+  scrollElement(scrollDOM, top);
+  view.requestMeasure({
+    key: scrollSource,
+    read: () => {},
+    // Corrections come later in the same measure. Microtasks run after it, before the scroll events it causes.
+    write: () =>
+      queueMicrotask(() => {
+        if (isProgrammaticScroll(scrollDOM)) return;
+        markProgrammaticScroll(scrollDOM);
+        onCorrected?.();
+      }),
+  });
 }
 
 function isProgrammaticScroll(element: HTMLElement): boolean {
   return programmaticScrolls.get(element) === element.scrollTop;
 }
+
+/** Set while a scroll that scrollSourceToLine asked CodeMirror for waits to be made. */
+let sourceScrollRequested = false;
+
+/** Tells the scrolls CodeMirror makes for this module apart from the user's. Include it in the editor's extensions. */
+export const sourceScrollTracking = EditorView.scrollHandler.of((view) => {
+  if (sourceScrollRequested) {
+    sourceScrollRequested = false;
+    // CodeMirror scrolls once handlers return, and can correct the position later in the same measure.
+    queueMicrotask(() => markProgrammaticScroll(view.scrollDOM));
+  }
+  return false;
+});
 
 /** Briefly highlights the preview block a jump landed on. */
 function flash(element: HTMLElement): void {
@@ -160,7 +200,7 @@ function sourceLineAtTop(view: EditorView): number {
 function scrollSourceToLine(view: EditorView, line: number): void {
   const { doc } = view.state;
   if (line <= 0) {
-    scrollElement(view.scrollDOM, 0);
+    scrollSource(view, 0);
     return;
   }
   const whole = Math.min(Math.floor(line), doc.lines - 1);
@@ -168,6 +208,7 @@ function scrollSourceToLine(view: EditorView, line: number): void {
   const block = view.lineBlockAt(position);
   const lines = doc.lineAt(block.to).number - doc.lineAt(block.from).number + 1;
   const offset = (block.height * Math.min(line - whole, lines)) / lines;
+  sourceScrollRequested = true;
   // CodeMirror measures the target once it's laid out, which a freshly shown editor isn't yet.
   view.dispatch({ effects: EditorView.scrollIntoView(position, { y: 'start', yMargin: -offset }) });
 }
@@ -255,7 +296,7 @@ export function jumpToSource(event: MouseEvent): void {
     });
   } else {
     view.dispatch({ selection: { anchor: position } });
-    scrollElement(view.scrollDOM, sourceLineTops(view)(line) - offset);
+    scrollSource(view, sourceLineTops(view)(line) - offset);
   }
   view.focus();
 }
@@ -338,7 +379,8 @@ function linkScrolling(view: EditorView, pane: HTMLElement): () => void {
     if (scrollAnchor.pane === 'source') {
       scrollElement(pane, mapOffset(source.scrollTop, map.source, map.preview));
     } else {
-      scrollElement(source, mapOffset(pane.scrollTop, map.preview, map.source));
+      // Realigns once CodeMirror has measured the lines it scrolled to.
+      scrollSource(view, mapOffset(pane.scrollTop, map.preview, map.source), sync);
     }
   };
 
