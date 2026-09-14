@@ -63,7 +63,9 @@ export default function Toolbar() {
       <IconButton
         icon={Search}
         label="Find and replace"
-        pressed={findOpen()}
+        // The panel is in the editor, so the button does nothing while the source is hidden.
+        pressed={findOpen() && viewMode() !== 'preview'}
+        disabled={viewMode() === 'preview'}
         onClick={editorCommands.toggleFind}
       />
 
