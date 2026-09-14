@@ -93,6 +93,12 @@ button,
   border-bottom: 1px solid var(--color-border);
 }
 
+/* Related toolbar buttons, grouped for screen readers. Spaced like the toolbar. */
+.toolbar-group {
+  display: flex;
+  gap: inherit;
+}
+
 .toolbar-divider {
   width: 1px;
   height: 1rem;

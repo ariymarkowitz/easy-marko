@@ -79,17 +79,19 @@ export default function Toolbar() {
         onClick={toggleSyncScroll}
       />
       <div class="toolbar-divider" />
-      <For each={viewModes}>
-        {(item) => (
-          <IconButton
-            icon={item.icon}
-            label={item.label}
-            pressed={viewMode() === item.mode}
-            disabled={item.mode === 'split' && narrowScreen()}
-            onClick={() => selectViewMode(item.mode)}
-          />
-        )}
-      </For>
+      <div class="toolbar-group" role="group" aria-label="View">
+        <For each={viewModes}>
+          {(item) => (
+            <IconButton
+              icon={item.icon}
+              label={item.label}
+              pressed={viewMode() === item.mode}
+              disabled={item.mode === 'split' && narrowScreen()}
+              onClick={() => selectViewMode(item.mode)}
+            />
+          )}
+        </For>
+      </div>
       <div class="toolbar-divider" />
       <IconButton
         icon={theme() === 'dark' ? Sun : Moon}
