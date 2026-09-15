@@ -13,7 +13,8 @@
     "lint": "oxlint src",
     "typecheck": "tsc --noEmit",
     "status": "node scripts/server.mjs status",
-    "stop": "node scripts/server.mjs stop"
+    "stop": "node scripts/server.mjs stop",
+    "generate-logo": "node scripts/logo/generate.mjs"
   },
   "license": "MIT",
   "devDependencies": {

@@ -113,7 +113,7 @@ export default defineConfig(({ mode }) => {
           background_color: APP_COLORS.background.light,
           theme_color: APP_COLORS.surface.light,
           // Paths are relative to the manifest (start_url and scope default to
-          // the base). The PNGs are generated from icon.svg by scripts/icons.mjs.
+          // the base). The PNGs are generated from icon.svg by scripts/logo/app-icons.mjs.
           icons: [
             { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
             { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },

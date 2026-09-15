@@ -18,7 +18,7 @@ export default function Document(props: ParentProps) {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="description" content={APP_DESCRIPTION} />
-        {/* Link previews. public/og-image.png is generated from banner.svg by scripts/og-image.mjs. */}
+        {/* Link previews. public/og-image.png is generated from banner.svg by scripts/logo/og-image.mjs. */}
         <meta property="og:type" content="website" />
         <meta property="og:title" content={APP_NAME} />
         <meta property="og:description" content={APP_DESCRIPTION} />

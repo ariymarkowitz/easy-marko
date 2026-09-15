@@ -13,6 +13,7 @@ This is a SolidJS 2.x project. Solid is not React: components run once (there is
 - `npm test`: vitest (jsdom). Tests sit beside the code they cover.
 - `npm run typecheck`, `npm run lint`
 - `npm run status -- [dev|preview] [--wait]`, `npm run stop -- [dev|preview|<pid>]`: list or stop the servers running from this folder (see below)
+- `npm run generate-logo`: regenerate all the logo artwork in `scripts/logo/` (see below)
 
 ## Instructions
 
@@ -39,7 +40,7 @@ This is a SolidJS 2.x project. Solid is not React: components run once (there is
 - `src/content/welcome.md`: the document opened on first run.
 - `src/styles/`: `tokens.css` (palette, type, spacing, transitions), `base.css` (layout and controls), `editor.css` (syntax colours), `markdown.css` (preview typography), `fonts.css` (fallback faces; the web fonts are Fontsource imports in `App.tsx`).
 - `public/`: static assets.
-- `scripts/`: development scripts (`server.mjs` lists and stops this folder's local servers; `logo.mjs` generates `public/icon.svg` and the transparent wordmark `assets/banner.svg` from Figtree's outlines; `icons.mjs` regenerates the PNG icons from `public/icon.svg`; `banner.mjs` generates the transparent tiling `assets/tiling.svg`; `combine-banner.mjs` layers `assets/tiling.svg` and `assets/banner.svg` into `public/banner.svg`, shown at the top of the welcome document; `og-image.mjs` regenerates `public/og-image.png`, the link preview, from `assets/banner.svg`).
+- `scripts/`: `server.mjs` lists and stops this folder's local servers. `logo/` generates all the logo artwork from Figtree outlines; run `npm run generate-logo` (`generate.mjs`) after changing the font, colours, or logo geometry, rather than its steps individually: `glyphs.mjs` (shared font-shaping helpers), `icon.mjs` (`public/icon.svg`), `wordmark.mjs` (the transparent wordmark `assets/banner.svg`), `app-icons.mjs` (the PWA's PNG icons, from `icon.svg`), `tiling.mjs` (the transparent tiling `assets/tiling.svg`), `banner.mjs` (layers `tiling.svg` and the wordmark into `public/banner.svg`, shown atop the welcome document), `og-image.mjs` (`public/og-image.png`, the link preview, from the wordmark).
 
 ## Code conventions
 
