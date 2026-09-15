@@ -16,7 +16,7 @@
   /* Floating surfaces, like notices and the drop indicator's label. */
   --color-surface: light-dark(#f7f7f7, #222222);
   /* Code in rendered Markdown: fenced blocks, and inline code spans. */
-  --color-code-bg: light-dark(#ebebeb, #262630);
+  --color-code-bg: light-dark(#ebebeb, #27272c);
   --color-code-inline-bg: light-dark(#e9e9e9, #232323);
   /* The blockquote bar and hr in rendered Markdown. */
   --color-border-strong: light-dark(#e0e0e0, #333333);
