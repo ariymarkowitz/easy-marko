@@ -26,14 +26,22 @@ export function toggleTheme(): void {
 }
 
 /**
- * Mirrors the override onto `<html data-theme>`, and eases colours over when
- * the theme changes. Call once from the app root. The inline script in
- * Document.tsx applies the saved override before first paint.
+ * Mirrors the override onto `<html data-theme>`, colours the browser UI (the
+ * theme-color meta tag) to match the theme, and eases colours over when the
+ * theme changes. Call once from the app root. The inline script in
+ * Document.tsx does the first two before first paint.
  */
 export function useTheme(): void {
   createEffect(override, (value) => {
     if (value) document.documentElement.dataset.theme = value;
     else delete document.documentElement.dataset.theme;
+  });
+
+  // The meta tag's media attribute could only follow the system, so set its colour directly.
+  createEffect(theme, (value) => {
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    const color = meta?.dataset[value];
+    if (meta && color) meta.content = color;
   });
 
   // Covers switches from the toggle and from the system; see .theme-transition in base.css.

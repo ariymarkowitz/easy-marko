@@ -10,8 +10,9 @@ import tokensCss from './styles/tokens.css?raw';
 const background = lightDarkToken(tokensCss, '--color-bg');
 
 // Applies a saved theme override before first paint, so there's no flash of
-// the wrong theme. state/theme.ts keeps it in sync after the app starts.
-const themeScript = `try{var t=localStorage.getItem(${JSON.stringify(STORAGE_KEYS.theme)});if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
+// the wrong theme, and colours the browser UI (such as an installed app's
+// title bar) to match. state/theme.ts keeps both in sync after the app starts.
+const themeScript = `(function(){var t;try{t=localStorage.getItem(${JSON.stringify(STORAGE_KEYS.theme)})}catch(e){}if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;else t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=m.dataset[t]})()`;
 
 // The document shell (the equivalent of index.html). It is prerendered into
 // dist/client/index.html at build time and ships no client-side JS; the
@@ -33,8 +34,8 @@ export default function Document(props: ParentProps) {
         <meta property="og:image:height" content="630" />
         <meta property="og:image:alt" content={`${APP_NAME} Markdown editor`} />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="theme-color" media="(prefers-color-scheme: light)" content={background.light} />
-        <meta name="theme-color" media="(prefers-color-scheme: dark)" content={background.dark} />
+        {/* Follows the app's theme, not the system's: the theme script and state/theme.ts set content from data-light/data-dark. */}
+        <meta name="theme-color" content={background.light} data-light={background.light} data-dark={background.dark} />
         <link rel="icon" href={`${import.meta.env.BASE_URL}icon.svg`} type="image/svg+xml" />
         <link rel="apple-touch-icon" href={`${import.meta.env.BASE_URL}apple-touch-icon.png`} />
         <link rel="manifest" href={`${import.meta.env.BASE_URL}manifest.webmanifest`} />
