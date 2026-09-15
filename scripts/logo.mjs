@@ -158,7 +158,7 @@ const titleBaseline = round(height / 2 - blockHeight / 2 + (capHeight * titleSiz
 const title = textPaths('#EASYMARKO', 800, titleSize, width / 2, titleBaseline, (char, i) =>
   char === '#' ? `fill="${accent}" fill-opacity="0.5"` : i < 5 ? `fill="${accent}"` : `fill="${light}"`,
   // Figtree's K and O are set a little loose at this weight.
-  { O: -30 },
+  { O: -50 },
 );
 const tagline = textPaths('markdown editor', 500, taglineSize, width / 2, titleBaseline + lineGap, () => 'fill="#e5e5e5"');
 const banner = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}">
