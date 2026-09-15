@@ -75,10 +75,8 @@ export default function Toolbar() {
         disabled={viewMode() === 'preview'}
         onClick={editorCommands.toggleFind}
       />
-
-      <span class="spacer" />
-
       <IconButton
+        class="push-end"
         icon={Link2}
         label="Sync scrolling in side-by-side view"
         pressed={settings.syncScroll}

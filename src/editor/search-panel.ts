@@ -32,7 +32,6 @@ function element<K extends keyof HTMLElementTagNameMap>(
 
 function iconButton(icon: IconNode, label: string, onClick: () => void, className = ''): HTMLButtonElement {
   const button = element('button', { type: 'button', title: label, className: `icon-button ${className}`.trim() });
-  button.setAttribute('aria-label', label);
   button.innerHTML = iconSvg(icon, 'icon');
   button.addEventListener('click', onClick);
   return button;
@@ -116,7 +115,7 @@ export function createSearchPanel(view: EditorView): Panel {
     iconButton(ReplaceAll, 'Replace all', () => replaceAll(view)),
   ];
   for (const control of replaceControls) control.hidden = readOnly;
-  const grid = element('div', { className: 'search-grid' }, [
+  const dom = element('div', { className: 'search-panel' }, [
     element('div', { className: 'search-row' }, [
       element('div', { className: 'search-input' }, [searchField, ...Object.values(toggles)]),
       iconButton(ChevronUp, 'Previous match', () => findPrevious(view)),
@@ -125,7 +124,6 @@ export function createSearchPanel(view: EditorView): Panel {
     ]),
     element('div', { className: 'search-row' }, [...replaceControls, count]),
   ]);
-  const dom = element('div', { className: 'search-panel' }, [grid]);
 
   dom.addEventListener('keydown', (event) => {
     if (runScopeHandlers(view, event, 'search-panel')) {

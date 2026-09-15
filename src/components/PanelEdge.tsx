@@ -1,5 +1,5 @@
 import type { JSX } from '@solidjs/web';
-import { createSignal, For, onSettled } from 'solid-js';
+import { createSignal, For, onSettled, Show } from 'solid-js';
 import { ChevronLeft, ChevronRight, Eye, PanelLeft, type IconNode } from 'lucide';
 import { CLICK_SLOP, trackDrag } from '../lib/drag';
 import { useListeners } from '../reactive';
@@ -107,13 +107,20 @@ export default function PanelEdge(props: {
       class={['panel-edge', props.position && `panel-edge-${props.position}`, { revealed: revealed() }]}
     >
       {props.children}
-      <div class="panel-edge-buttons before">
-        <For each={props.before}>{(action) => <EdgeButton action={action} />}</For>
-      </div>
-      <div class="panel-edge-buttons after">
-        <For each={props.after}>{(action) => <EdgeButton action={action} />}</For>
-      </div>
+      <EdgeButtons side="before" actions={props.before} />
+      <EdgeButtons side="after" actions={props.after} />
     </div>
+  );
+}
+
+/** The buttons on one side of an edge, if it has any. */
+function EdgeButtons(props: { side: 'before' | 'after'; actions?: EdgeAction[] }) {
+  return (
+    <Show when={props.actions?.length}>
+      <div class={['panel-edge-buttons', props.side]}>
+        <For each={props.actions}>{(action) => <EdgeButton action={action} />}</For>
+      </div>
+    </Show>
   );
 }
 
@@ -125,7 +132,6 @@ function EdgeButton(props: { action: EdgeAction }) {
       // Out of the tab order: the toolbar has the same controls.
       tabindex="-1"
       title={props.action.label}
-      aria-label={props.action.label}
       aria-controls={props.action.controls}
       onPointerDown={(event) =>
         trackDrag(event, { threshold: CLICK_SLOP, onMove: props.action.onDragStart() })

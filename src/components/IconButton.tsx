@@ -19,7 +19,6 @@ export default function IconButton(props: {
       type="button"
       class={['icon-button', props.class]}
       title={props.label}
-      aria-label={props.label}
       aria-pressed={props.pressed === undefined ? undefined : props.pressed ? 'true' : 'false'}
       aria-controls={props.controls}
       aria-busy={props.busy ? 'true' : undefined}

@@ -78,5 +78,5 @@ export default function Editor() {
     },
   );
 
-  return <div class="editor">{view.dom}</div>;
+  return view.dom;
 }

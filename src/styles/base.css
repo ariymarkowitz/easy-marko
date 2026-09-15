@@ -51,8 +51,9 @@ button,
 
 /* Utilities */
 
-.spacer {
-  flex: 1;
+/* Pushes the element, and those after it in a flex row, to the row's end. */
+.push-end {
+  margin-inline-start: auto;
 }
 
 /* Layout */
@@ -82,8 +83,8 @@ button,
   white-space: nowrap;
 }
 
-.toolbar > :not(.spacer),
-.status-bar > :not(.spacer) {
+.toolbar > *,
+.status-bar > * {
   flex-shrink: 0;
 }
 
@@ -143,7 +144,7 @@ button,
 }
 
 /* Bound the editor to the pane so CodeMirror's own scroller does the scrolling. */
-.editor {
+.source-pane .cm-editor {
   height: 100%;
 }
 
@@ -174,6 +175,12 @@ button,
 }
 
 /* Controls */
+
+.icon {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
 
 .icon-button {
   display: inline-grid;
@@ -327,9 +334,6 @@ button,
 
 .search-panel {
   container: search-panel / inline-size;
-}
-
-.search-grid {
   display: grid;
   /* A zero minimum, so the rows and their fields can be narrower than the fields' natural widths. */
   grid-template-columns: minmax(0, 1fr);
@@ -381,11 +385,6 @@ button,
 
 .search-field::placeholder {
   color: var(--color-text-muted);
-}
-
-.search-grid .icon {
-  width: 1rem;
-  height: 1rem;
 }
 
 .search-toggle.icon-button {
@@ -471,12 +470,6 @@ button,
   line-height: 1.4;
   color: var(--color-text-muted);
   vertical-align: middle;
-}
-
-.markdown .local-image-icon {
-  flex: none;
-  width: 1rem;
-  height: 1rem;
 }
 
 .markdown .local-image-label {
@@ -631,7 +624,6 @@ button,
 }
 
 .notice-icon {
-  display: flex;
   color: var(--color-accent);
 }
 

@@ -7,8 +7,8 @@ import IconButton from './IconButton';
 
 export default function Sidebar() {
   return (
-    <aside id="sidebar" class="sidebar" aria-label="Documents">
-      <h2 class="sidebar-heading">Documents</h2>
+    <aside id="sidebar" class="sidebar" aria-labelledby="sidebar-heading">
+      <h2 id="sidebar-heading" class="sidebar-heading">Documents</h2>
       <ul class="document-list">
         <For each={documentsState.documents}>
           {(doc) => {

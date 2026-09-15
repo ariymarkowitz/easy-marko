@@ -90,7 +90,7 @@ export type LocalImage =
   /** No granted folder contains the image. */
   | { status: 'no-access' };
 
-const imageOffIcon = iconSvg(ImageOff, 'local-image-icon');
+const imageOffIcon = iconSvg(ImageOff, 'icon');
 
 function placeholder(alt: string, src: string, status: 'missing' | 'no-access'): HTMLElement {
   let path = src;

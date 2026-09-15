@@ -47,7 +47,7 @@ This is a SolidJS 2.x project. Solid is not React: components run once (there is
 - Solid 2 conventions are in the cheatsheet.
 - Icons: import icon data from `lucide` and render it with `<Icon>`/`<IconButton>`.
 - The UI is minimalist: greyscale plus one accent colour, and a small toolbar and status bar so the editor and preview are nearly fullscreen.
-- CSS: use the tokens in `tokens.css` and add new ones only when needed. `markdown.css` is only for rendered Markdown (it's also used in exported HTML); app UI in or around the preview goes in `base.css`, and the sanitiser strips `base.css` classes and ids from Markdown. Prefer semantic class names; keep utility classes (like `.spacer`) for cases where they make the code simpler. Colours use `light-dark()`.
+- CSS: use the tokens in `tokens.css` and add new ones only when needed. `markdown.css` is only for rendered Markdown (it's also used in exported HTML); app UI in or around the preview goes in `base.css`, and the sanitiser strips `base.css` classes and ids from Markdown. Prefer semantic class names; keep utility classes (like `.push-end`) for cases where they make the code simpler. Colours use `light-dark()`.
 - The preview is written with `innerHTML` and Markdown may contain raw HTML: pass rendered HTML through `sanitizeHtml` (`src/lib/sanitize.ts`) before it's shown or exported.
 - Feature-detect optional browser APIs by type (`typeof window.showOpenFilePicker === 'function'`), not truthiness: where a browser lacks one, an element in the preview with that id or name appears as `window.<name>`.
 - Keep `AGENTS.md` short: only include locations of important files and instructions. No extraneous information.
