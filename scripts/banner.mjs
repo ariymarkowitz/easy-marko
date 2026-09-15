@@ -26,11 +26,12 @@ const scale = +(glyph / 700).toFixed(5);
 /** The E's top and bottom bars, which are also the M's strokes. */
 const bar = 147.6;
 
-// The E's bars reach the right edge. Its stem and pointed middle bar are the logo's.
+// The E's bars reach the right edge. Its stem and bar thicknesses are the
+// logo's; the middle bar's point stops a bar's thickness short of the edge.
 const stem = 160.8;
 const middle = { top: -74.4, bottom: 69.2 };
 const taper = (middle.bottom - middle.top) / 2;
-const tip = -350 + 460 * 0.8;
+const tip = 350 - bar;
 const e = [
   `M-350-350H350v${bar}H${round(-350 + stem)}V${middle.top}`,
   `H${round(tip - taper)}L${round(tip)} ${round(middle.top + taper)}L${round(tip - taper)} ${middle.bottom}`,
