@@ -639,7 +639,7 @@ button,
 .notice-message {
   flex: 1;
   min-width: 0;
-  margin: var(--space-1) 0;
+  margin: var(--space-1) 0 var(--space-1) var(--space-2);
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
