@@ -81,7 +81,9 @@ function pathData(commands, x, y, size) {
 
 /**
  * Shapes `text` at a weight: each glyph's outline, pen position and ink extent
- * in font units. `shifts` moves glyphs of the given characters horizontally.
+ * in font units. `shifts` moves glyphs of the given characters horizontally,
+ * and carries forward to every glyph after them (so it also closes up or
+ * opens up the gap to what follows, like a kerning adjustment).
  */
 function shape(text, weight, shifts = {}) {
   font.setVariations([new hb.Variation('wght', weight)]);
@@ -96,14 +98,15 @@ function shape(text, weight, shifts = {}) {
   const glyphs = buffer.getGlyphInfos().map((info, i) => {
     const char = text[info.cluster];
     const commands = char === 'E' && weight === 800 ? eCommands() : font.glyphToJson(info.codepoint);
-    const x = pen + positions[i].xOffset + (shifts[char] ?? 0);
+    const shift = shifts[char] ?? 0;
+    const x = pen + positions[i].xOffset + shift;
     for (const { values } of commands) {
       for (let j = 0; j < values.length; j += 2) {
         inkLeft = Math.min(inkLeft, x + values[j]);
         inkRight = Math.max(inkRight, x + values[j]);
       }
     }
-    pen += positions[i].xAdvance;
+    pen += positions[i].xAdvance + shift;
     return { char, commands, x };
   });
   return { glyphs, inkLeft, inkRight };
@@ -157,8 +160,9 @@ const titleBaseline = round(height / 2 - blockHeight / 2 + (capHeight * titleSiz
 
 const title = textPaths('#EASYMARKO', 800, titleSize, width / 2, titleBaseline, (char, i) =>
   char === '#' ? `fill="${accent}" fill-opacity="0.5"` : i < 5 ? `fill="${accent}"` : `fill="${light}"`,
-  // Figtree's K and O are set a little loose at this weight.
-  { O: -50 },
+  // Figtree's K and O are set a little loose at this weight, and S and Y
+  // leave an optical gap where their strokes converge.
+  { Y: -22.6, O: -50 },
 );
 const tagline = textPaths('markdown editor', 500, taglineSize, width / 2, titleBaseline + lineGap, () => 'fill="#e5e5e5"');
 const banner = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}">
