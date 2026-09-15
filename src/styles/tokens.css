@@ -13,6 +13,8 @@
   --color-code-bg: light-dark(#f3f3f3, #201f27);
   --color-code-inline-bg: light-dark(#ececec, #292929);
   --color-hover: light-dark(#e6e6e6, #2c2c2c);
+  /* Hover on controls that sit on --color-surface, like the find panel's. */
+  --color-hover-strong: light-dark(#dcdcdc, #363636);
   --color-hover-soft: light-dark(rgb(0 0 0 / 3%), rgb(255 255 255 / 3%));
   --color-border: light-dark(#e1e1e1, #2e2e2e);
   --color-text: light-dark(#2a2a2a, #e8e8e8);
@@ -54,7 +56,9 @@
   --space-4: 1rem;
   --space-6: 1.5rem;
 
-  --radius: 6px;
+  --radius: 3px;
+  /* Between the panes, and between them and the window's sides. */
+  --pane-gap: 5px;
   --content-width: 800px;
 
   /* Rendered Markdown (markdown.css). Em sizes follow the element's own font size. */
@@ -80,10 +84,9 @@
   /* The tick's size relative to Lucide's square-check. */
   --md-tick-scale: 1.67;
 
-  /* Text and icons change quickly; larger surfaces fade a little slower. */
   --transition-colors:
-    color 0.15s ease, fill 0.15s ease, stroke 0.15s ease, background-color 0.25s ease,
-    border-color 0.25s ease;
+    color 0.05s ease, fill 0.05s ease, stroke 0.05s ease, background-color 0.05s ease,
+    border-color 0.05s ease;
 }
 
 :root[data-theme='light'] {

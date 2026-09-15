@@ -28,8 +28,8 @@ export default function Document(props: ParentProps) {
         <meta property="og:image:height" content="630" />
         <meta property="og:image:alt" content={`${APP_NAME} Markdown editor`} />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="theme-color" media="(prefers-color-scheme: light)" content={APP_COLORS.surface.light} />
-        <meta name="theme-color" media="(prefers-color-scheme: dark)" content={APP_COLORS.surface.dark} />
+        <meta name="theme-color" media="(prefers-color-scheme: light)" content={APP_COLORS.background.light} />
+        <meta name="theme-color" media="(prefers-color-scheme: dark)" content={APP_COLORS.background.dark} />
         <link rel="icon" href={`${import.meta.env.BASE_URL}icon.svg`} type="image/svg+xml" />
         <link rel="apple-touch-icon" href={`${import.meta.env.BASE_URL}apple-touch-icon.png`} />
         <link rel="manifest" href={`${import.meta.env.BASE_URL}manifest.webmanifest`} />

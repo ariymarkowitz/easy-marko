@@ -11,8 +11,8 @@ export const APP_URL = 'https://ariymarkowitz.github.io/easy-marko/';
  * serves them to the CSS as `virtual:app-colors.css`, alongside tokens.css.
  */
 export const APP_COLORS = {
-  /** --color-surface: the toolbar, which the browser's own UI blends into. */
+  /** --color-surface: panels and floating surfaces, like the find panel and notices. */
   surface: { light: '#f6f6f6', dark: '#1e1e1e' },
-  /** --color-bg: the page, shown on the installed app's splash screen. */
+  /** --color-bg: the page and toolbar, which the browser's own UI and the installed app's splash screen blend into. */
   background: { light: '#fafafa', dark: '#161616' },
 };

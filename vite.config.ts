@@ -111,7 +111,7 @@ export default defineConfig(({ mode }) => {
           description: APP_DESCRIPTION,
           display: 'standalone',
           background_color: APP_COLORS.background.light,
-          theme_color: APP_COLORS.surface.light,
+          theme_color: APP_COLORS.background.light,
           // Paths are relative to the manifest (start_url and scope default to
           // the base). The PNGs are generated from icon.svg by scripts/logo/app-icons.mjs.
           icons: [

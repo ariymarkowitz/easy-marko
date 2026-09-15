@@ -29,7 +29,8 @@ const theme = EditorView.theme({
   '&': {
     height: '100%',
     color: 'var(--color-text)',
-    backgroundColor: 'var(--color-bg)',
+    // The pane paints the background, inside its rounded border.
+    backgroundColor: 'transparent',
   },
   '&.cm-focused': { outline: 'none' },
   '.cm-scroller': {
