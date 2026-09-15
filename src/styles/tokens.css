@@ -34,7 +34,7 @@
   --color-accent: light-dark(#3464e0, #7a9ff7);
   --color-accent-soft: light-dark(rgb(52 100 224 / 12%), rgb(122 159 247 / 16%));
   --color-selection: light-dark(rgb(52 100 224 / 22%), rgb(122 159 247 / 30%));
-  --color-danger: light-dark(#8e0f06, #f2877f);
+  --color-danger: light-dark(#c9372c, #f47c72);
   /* Notices (Notices.tsx). Info notices are tinted with the accent colour, errors with the danger colour. */
   --color-notice-border: light-dark(rgb(0 0 0 / 12%), rgb(255 255 255 / 13%));
   --color-notice-info-bg: light-dark(#e1e9fc, #192544);
@@ -44,6 +44,7 @@
   --color-notice-info-hover: light-dark(#d0dcfa, #263863);
   --color-notice-error-bg: light-dark(#fad9d6, #260e0d);
   --color-notice-error-border: light-dark(rgb(160 11 0 / 31%),rgb(255 92 78 / 45%));
+  --color-notice-error-text: light-dark(#8e0f06, #f2877f);
   --color-notice-error-hover: light-dark(#f6c7c3, #3d1816);
   /* Code highlighting (editor.css). */
   --color-syntax-variable: light-dark(#2755ce, #7a9ff7);

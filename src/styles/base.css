@@ -620,7 +620,7 @@ button,
 .notice-error {
   border-color: var(--color-notice-error-border);
   background-color: var(--color-notice-error-bg);
-  color: var(--color-danger);
+  color: var(--color-notice-error-text);
 }
 
 @keyframes notice-in {
