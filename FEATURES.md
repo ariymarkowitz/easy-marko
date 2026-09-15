@@ -85,7 +85,8 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 ## Offline and install
 
 - PWA with a web manifest and a precaching service worker. PNG and maskable icons are generated from `public/icon.svg` by `node scripts/icons.mjs`, which needs `rsvg-convert`.
-- Link previews: Open Graph and Twitter card tags with `public/og-image.png` (1200×630), generated from `assets/banner.svg` by `node scripts/og-image.mjs` (needs `rsvg-convert` and the Outfit font). Preview URLs are absolute, from `APP_URL` in `src/app-info.ts`.
+- Logo: Figtree at weight 800, outlined by `node scripts/logo.mjs` into `public/icon.svg` and `assets/banner.svg`. The E's top and bottom bars meet the M, and its shorter middle bar tapers to a point. The wordmark `#EASYMARKO` uses that E, over "Markdown editor" in Figtree at weight 400. The welcome banner (`node scripts/banner.mjs`) tiles the E and M squared up, with the M's legs and flat tops as thick as the E's bars.
+- Link previews: Open Graph and Twitter card tags with `public/og-image.png` (1200×630), generated from `assets/banner.svg` by `node scripts/og-image.mjs` (needs `rsvg-convert`). Preview URLs are absolute, from `APP_URL` in `src/app-info.ts`.
 - Update prompt: a new service worker waits until Reload is clicked, then every open tab reloads. Unsaved edits survive through the backup. The app checks for updates hourly and when the page becomes visible, and says once when it's ready to work offline.
 - Once installed, `.md` files open from the OS through `file_handlers` and `launchQueue`. `launch_handler` is `focus-existing`, so files open in an existing window.
 

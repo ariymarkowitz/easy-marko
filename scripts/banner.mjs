@@ -13,34 +13,40 @@ const height = 144;
 const cell = 48;
 /** Letter size in the cell; the rest is the gap between letters. */
 const glyph = 44;
-/** Stroke width, in the letters' 192-unit box. */
-const stroke = 46;
 /** Fill opacity of each letter. */
 const opacity = { e: 0.45, m: 0.3 };
 const seed = 7;
 
 const round = (value) => +value.toFixed(1);
-/** Scales a letter from its 192-unit box to the glyph size. */
-const scale = +(glyph / 192).toFixed(4);
+/** Scales a letter from its 700-unit box to the glyph size. */
+const scale = +(glyph / 700).toFixed(5);
 
-// The letters are drawn in a 192-unit box centred on the origin.
-const gap = round((192 - 3 * stroke) / 2);
+// The letters are the logo's (scripts/logo.mjs), from Figtree at weight 800 in
+// font units, drawn in a 700-unit box centred on the origin.
+/** The E's top and bottom bars, which are also the M's strokes. */
+const bar = 147.6;
+
+// The E's bars reach the right edge. Its stem and pointed middle bar are the logo's.
+const stem = 160.8;
+const middle = { top: -74.4, bottom: 69.2 };
+const taper = (middle.bottom - middle.top) / 2;
+const tip = -350 + 460 * 0.8;
 const e = [
-  `M-96-96H96v${stroke}H${-96 + stroke}v${gap}`,
-  `H${round(40 - stroke / 2)}l${stroke / 2} ${stroke / 2} ${-stroke / 2} ${stroke / 2}`,
-  `H${-96 + stroke}v${gap}H96v${stroke}H-96z`,
+  `M-350-350H350v${bar}H${round(-350 + stem)}V${middle.top}`,
+  `H${round(tip - taper)}L${round(tip)} ${round(middle.top + taper)}L${round(tip - taper)} ${middle.bottom}`,
+  `H${round(-350 + stem)}V${350 - bar}H350v${bar}H-350z`,
 ].join('');
 
-// The M's diagonals keep a 1.25 slope and are a little thicker than its legs.
-const slope = 1.25;
-const outerPoint = -96 + (96 - stroke) * slope;
-/** The diagonals' stroke, measured across the diagonal. */
-const diagonalStroke = (stroke * 50) / 48;
-const innerPoint = outerPoint + diagonalStroke * Math.hypot(1, slope);
-const innerLeg = innerPoint - (96 - stroke) * slope;
+// The M's legs and the flat tops beside its diagonals are as wide as the E's
+// bars. The diagonals keep Figtree's slope and vertical thickness.
+const slope = 276 / 186.6;
+const diagonal = 269.8;
+const outerPoint = -350 + (350 - bar) * slope;
+const innerPoint = outerPoint + diagonal;
+const innerLeg = innerPoint - (350 - bar) * slope;
 const m = [
-  `M-96 96V-96h${stroke}L0 ${round(outerPoint)}L${96 - stroke} -96H96V96H${96 - stroke}`,
-  `V${round(innerLeg)}L0 ${round(innerPoint)}L${-96 + stroke} ${round(innerLeg)}V96z`,
+  `M-350 350V-350h${bar}L0 ${round(outerPoint)}L${350 - bar} -350H350V350H${350 - bar}`,
+  `V${round(innerLeg)}L0 ${round(innerPoint)}L${-350 + bar} ${round(innerLeg)}V350z`,
 ].join('');
 
 let state = seed;

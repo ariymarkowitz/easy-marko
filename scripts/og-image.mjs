@@ -4,8 +4,7 @@
 //
 //   node scripts/og-image.mjs
 //
-// Needs rsvg-convert from librsvg (`brew install librsvg`), and the Outfit font
-// installed, since the banner's "#" and tagline are text.
+// Needs rsvg-convert from librsvg (`brew install librsvg`).
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -18,14 +17,13 @@ const banner = readFileSync(bannerFile, 'utf8').replace(/^<\?xml[^>]*>\s*/, '');
 const width = 1200;
 const height = 630;
 const background = '#1c1c1c';
-/** The banner's size, and the centre of its artwork, in its own units. */
+/** The banner's size in its own units. Its artwork is centred. */
 const bannerWidth = 1600;
 const bannerHeight = 400;
-const artworkCentre = { x: 800, y: 201.5 };
 const scale = 0.84;
 
-const x = +(width / 2 - artworkCentre.x * scale).toFixed(1);
-const y = +(height / 2 - artworkCentre.y * scale).toFixed(1);
+const x = +((width - bannerWidth * scale) / 2).toFixed(1);
+const y = +((height - bannerHeight * scale) / 2).toFixed(1);
 const nested = banner.replace(
   /<svg\b/,
   `<svg x="${x}" y="${y}" width="${bannerWidth * scale}" height="${bannerHeight * scale}"`,
