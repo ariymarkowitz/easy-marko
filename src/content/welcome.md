@@ -1,6 +1,6 @@
 ![Banner](https://ariymarkowitz.github.io/easy-marko/banner.svg)
 
-# Welcome to Easy Marko
+# Welcome to Easy Marko!
 
 Easy Marko is a simple Markdown editor and viewer. It runs in the browser or on your device as a Progressive Web App. This page is an ordinary document. Edit it, break it, or close it from the sidebar when you're done. You can bring it back by clicking the About button in the toolbar.
 
