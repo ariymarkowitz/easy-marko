@@ -1,41 +1,40 @@
-// Generates public/og-image.png, the link preview image, from assets/banner.svg
-// (the wordmark, from wordmark.mjs): the banner centred on a 1200×630
-// background. One step of generate.mjs, run after wordmark.mjs has written
-// that file.
+// Generates public/og-image.png, the link preview image: the banner's layers
+// (banner.mjs) filling a 1200×630 image on the dark theme's background, with a
+// tiling (tiling.mjs) grown to cover it and the wordmark (assets/banner.svg,
+// from wordmark.mjs) centred. One step of generate.mjs, run after
+// wordmark.mjs has written that file.
 //
 // Needs rsvg-convert from librsvg (`brew install librsvg`).
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { lightDarkToken } from '../../src/lib/css-tokens.ts';
+import { bannerLayers, bannerSize } from './banner.mjs';
+import { tilingSvg } from './tiling.mjs';
 
-const publicDir = fileURLToPath(new URL('../../public/', import.meta.url));
-const bannerFile = fileURLToPath(new URL('../../assets/banner.svg', import.meta.url));
+const root = new URL('../../', import.meta.url);
 
 export function generateOgImage() {
-  const banner = readFileSync(bannerFile, 'utf8').replace(/^<\?xml[^>]*>\s*/, '');
+  const wordmark = readFileSync(fileURLToPath(new URL('assets/banner.svg', root)), 'utf8');
+  const tokens = readFileSync(fileURLToPath(new URL('src/styles/tokens.css', root)), 'utf8');
 
   const width = 1200;
   const height = 630;
-  const background = '#1c1c1c';
-  /** The banner's size in its own units. Its artwork is centred. */
-  const bannerWidth = 1600;
-  const bannerHeight = 400;
+  const background = lightDarkToken(tokens, '--color-bg').dark;
+  /** The wordmark's scale from banner units; the tiling's cells scale with it. */
   const scale = 0.84;
 
-  const x = +((width - bannerWidth * scale) / 2).toFixed(1);
-  const y = +((height - bannerHeight * scale) / 2).toFixed(1);
-  const nested = banner.replace(
-    /<svg\b/,
-    `<svg x="${x}" y="${y}" width="${bannerWidth * scale}" height="${bannerHeight * scale}"`,
-  );
+  const x = +((width - bannerSize.width * scale) / 2).toFixed(1);
+  const y = +((height - bannerSize.height * scale) / 2).toFixed(1);
+  const tiling = tilingSvg({ width, height, cell: (bannerSize.height / 3) * scale });
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}">
   <rect width="${width}" height="${height}" fill="${background}"/>
-  ${nested}
+${bannerLayers({ width, height, tiling, wordmark, transform: `translate(${x} ${y}) scale(${scale})` })}
 </svg>`;
 
-  execFileSync('rsvg-convert', ['--width', width, '--height', height, '--output', `${publicDir}og-image.png`], {
+  execFileSync('rsvg-convert', ['--width', width, '--height', height, '--output', fileURLToPath(new URL('public/og-image.png', root))], {
     input: svg,
   });
   console.log('public/og-image.png');
