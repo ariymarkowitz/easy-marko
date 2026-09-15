@@ -199,6 +199,20 @@ button,
   cursor: default;
 }
 
+.icon-button[aria-busy='true'] {
+  cursor: progress;
+}
+
+.icon-button[aria-busy='true'] .icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    rotate: 1turn;
+  }
+}
+
 /* A text button in the accent colour, like a notice's action. */
 .text-button {
   border: 0;

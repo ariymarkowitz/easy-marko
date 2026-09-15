@@ -7,6 +7,7 @@ import {
   FolderOpen,
   Info,
   Link2,
+  LoaderCircle,
   Moon,
   PanelLeft,
   Redo2,
@@ -19,6 +20,7 @@ import {
 import { canRedo, canUndo, editorCommands, findOpen } from '../editor/controller';
 import {
   exportActiveDocument,
+  exporting,
   newDocument,
   openDocument,
   openWelcomeDocument,
@@ -56,7 +58,12 @@ export default function Toolbar() {
       <IconButton icon={FilePlus} label="New document" onClick={newDocument} />
       <IconButton icon={FolderOpen} label="Open (Mod-O)" onClick={openDocument} />
       <IconButton icon={Save} label="Save (Mod-S)" onClick={saveActiveDocument} />
-      <IconButton icon={FileDown} label="Export as HTML" onClick={exportActiveDocument} />
+      <IconButton
+        icon={exporting() ? LoaderCircle : FileDown}
+        label={exporting() ? 'Exporting as HTML…' : 'Export as HTML'}
+        busy={exporting()}
+        onClick={exportActiveDocument}
+      />
       <div class="toolbar-divider" />
       <IconButton icon={Undo2} label="Undo" disabled={!canUndo()} onClick={editorCommands.undo} />
       <IconButton icon={Redo2} label="Redo" disabled={!canRedo()} onClick={editorCommands.redo} />

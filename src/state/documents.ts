@@ -1,4 +1,4 @@
-import { createEffect, createStore, deep, flush, reconcile, snapshot } from 'solid-js';
+import { createEffect, createSignal, createStore, deep, flush, reconcile, snapshot } from 'solid-js';
 import { APP_NAME } from '../app-info';
 import { clamp } from '../lib/clamp';
 import { exportHtml } from '../lib/export-html';
@@ -365,19 +365,31 @@ export async function saveActiveDocument(): Promise<void> {
   }
 }
 
+const [exporting, setExporting] = createSignal(false);
+
+/** Whether an export is building its file, after its save dialog has closed. */
+export { exporting };
+
 /**
  * Saves a standalone HTML copy of the active document. Its Markdown file stays
  * the one Save writes to. Local images are embedded if their folder is granted.
- * The copy keeps the app's current colour scheme.
+ * The copy keeps the app's current colour scheme. Does nothing while another
+ * export is building.
  */
 export async function exportActiveDocument(): Promise<void> {
   const doc = activeDocument();
-  if (!doc) return;
+  if (!doc || exporting()) return;
   const { id, name, content } = doc;
   const colorScheme = theme();
   const file = await loadDocumentFile(id);
   const readImage = file && localImageReader(grantedFolders(), file);
-  await exportHtml(name, content, { readImage, colorScheme }).catch((error) => reportFileError('export', error));
+  try {
+    await exportHtml(name, content, { readImage, colorScheme, onBuild: () => setExporting(true) });
+  } catch (error) {
+    reportFileError('export', error);
+  } finally {
+    setExporting(false);
+  }
 }
 
 // Backup sync

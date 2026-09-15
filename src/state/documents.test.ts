@@ -9,6 +9,8 @@ import {
   activeDocument,
   closeDocument,
   documentsState,
+  exportActiveDocument,
+  exporting,
   hasUnsavedChanges,
   type MarkdownDocument,
   newDocument,
@@ -74,6 +76,45 @@ describe('unsaved changes', () => {
     await saveActiveDocument();
     flush();
     expect(hasUnsavedChanges(doc)).toBe(true);
+  });
+});
+
+describe('exportActiveDocument', () => {
+  test('is exporting while the file builds, and ignores another export meanwhile', async () => {
+    addDocument();
+    let finish!: () => void;
+    let building!: Promise<void>;
+    vi.mocked(saveFile).mockImplementationOnce(async (name, content) => {
+      // Building starts once the dialog closes. Its HTML isn't needed here.
+      building = (content as () => Promise<string>)().then(
+        () => {},
+        () => {},
+      );
+      await new Promise<void>((resolve) => (finish = resolve));
+      return { name };
+    });
+
+    const exported = exportActiveDocument();
+    await settle();
+    flush();
+    expect(exporting()).toBe(true);
+
+    await exportActiveDocument();
+    expect(saveFile).toHaveBeenCalledTimes(1);
+
+    finish();
+    await exported;
+    await building;
+    flush();
+    expect(exporting()).toBe(false);
+  });
+
+  test("isn't exporting when the save dialog is cancelled", async () => {
+    addDocument();
+    vi.mocked(saveFile).mockResolvedValueOnce(undefined);
+    await exportActiveDocument();
+    flush();
+    expect(exporting()).toBe(false);
   });
 });
 

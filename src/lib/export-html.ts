@@ -96,8 +96,16 @@ ${body}</article>
 /**
  * Saves a document as `<name>.html`. The HTML is built once a destination is
  * chosen, so the save dialog opens straight from the click, and nothing is
- * built if it's cancelled.
+ * built if it's cancelled. `onBuild` is called when building starts.
  */
-export async function exportHtml(name: string, source: string, options: ExportOptions = {}): Promise<void> {
-  await saveFile(`${baseName(name)}.html`, () => buildHtmlDocument(name, source, options), { type: htmlFile });
+export async function exportHtml(
+  name: string,
+  source: string,
+  { onBuild, ...options }: ExportOptions & { onBuild?: () => void } = {},
+): Promise<void> {
+  const build = () => {
+    onBuild?.();
+    return buildHtmlDocument(name, source, options);
+  };
+  await saveFile(`${baseName(name)}.html`, build, { type: htmlFile });
 }

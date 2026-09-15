@@ -8,6 +8,8 @@ export default function IconButton(props: {
   /** Set for toggle buttons; leave undefined for plain actions. */
   pressed?: boolean;
   disabled?: boolean;
+  /** Set while the button's action is in progress; the icon spins. */
+  busy?: boolean;
   /** The id of the element the button shows or hides. */
   controls?: string;
   class?: string;
@@ -20,6 +22,7 @@ export default function IconButton(props: {
       aria-label={props.label}
       aria-pressed={props.pressed === undefined ? undefined : props.pressed ? 'true' : 'false'}
       aria-controls={props.controls}
+      aria-busy={props.busy ? 'true' : undefined}
       disabled={props.disabled}
       onClick={() => props.onClick()}
     >
