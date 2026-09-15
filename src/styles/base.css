@@ -644,9 +644,19 @@ button,
   overflow-wrap: anywhere;
 }
 
+/* In the notice's text colour rather than the accent, so it's readable on the tinted background. */
 .notice-action {
   flex: none;
   padding: var(--space-1) var(--space-2);
+  color: inherit;
+}
+
+.notice-info .notice-action:hover {
+  background-color: var(--color-notice-info-hover);
+}
+
+.notice-error .notice-action:hover {
+  background-color: var(--color-notice-error-hover);
 }
 
 /* Drop indicator: outlines the window while files are dragged over it. */
