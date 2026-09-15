@@ -22,8 +22,8 @@
   --color-border-strong: light-dark(#e0e0e0, #333333);
   /* Tables in rendered Markdown. */
   --color-table: light-dark(#e6e6e6, #333333);
-  /* Translucent, so hovers darken whatever they sit on. */
-  --color-hover: light-dark(rgb(0 0 0 / 5%), rgb(255 255 255 / 4%));
+  /* Translucent, so hovers darken/lighten whatever they sit on. */
+  --color-hover: light-dark(rgb(0 0 0 / 5%), rgb(255 255 255 / 6%));
   --color-border: light-dark(rgb(0 0 0 / 6%), rgb(255 255 255 / 5%));
   /* The source and preview panes, a shade lighter than the page. Also exported HTML's page. */
   --color-pane: light-dark(#f1f1f1, #1c1c1c);
