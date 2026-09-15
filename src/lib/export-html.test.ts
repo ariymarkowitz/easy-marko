@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { buildHtmlDocument, exportHtml } from './export-html';
-import { subsetFont } from './font-subset';
+import { type SubsetOptions, subsetFont } from './font-subset';
 import { markdown } from './markdown';
 
 // Subsetting is tested in font-subset.test.ts. Here a font's "subset" is its fetched bytes.
@@ -14,12 +14,12 @@ const fetch = vi.fn(async (url: string) => new Response(fileName(url)));
 /** The names of the font files fetched, sorted. */
 const fetchedFiles = () => fetch.mock.calls.map(([url]) => fileName(url)).sort();
 
-/** The characters and pinned axes each font file was subset to, by file name. */
-function subsets(): Record<string, { text: string; axes?: Record<string, number> }> {
+/** The characters and subsetting options each font file was cut down with, by file name. */
+function subsets(): Record<string, { text: string; options?: SubsetOptions }> {
   return Object.fromEntries(
-    vi.mocked(subsetFont).mock.calls.map(([bytes, codePoints, axes]) => [
+    vi.mocked(subsetFont).mock.calls.map(([bytes, codePoints, options]) => [
       new TextDecoder().decode(bytes),
-      { text: String.fromCodePoint(...codePoints), ...(axes && Object.keys(axes).length ? { axes } : {}) },
+      { text: String.fromCodePoint(...codePoints), ...(options && Object.keys(options).length ? { options } : {}) },
     ]),
   );
 }
@@ -57,16 +57,17 @@ describe('buildHtmlDocument', () => {
 
     const css = doc.querySelector('style')?.textContent ?? '';
     expect(css).toContain('light-dark(');
-    expect(css).toContain('.markdown pre');
-    expect(css).toContain('.tok-string');
-    // The preview CSS styles .katex-display, but KaTeX's own stylesheet and fonts stay out.
+    expect(css).toContain('.task-list-item-checkbox');
+    // Only what the document needs: it has no code, and no maths for KaTeX's stylesheet.
+    expect(css).not.toContain('.markdown pre');
+    expect(css).not.toContain('.tok-string');
     expect(css).not.toContain('KaTeX_');
     const embedded = `data:font/woff;base64,${btoa('figtree-latin-wght-normal.woff2')}`;
     expect(css).toContain(`src: url(${embedded}) format('woff')`);
     expect(css).not.toContain('url(./files/');
     expect(subsets()).toEqual({
       'figtree-latin-wght-normal.woff2': { text: 'Helo' },
-      'instrument-sans-latin-wdth-normal.woff2': { text: 'done', axes: { wdth: 96 } },
+      'instrument-sans-latin-wdth-normal.woff2': { text: 'done', options: { pinnedAxes: { wdth: 96 } } },
     });
   });
 
@@ -112,7 +113,7 @@ describe('buildHtmlDocument', () => {
   });
 
   test('embeds KaTeX styles and the fonts its maths is shown in', async () => {
-    const html = await buildHtmlDocument('Maths.md', 'Euler: $\\mathbf{x} + \\sum e^{i\\pi}$');
+    const html = await buildHtmlDocument('Maths.md', 'Euler: $$\\mathbf{x} + \\sum e^{i\\pi}$$');
 
     expect(html).toContain('class="katex"');
     expect(html).toContain('.katex-display');
@@ -123,10 +124,15 @@ describe('buildHtmlDocument', () => {
       'KaTeX_Main-Bold.woff2': { text: 'x' },
       'KaTeX_Main-Regular.woff2': { text: '+' },
       'KaTeX_Math-Italic.woff2': { text: 'eiπ' },
-      'KaTeX_Size1-Regular.woff2': { text: '∑' },
+      // The display sum is the larger of KaTeX's sizes.
+      'KaTeX_Size2-Regular.woff2': { text: '∑' },
     });
-    expect(html.match(/@font-face\{[^}]*\}/g)?.map((rule) => /url\(data:font\/woff;base64,([^)]+)\)/.exec(rule)?.[1]))
-      .toEqual(['KaTeX_Main-Bold.woff2', 'KaTeX_Main-Regular.woff2', 'KaTeX_Math-Italic.woff2', 'KaTeX_Size1-Regular.woff2'].map(btoa));
+    const embedded = [...html.matchAll(/@font-face \{[^}]*\}/g)]
+      .filter(([rule]) => rule.includes('KaTeX_'))
+      .map(([rule]) => /url\(data:font\/woff;base64,([^)]+)\)/.exec(rule)?.[1]);
+    expect(embedded).toEqual(
+      ['KaTeX_Main-Bold.woff2', 'KaTeX_Main-Regular.woff2', 'KaTeX_Math-Italic.woff2', 'KaTeX_Size2-Regular.woff2'].map(btoa),
+    );
   });
 
   test('leaves out a KaTeX font without the characters', async () => {
@@ -134,13 +140,26 @@ describe('buildHtmlDocument', () => {
       new TextDecoder().decode(bytes).startsWith('KaTeX_') ? undefined : bytes,
     );
     const html = await buildHtmlDocument('Maths.md', '$x$');
-    expect(html).not.toMatch(/@font-face\{[^}]*KaTeX/);
+    expect(html).not.toMatch(/@font-face \{[^}]*KaTeX/);
     expect(html).toContain('.katex .mathnormal');
   });
 
   test('waits for code languages to load and highlights the code', async () => {
-    const html = await buildHtmlDocument('Code.md', '```go\npackage main\n```');
-    expect(html).toMatch(/<span class="tok-[\w ]+">package<\/span>/);
+    const html = await buildHtmlDocument('Code.md', '```go\nconst x = "s"\n```');
+    expect(html).toMatch(/<span class="tok-string">"s"<\/span>/);
+  });
+
+  test('keeps only the highlighting the theme colours', async () => {
+    const html = await buildHtmlDocument('Code.md', '```js\nlet value = 1;\n```');
+    const code = parseDocument(html).querySelector('pre code')!;
+
+    // `let` and `value` are marked up by the highlighter, but the theme leaves them plain.
+    expect(code.textContent).toBe('let value = 1;\n');
+    expect([...code.querySelectorAll('span')].map((span) => `${span.className}:${span.textContent}`)).toEqual([
+      'tok-variableDef:value',
+      'tok-number:1',
+      'tok-punctuation:;',
+    ]);
   });
 });
 

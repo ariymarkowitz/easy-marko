@@ -11,6 +11,7 @@ import jetbrainsMonoItalic from '@fontsource-variable/jetbrains-mono/wght-italic
 import instrumentSans from '@fontsource-variable/instrument-sans/wdth.css?raw';
 import instrumentSansItalic from '@fontsource-variable/instrument-sans/wdth-italic.css?raw';
 import katexCss from 'katex/dist/katex.min.css?raw';
+import type { SubsetOptions } from './font-subset';
 
 // Glob options have to be written out in each call. Globs skip node_modules
 // unless they're exhaustive.
@@ -81,10 +82,12 @@ const faces: Face[] = Object.entries(stylesheets).flatMap(([role, sheets]) =>
     })),
 );
 
-/** Axes the preview fixes, pinned so their data can be dropped. */
-const pinnedAxes: Partial<Record<FontRole, Record<string, number>>> = {
-  // markdown.css sets the body's font-stretch to 96%.
-  body: { wdth: 96 },
+/** What each role's fonts can be cut down by, beyond the characters they show. */
+const roleSubsetting: Partial<Record<FontRole, SubsetOptions>> = {
+  // markdown.css sets the body's font-stretch to 96%, so the axis can be pinned.
+  body: { pinnedAxes: { wdth: 96 } },
+  // It also sets `font-variant-ligatures: none` on code, which turns these off.
+  code: { dropFeatures: ['liga', 'clig', 'dlig', 'hlig', 'calt'] },
 };
 
 /** Elements that markdown.css, editor.css or browsers set in italics. */
@@ -197,11 +200,11 @@ function loadFontSubset() {
 async function subsetDataUrl(
   url: string,
   codePoints: Iterable<number>,
-  axes?: Record<string, number>,
+  options?: SubsetOptions,
 ): Promise<string | undefined> {
   const [{ subsetFont }, response] = await Promise.all([loadFontSubset(), fetch(url)]);
   if (!response.ok) throw new Error(`Couldn't load ${url} (${response.status})`);
-  const woff = await subsetFont(new Uint8Array(await response.arrayBuffer()), codePoints, axes);
+  const woff = await subsetFont(new Uint8Array(await response.arrayBuffer()), codePoints, options);
   return woff && `data:font/woff;base64,${woff.toBase64()}`;
 }
 
@@ -220,7 +223,7 @@ async function textFontsCss(characters: Map<string, Set<number>>): Promise<strin
         face.ranges.some(([start, end]) => code >= start && code <= end),
       );
       if (inRange.length === 0) return '';
-      const dataUrl = await subsetDataUrl(fontUrl(fontUrls, face.file), inRange, pinnedAxes[face.role]);
+      const dataUrl = await subsetDataUrl(fontUrl(fontUrls, face.file), inRange, roleSubsetting[face.role]);
       return dataUrl ? face.css.replace(/src:[^;]*/, `src: url(${dataUrl}) format('woff')`) : '';
     }),
   );

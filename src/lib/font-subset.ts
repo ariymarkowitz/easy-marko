@@ -1,6 +1,6 @@
 // Subsets fonts for HTML exports to the characters a document shows, with
-// HarfBuzz's hb-subset (WebAssembly), keeping every layout feature and the
-// variation axes that aren't pinned. Exports import this module only when
+// HarfBuzz's hb-subset (WebAssembly), keeping the layout features and
+// variation axes the caller doesn't drop. Exports import this module only when
 // they're built, so the app doesn't load it on start.
 
 import wasmUrl from 'harfbuzzjs/dist/harfbuzz-subset.wasm?url';
@@ -20,6 +20,7 @@ interface HarfBuzz {
   hb_face_destroy(face: number): void;
   hb_face_reference_blob(face: number): number;
   hb_set_add(set: number, value: number): void;
+  hb_set_del(set: number, value: number): void;
   hb_set_clear(set: number): void;
   hb_set_invert(set: number): void;
   hb_subset_input_create_or_fail(): number;
@@ -130,12 +131,19 @@ export async function sfntToWoff(sfnt: Uint8Array): Promise<Uint8Array> {
   return woff;
 }
 
+export interface SubsetOptions {
+  /** Variation axes to fix at a value, like `{ wdth: 96 }`, which drops their data. */
+  pinnedAxes?: Record<string, number>;
+  /** Layout features to leave out, for those the CSS turns off, like `['liga']`. */
+  dropFeatures?: string[];
+}
+
 /** Runs hb-subset on an OpenType font, giving the subset font's bytes. */
 function subsetSfnt(
   hb: HarfBuzz,
   sfnt: Uint8Array,
   codePoints: Iterable<number>,
-  pinnedAxes: Record<string, number>,
+  { pinnedAxes = {}, dropFeatures = [] }: SubsetOptions,
 ): Uint8Array {
   const input = hb.hb_subset_input_create_or_fail();
   const pointer = hb.malloc(sfnt.byteLength);
@@ -145,10 +153,12 @@ function subsetSfnt(
   const face = hb.hb_face_create(blob, 0);
   hb.hb_blob_destroy(blob);
   try {
-    // Keep every layout feature, not just the ones HarfBuzz keeps by default.
+    // Keep every layout feature, not just the ones HarfBuzz keeps by default,
+    // apart from those the CSS turns off, whose glyphs and rules can go.
     const features = hb.hb_subset_input_set(input, HB_SUBSET_SETS_LAYOUT_FEATURE_TAG);
     hb.hb_set_clear(features);
     hb.hb_set_invert(features);
+    for (const feature of dropFeatures) hb.hb_set_del(features, tagNumber(feature));
     const unicodes = hb.hb_subset_input_unicode_set(input);
     for (const codePoint of codePoints) hb.hb_set_add(unicodes, codePoint);
     for (const [axis, value] of Object.entries(pinnedAxes)) {
@@ -176,16 +186,15 @@ function subsetSfnt(
 /**
  * A WOFF2 font cut down to the glyphs for `codePoints` (and the glyphs their
  * layout features reach), as a WOFF file, or undefined if the font has none
- * of them. `pinnedAxes` fixes variation axes at a value, like `{ wdth: 96 }`,
- * which drops their data.
+ * of them.
  */
 export async function subsetFont(
   woff2: Uint8Array,
   codePoints: Iterable<number>,
-  pinnedAxes: Record<string, number> = {},
+  options: SubsetOptions = {},
 ): Promise<Uint8Array | undefined> {
   const [hb, sfnt] = await Promise.all([loadHarfBuzz(), decompressWoff2(woff2)]);
-  const subset = subsetSfnt(hb, sfnt, codePoints, pinnedAxes);
+  const subset = subsetSfnt(hb, sfnt, codePoints, options);
   // A font without the characters keeps only .notdef.
   if (glyphCount(readSfnt(subset).tables) <= 1) return undefined;
   return sfntToWoff(subset);

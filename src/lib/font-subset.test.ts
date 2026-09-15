@@ -71,7 +71,7 @@ describe('subsetFont', () => {
   });
 
   test('drops a pinned axis', async () => {
-    const { tables } = readWoff((await subsetFont(instrumentSans(), codePoints('Hello'), { wdth: 96 }))!);
+    const { tables } = readWoff((await subsetFont(instrumentSans(), codePoints('Hello'), { pinnedAxes: { wdth: 96 } }))!);
     expect(axisTags(tables.get('fvar'))).toEqual(['wght']);
   });
 

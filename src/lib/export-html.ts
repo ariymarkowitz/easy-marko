@@ -6,6 +6,7 @@ import syntaxCss from '../styles/editor.css?raw';
 import fallbackFontsCss from '../styles/fonts.css?raw';
 import markdownCss from '../styles/markdown.css?raw';
 import tokensCss from '../styles/tokens.css?raw';
+import { optimizeCss, styledClasses } from './css-optimize';
 import { escapeHtml } from './escape-html';
 import { exportFontsCss } from './export-fonts';
 import { htmlFile, saveFile } from './files';
@@ -54,6 +55,33 @@ async function renderMarkdown(source: string): Promise<string> {
   return render();
 }
 
+/**
+ * Drops the `tok-*` classes that no rule colours, since highlighters mark up
+ * far more than the theme paints, and unwraps the spans left with nothing on
+ * them. Runs of spans sharing a class then join up.
+ */
+function trimHighlighting(root: Element, styled: Set<string>): void {
+  for (const element of root.querySelectorAll('[class*="tok-"]')) {
+    const classes = [...element.classList].filter((name) => !name.startsWith('tok-') || styled.has(name));
+    if (classes.length > 0) {
+      element.className = classes.join(' ');
+    } else {
+      element.removeAttribute('class');
+      if (element.tagName === 'SPAN' && element.attributes.length === 0) element.replaceWith(...element.childNodes);
+    }
+  }
+  for (const span of root.querySelectorAll('span[class]')) {
+    // Only the highlighter's own spans: others may be styled by where they sit.
+    if (span.attributes.length > 1 || ![...span.classList].every((name) => name.startsWith('tok-'))) continue;
+    for (let next = span.nextSibling; next instanceof Element && next.matches('span'); next = span.nextSibling) {
+      if (next.getAttribute('class') !== span.getAttribute('class') || next.attributes.length > 1) break;
+      span.append(...next.childNodes);
+      next.remove();
+    }
+  }
+  root.normalize();
+}
+
 export interface ExportOptions {
   /** Reads an image with a relative path as a data URL to embed, or gives undefined to leave it as written. */
   readImage?: (src: string) => Promise<string | undefined>;
@@ -68,13 +96,22 @@ export async function buildHtmlDocument(
   { readImage, colorScheme }: ExportOptions = {},
 ): Promise<string> {
   const rendered = await renderMarkdown(source);
-  const body = readImage ? await embedLocalImages(rendered, readImage) : rendered;
-  const fonts = await exportFontsCss(body);
-  const css = [documentCss, tokensCss, fallbackFontsCss, fonts.text, syntaxCss, markdownCss, fonts.maths]
-    .join('\n')
-    .trim();
+  const html = readImage ? await embedLocalImages(rendered, readImage) : rendered;
+  const fonts = await exportFontsCss(html);
+  const theme = colorScheme ? ` data-theme="${colorScheme}"` : '';
+  // The document as it will ship, so the CSS can be cut down to what it needs.
+  const doc = new DOMParser().parseFromString(
+    `<html lang="en"${theme}><body><article class="markdown">\n${html}</article></body></html>`,
+    'text/html',
+  );
+  const css = optimizeCss(
+    [documentCss, tokensCss, fallbackFontsCss, fonts.text, syntaxCss, markdownCss, fonts.maths].join('\n'),
+    doc,
+  );
+  const article = doc.querySelector('article')!;
+  trimHighlighting(article, styledClasses(css));
   return `<!doctype html>
-<html lang="en"${colorScheme ? ` data-theme="${colorScheme}"` : ''}>
+<html lang="en"${theme}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -85,8 +122,7 @@ ${css}
 </style>
 </head>
 <body>
-<article class="markdown">
-${body}</article>
+<article class="markdown">${article.innerHTML}</article>
 </body>
 </html>
 `;
