@@ -1,10 +1,6 @@
 ![Banner](https://ariymarkowitz.github.io/easy-marko/banner.svg)
 
-# Welcome to <span style="color: #4c7bf4">Easy Marko!</span>
-
-> Markdown’s syntax is intended for one purpose: to be used as a format for *writing* for the web.
->
-> *--- John Grube, Introducing Markdown*
+# Welcome to Easy Marko
 
 Easy Marko is a simple Markdown editor and viewer. It runs in the browser or on your device as a Progressive Web App. This page is an ordinary document. Edit it, break it, or close it from the sidebar when you're done. You can bring it back by clicking the About button in the toolbar.
 
@@ -29,6 +25,12 @@ Straight quotes turn "curly" in the preview, and `--` becomes an en dash, as in 
 
 - [x] Write a task list
 - [ ] Tick it off in the source by changing `[ ]` to `[x]`
+
+### Quotes
+
+> Markdown’s syntax is intended for one purpose: to be used as a format for *writing* for the web.
+>
+> *--- John Grube, Introducing Markdown*
 
 ### Tables
 
