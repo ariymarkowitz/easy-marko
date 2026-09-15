@@ -4,7 +4,8 @@ import type { Plugin } from 'vite';
 import { configDefaults, defineConfig } from 'vitest/config';
 import solid from '@solidjs/vite-plugin';
 import { VitePWA, type VitePluginPWAAPI } from 'vite-plugin-pwa';
-import { APP_COLORS, APP_DESCRIPTION, APP_NAME } from './src/app-info.ts';
+import { APP_DESCRIPTION, APP_NAME } from './src/app-info.ts';
+import { lightDarkToken } from './src/lib/css-tokens.ts';
 import { fileTypes } from './src/lib/files.ts';
 
 /**
@@ -32,34 +33,6 @@ function precachePrerenderedShell(): Plugin {
 }
 
 /**
- * Serves `virtual:app-colors.css`, the tokens.css colours that app-info.ts
- * also gives the browser and OS, so they're written once. Also serves
- * `virtual:app-colors.css?raw` for the HTML export, which Vite's own `?raw`
- * handling can't load because there is no file.
- */
-function appColors(): Plugin {
-  const id = 'virtual:app-colors.css';
-  const resolvedId = `\0${id}`;
-  const css = `:root {
-  --color-bg: light-dark(${APP_COLORS.background.light}, ${APP_COLORS.background.dark});
-  --color-surface: light-dark(${APP_COLORS.surface.light}, ${APP_COLORS.surface.dark});
-}
-`;
-  return {
-    name: 'easy-marko:app-colors',
-    enforce: 'pre',
-    resolveId(source) {
-      if (source === id) return resolvedId;
-      if (source === `${id}?raw`) return `${resolvedId}?raw`;
-    },
-    load(loadId) {
-      if (loadId === resolvedId) return css;
-      if (loadId === `${resolvedId}?raw`) return `export default ${JSON.stringify(css)};`;
-    },
-  };
-}
-
-/**
  * Test files that call vi.mock. Tests otherwise share one module graph
  * (`isolate: false`), where a mock can't replace a module that an earlier test
  * file already loaded, so these files run isolated.
@@ -82,6 +55,9 @@ const uncommonFontFiles = ['instrument-sans', 'figtree', 'jetbrains-mono'].flatM
     .map((subset) => `**/${font}-${subset}-*.woff2`);
 });
 
+/** The page colour, for the browser's UI and the installed app's splash screen. */
+const background = lightDarkToken(readFileSync('src/styles/tokens.css', 'utf8'), '--color-bg');
+
 /** GitHub Pages serves the site from the repository's path; see `npm run deploy`. */
 const githubPagesBase = '/easy-marko/';
 
@@ -91,7 +67,6 @@ export default defineConfig(({ mode }) => {
   return {
     base,
     plugins: [
-      appColors(),
       // Turnkey client mode: no index.html and no mount file. The plugin
       // generates the entries around src/App.tsx, wrapped in src/Document.tsx,
       // and `vite build` prerenders the shell into a static dist/client.
@@ -110,8 +85,8 @@ export default defineConfig(({ mode }) => {
           short_name: APP_NAME,
           description: APP_DESCRIPTION,
           display: 'standalone',
-          background_color: APP_COLORS.background.light,
-          theme_color: APP_COLORS.background.light,
+          background_color: background.light,
+          theme_color: background.light,
           // Paths are relative to the manifest (start_url and scope default to
           // the base). The PNGs are generated from icon.svg by scripts/logo/app-icons.mjs.
           icons: [

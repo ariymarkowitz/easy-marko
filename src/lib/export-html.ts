@@ -2,7 +2,6 @@
 // Markdown with the CSS it needs inlined, so it looks like the preview in any
 // browser, offline, in the colour scheme it was exported in.
 
-import appColorsCss from 'virtual:app-colors.css?raw';
 import syntaxCss from '../styles/editor.css?raw';
 import fallbackFontsCss from '../styles/fonts.css?raw';
 import markdownCss from '../styles/markdown.css?raw';
@@ -71,7 +70,7 @@ export async function buildHtmlDocument(
   const rendered = await renderMarkdown(source);
   const body = readImage ? await embedLocalImages(rendered, readImage) : rendered;
   const fonts = await exportFontsCss(body);
-  const css = [documentCss, appColorsCss, tokensCss, fallbackFontsCss, fonts.text, syntaxCss, markdownCss, fonts.maths]
+  const css = [documentCss, tokensCss, fallbackFontsCss, fonts.text, syntaxCss, markdownCss, fonts.maths]
     .join('\n')
     .trim();
   return `<!doctype html>

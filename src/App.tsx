@@ -1,5 +1,4 @@
 import 'katex/dist/katex.min.css';
-import 'virtual:app-colors.css';
 import './styles/tokens.css';
 // The fonts' faces, as lib/export-fonts.ts embeds them in exports. Instrument
 // Sans's wdth files have both axes.

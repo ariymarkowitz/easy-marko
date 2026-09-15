@@ -8,7 +8,13 @@
 :root {
   color-scheme: light dark;
 
-  /* --color-bg and --color-surface come from src/app-info.ts (virtual:app-colors.css). */
+  /*
+   * The page and toolbar. The browser's UI and the installed app's splash screen
+   * use it too (vite.config.ts, Document.tsx), so it must stay light-dark(#hex, #hex).
+   */
+  --color-bg: light-dark(#fafafa, #101010);
+  /* Floating surfaces, like notices and the drop indicator's label. */
+  --color-surface: light-dark(#f7f7f7, #222222);
   /* Code in rendered Markdown: fenced blocks, and inline code spans. */
   --color-code-bg: light-dark(#ebebeb, #1a1a21);
   --color-code-inline-bg: light-dark(#e9e9e9, #232323);

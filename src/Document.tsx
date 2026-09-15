@@ -1,8 +1,13 @@
 import type { ParentProps } from 'solid-js';
 import { HydrationScript } from '@solidjs/web';
 import bodyFontUrl from '@fontsource-variable/instrument-sans/files/instrument-sans-latin-wdth-normal.woff2?url';
-import { APP_COLORS, APP_DESCRIPTION, APP_NAME, APP_URL } from './app-info';
+import { APP_DESCRIPTION, APP_NAME, APP_URL } from './app-info';
+import { lightDarkToken } from './lib/css-tokens';
 import { STORAGE_KEYS } from './lib/storage';
+import tokensCss from './styles/tokens.css?raw';
+
+// The page colour, which the browser's UI blends into.
+const background = lightDarkToken(tokensCss, '--color-bg');
 
 // Applies a saved theme override before first paint, so there's no flash of
 // the wrong theme. state/theme.ts keeps it in sync after the app starts.
@@ -28,8 +33,8 @@ export default function Document(props: ParentProps) {
         <meta property="og:image:height" content="630" />
         <meta property="og:image:alt" content={`${APP_NAME} Markdown editor`} />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="theme-color" media="(prefers-color-scheme: light)" content={APP_COLORS.background.light} />
-        <meta name="theme-color" media="(prefers-color-scheme: dark)" content={APP_COLORS.background.dark} />
+        <meta name="theme-color" media="(prefers-color-scheme: light)" content={background.light} />
+        <meta name="theme-color" media="(prefers-color-scheme: dark)" content={background.dark} />
         <link rel="icon" href={`${import.meta.env.BASE_URL}icon.svg`} type="image/svg+xml" />
         <link rel="apple-touch-icon" href={`${import.meta.env.BASE_URL}apple-touch-icon.png`} />
         <link rel="manifest" href={`${import.meta.env.BASE_URL}manifest.webmanifest`} />
