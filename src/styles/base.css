@@ -100,7 +100,7 @@ button,
 }
 
 /* A gap between toolbar groups. */
-.toolbar-divider {
+.toolbar-gap {
   margin-inline: var(--space-2);
 }
 
@@ -314,7 +314,7 @@ button,
 }
 
 .panel-edge-button.icon-button:hover {
-  background-color: color-mix(in srgb, var(--color-bg), white 5%);
+  background-color: var(--color-bg-hover);
 }
 
 /* Set by lib/drag.ts while a resizer or an edge button is dragged. */
@@ -604,9 +604,9 @@ button,
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
-  border: 1px solid var(--color-notice-border);
+  /* Coloured by the notice's tone. */
+  border: 1px solid;
   border-radius: var(--radius-large);
-  background-color: var(--color-surface);
   box-shadow: var(--shadow-overlay);
   animation: notice-in 0.15s ease-out;
 }
@@ -714,7 +714,7 @@ button,
     padding-inline: var(--space-1);
   }
 
-  .toolbar-divider {
+  .toolbar-gap {
     margin-inline: 0;
   }
 }

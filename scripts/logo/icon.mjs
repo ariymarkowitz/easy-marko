@@ -2,10 +2,8 @@
 // weight 800, on a rounded square. One step of generate.mjs; app-icons.mjs
 // rasterises the result into the PWA's PNG icons.
 
-import { writeFileSync } from 'node:fs';
+import { writeProjectFile } from './files.mjs';
 import { E, accent, background, eCommands, light, loadFont, pathData, shape } from './glyphs.mjs';
-
-const root = new URL('../../', import.meta.url);
 
 export async function generateIcon() {
   const font = await loadFont();
@@ -29,6 +27,5 @@ export async function generateIcon() {
   <path d="${pathData(mCommands, iconLeft + (E.width - mLeft) * iconScale, iconBaseline, iconSize)}" fill="${light}"/>
 </svg>
 `;
-  writeFileSync(new URL('public/icon.svg', root), icon);
-  console.log('public/icon.svg');
+  writeProjectFile('public/icon.svg', icon);
 }

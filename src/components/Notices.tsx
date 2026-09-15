@@ -57,7 +57,7 @@ function NoticeItem(props: { notice: Notice }) {
         if (event.key === 'Escape') dismiss();
       }}
     >
-      <Icon icon={props.notice.tone === 'error' ? CircleAlert : Info} class="notice-icon" />
+      <Icon icon={props.notice.tone === 'error' ? CircleAlert : Info} />
       <p class="notice-message">{props.notice.message}</p>
       <For each={props.notice.actions}>
         {(action) => (

@@ -3,15 +3,13 @@
 // fades this and layers the wordmark on top to build the public banner.
 // og-image.mjs builds its own, larger tiling with tilingSvg().
 
-import { writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-
-const file = fileURLToPath(new URL('../../assets/tiling.svg', import.meta.url));
+import { bannerSize } from './banner.mjs';
+import { writeProjectFile } from './files.mjs';
+import { E } from './glyphs.mjs';
 
 export function generateTiling() {
-  const height = 400;
-  writeFileSync(file, tilingSvg({ width: 1600, height, cell: height / 3 }));
-  console.log('assets/tiling.svg');
+  const { width, height } = bannerSize;
+  writeProjectFile('assets/tiling.svg', tilingSvg({ width, height, cell: height / 3 }));
 }
 
 /**
@@ -31,12 +29,11 @@ export function tilingSvg({ width, height, cell }) {
   // The letters are the logo's (icon.mjs), from Figtree at weight 800 in font
   // units, drawn in a 700-unit box centred on the origin.
   /** The E's top and bottom bars, which are also the M's strokes. */
-  const bar = 147.6;
+  const { bar, stem } = E;
 
   // The E's bars reach the right edge. Its stem and bar thicknesses are the
   // logo's; the middle bar's point stops a bar's thickness short of the edge.
-  const stem = 160.8;
-  const middle = { top: -74.4, bottom: 69.2 };
+  const middle = { top: round(350 - E.middle.top), bottom: round(350 - E.middle.bottom) };
   const taper = (middle.bottom - middle.top) / 2;
   const tip = 350 - bar;
   const e = [

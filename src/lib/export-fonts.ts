@@ -15,22 +15,30 @@ import katexCss from 'katex/dist/katex.min.css?raw';
 // Glob options have to be written out in each call. Globs skip node_modules
 // unless they're exhaustive.
 
-/** URLs of KaTeX's WOFF2 fonts, keyed by path. Embedded only in documents with maths. */
-const katexFontUrls = import.meta.glob<string>('/node_modules/katex/dist/fonts/*.woff2', {
-  query: '?url',
-  import: 'default',
-  eager: true,
-  exhaustive: true,
-});
+/** Font URLs from a glob, which keys them by path, keyed by file name instead. */
+const byFileName = (urls: Record<string, string>) =>
+  new Map(Object.entries(urls).map(([path, url]) => [path.slice(path.lastIndexOf('/') + 1), url]));
 
-/** URLs of the files in the Fontsource stylesheets below, keyed by path. The same files as App.tsx imports. */
-const fontUrls = import.meta.glob<string>(
-  [
-    '/node_modules/@fontsource-variable/instrument-sans/files/*-wdth-*.woff2',
-    '/node_modules/@fontsource-variable/figtree/files/*-wght-*.woff2',
-    '/node_modules/@fontsource-variable/jetbrains-mono/files/*-wght-*.woff2',
-  ],
-  { query: '?url', import: 'default', eager: true, exhaustive: true },
+/** URLs of KaTeX's WOFF2 fonts, by file name. Embedded only in documents with maths. */
+const katexFontUrls = byFileName(
+  import.meta.glob<string>('/node_modules/katex/dist/fonts/*.woff2', {
+    query: '?url',
+    import: 'default',
+    eager: true,
+    exhaustive: true,
+  }),
+);
+
+/** URLs of the files in the Fontsource stylesheets below, by file name. The same files as App.tsx imports. */
+const fontUrls = byFileName(
+  import.meta.glob<string>(
+    [
+      '/node_modules/@fontsource-variable/instrument-sans/files/*-wdth-*.woff2',
+      '/node_modules/@fontsource-variable/figtree/files/*-wght-*.woff2',
+      '/node_modules/@fontsource-variable/jetbrains-mono/files/*-wght-*.woff2',
+    ],
+    { query: '?url', import: 'default', eager: true, exhaustive: true },
+  ),
 );
 
 type FontRole = 'body' | 'heading' | 'code';
@@ -51,8 +59,6 @@ interface Face {
   /** Inclusive code point ranges. */
   ranges: [number, number][];
 }
-
-const fileName = (path: string) => path.slice(path.lastIndexOf('/') + 1);
 
 /** The code point ranges in a unicode-range value, like `U+0000-00FF,U+4??`. */
 export function parseUnicodeRange(value: string): [number, number][] {
@@ -76,11 +82,9 @@ const faces: Face[] = Object.entries(stylesheets).flatMap(([role, sheets]) =>
 );
 
 /** Axes the preview fixes, pinned so their data can be dropped. */
-const pinnedAxes: Record<FontRole, Record<string, number>> = {
+const pinnedAxes: Partial<Record<FontRole, Record<string, number>>> = {
   // markdown.css sets the body's font-stretch to 96%.
   body: { wdth: 96 },
-  heading: {},
-  code: {},
 };
 
 /** Elements that markdown.css, editor.css or browsers set in italics. */
@@ -201,11 +205,11 @@ async function subsetDataUrl(
   return woff && `data:font/woff;base64,${woff.toBase64()}`;
 }
 
-/** The URL of a font `file` among `urls`, keyed by path. */
-function fontUrl(urls: Record<string, string>, file: string): string {
-  const path = Object.keys(urls).find((key) => fileName(key) === file);
-  if (!path) throw new Error(`Missing font ${file}`);
-  return urls[path];
+/** The URL of a font `file` among `urls`, keyed by file name. */
+function fontUrl(urls: Map<string, string>, file: string): string {
+  const url = urls.get(file);
+  if (!url) throw new Error(`Missing font ${file}`);
+  return url;
 }
 
 /** The @font-face rules, with embedded files, for the text fonts that `characters` need. */

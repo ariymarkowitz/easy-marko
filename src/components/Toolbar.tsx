@@ -45,6 +45,9 @@ const viewModes: { mode: ViewMode; label: string; icon: IconNode }[] = [
 ];
 
 export default function Toolbar() {
+  // The find panel is in the editor, so its button does nothing while the source is hidden.
+  const sourceHidden = () => viewMode() === 'preview';
+
   return (
     <header class="toolbar">
       <IconButton
@@ -54,7 +57,7 @@ export default function Toolbar() {
         controls="sidebar"
         onClick={toggleSidebar}
       />
-      <div class="toolbar-divider" />
+      <div class="toolbar-gap" />
       <IconButton icon={FilePlus} label="New document" onClick={newDocument} />
       <IconButton icon={FolderOpen} label="Open (Mod-O)" onClick={openDocument} />
       <IconButton icon={Save} label="Save (Mod-S)" onClick={saveActiveDocument} />
@@ -64,15 +67,14 @@ export default function Toolbar() {
         busy={exporting()}
         onClick={exportActiveDocument}
       />
-      <div class="toolbar-divider" />
+      <div class="toolbar-gap" />
       <IconButton icon={Undo2} label="Undo" disabled={!canUndo()} onClick={editorCommands.undo} />
       <IconButton icon={Redo2} label="Redo" disabled={!canRedo()} onClick={editorCommands.redo} />
       <IconButton
         icon={Search}
         label="Find and replace"
-        // The panel is in the editor, so the button does nothing while the source is hidden.
-        pressed={findOpen() && viewMode() !== 'preview'}
-        disabled={viewMode() === 'preview'}
+        pressed={findOpen() && !sourceHidden()}
+        disabled={sourceHidden()}
         onClick={editorCommands.toggleFind}
       />
       <IconButton
@@ -83,7 +85,7 @@ export default function Toolbar() {
         disabled={viewMode() !== 'split'}
         onClick={toggleSyncScroll}
       />
-      <div class="toolbar-divider" />
+      <div class="toolbar-gap" />
       <div class="toolbar-group" role="group" aria-label="View">
         <For each={viewModes}>
           {(item) => (
@@ -97,7 +99,7 @@ export default function Toolbar() {
           )}
         </For>
       </div>
-      <div class="toolbar-divider" />
+      <div class="toolbar-gap" />
       <IconButton
         icon={theme() === 'dark' ? Sun : Moon}
         label={theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}

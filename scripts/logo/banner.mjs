@@ -3,10 +3,7 @@
 // top. Shown at the top of the welcome document. One step of generate.mjs,
 // run after tiling.mjs and wordmark.mjs have written those files.
 
-import { readFileSync, writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-
-const root = new URL('../../', import.meta.url);
+import { readProjectFile, writeProjectFile } from './files.mjs';
 
 /** The banner's size in its own units, which the wordmark in assets/banner.svg shares. */
 export const bannerSize = { width: 1600, height: 400 };
@@ -14,8 +11,8 @@ export const bannerSize = { width: 1600, height: 400 };
 const innerOf = (svg) => svg.replace(/^<\?xml[^>]*>\s*/, '').replace(/<svg\b[^>]*>/, '').replace(/<\/svg>\s*$/, '');
 
 export function generateBanner() {
-  const tiling = readFileSync(fileURLToPath(new URL('assets/tiling.svg', root)), 'utf8');
-  const wordmark = readFileSync(fileURLToPath(new URL('assets/banner.svg', root)), 'utf8');
+  const tiling = readProjectFile('assets/tiling.svg');
+  const wordmark = readProjectFile('assets/banner.svg');
 
   const { width, height } = bannerSize;
   /** The corner radius the whole banner is clipped to. */
@@ -31,8 +28,7 @@ ${bannerLayers({ width, height, tiling, wordmark })}
 </svg>
 `;
 
-  writeFileSync(fileURLToPath(new URL('public/banner.svg', root)), banner);
-  console.log('public/banner.svg');
+  writeProjectFile('public/banner.svg', banner);
 }
 
 /**

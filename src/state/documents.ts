@@ -370,24 +370,29 @@ const [exporting, setExporting] = createSignal(false);
 /** Whether an export is building its file, after its save dialog has closed. */
 export { exporting };
 
+/** Set from an export's click until it finishes, including while its save dialog is open. */
+let exportRunning = false;
+
 /**
  * Saves a standalone HTML copy of the active document. Its Markdown file stays
  * the one Save writes to. Local images are embedded if their folder is granted.
  * The copy keeps the app's current colour scheme. Does nothing while another
- * export is building.
+ * export is running.
  */
 export async function exportActiveDocument(): Promise<void> {
   const doc = activeDocument();
-  if (!doc || exporting()) return;
+  if (!doc || exportRunning) return;
+  exportRunning = true;
   const { id, name, content } = doc;
   const colorScheme = theme();
-  const file = await loadDocumentFile(id);
-  const readImage = file && localImageReader(grantedFolders(), file);
   try {
+    const file = await loadDocumentFile(id);
+    const readImage = file && localImageReader(grantedFolders(), file);
     await exportHtml(name, content, { readImage, colorScheme, onBuild: () => setExporting(true) });
   } catch (error) {
     reportFileError('export', error);
   } finally {
+    exportRunning = false;
     setExporting(false);
   }
 }

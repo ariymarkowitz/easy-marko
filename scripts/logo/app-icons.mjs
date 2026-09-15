@@ -4,10 +4,7 @@
 // Needs rsvg-convert from librsvg (`brew install librsvg`).
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-
-const publicDir = fileURLToPath(new URL('../../public/', import.meta.url));
+import { projectPath, readProjectFile } from './files.mjs';
 
 /**
  * The icon as a full square: the background rect without its rounded corners,
@@ -24,14 +21,13 @@ function fullBleed(svg, scale) {
 }
 
 function render(source, size, file) {
-  execFileSync('rsvg-convert', ['--width', size, '--height', size, '--output', `${publicDir}${file}`], {
-    input: source,
-  });
-  console.log(`public/${file}`);
+  const path = `public/${file}`;
+  execFileSync('rsvg-convert', ['--width', size, '--height', size, '--output', projectPath(path)], { input: source });
+  console.log(path);
 }
 
 export function generateAppIcons() {
-  const svg = readFileSync(`${publicDir}icon.svg`, 'utf8');
+  const svg = readProjectFile('public/icon.svg');
 
   render(svg, 192, 'icon-192.png');
   render(svg, 512, 'icon-512.png');

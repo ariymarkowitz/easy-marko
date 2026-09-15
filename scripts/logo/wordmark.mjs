@@ -3,17 +3,15 @@
 // background so callers can lay their own background behind it. One step of
 // generate.mjs; banner.mjs and og-image.mjs both build on the result.
 
-import { writeFileSync } from 'node:fs';
+import { bannerSize } from './banner.mjs';
+import { writeProjectFile } from './files.mjs';
 import { accent, light, loadFont, textPaths } from './glyphs.mjs';
-
-const root = new URL('../../', import.meta.url);
 
 export async function generateWordmark() {
   const font = await loadFont();
 
-  // The wordmark over the tagline, centred on 1600×400.
-  const width = 1600;
-  const height = 400;
+  // The wordmark over the tagline, centred on the banner.
+  const { width, height } = bannerSize;
   const titleSize = 177;
   const taglineSize = 85;
   /** From the title's baseline to the tagline's. */
@@ -37,6 +35,5 @@ ${title}
 ${tagline}
 </svg>
 `;
-  writeFileSync(new URL('assets/banner.svg', root), banner);
-  console.log('assets/banner.svg');
+  writeProjectFile('assets/banner.svg', banner);
 }

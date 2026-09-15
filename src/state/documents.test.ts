@@ -109,6 +109,24 @@ describe('exportActiveDocument', () => {
     expect(exporting()).toBe(false);
   });
 
+  test('ignores another export while the save dialog is open', async () => {
+    addDocument();
+    let cancel!: () => void;
+    vi.mocked(saveFile).mockImplementationOnce(
+      () => new Promise((resolve) => (cancel = () => resolve(undefined))),
+    );
+
+    const exported = exportActiveDocument();
+    await settle();
+    await exportActiveDocument();
+    expect(saveFile).toHaveBeenCalledTimes(1);
+
+    cancel();
+    await exported;
+    flush();
+    expect(exporting()).toBe(false);
+  });
+
   test("isn't exporting when the save dialog is cancelled", async () => {
     addDocument();
     vi.mocked(saveFile).mockResolvedValueOnce(undefined);

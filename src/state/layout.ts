@@ -26,11 +26,12 @@ export const NARROW_WIDTH = 700;
 
 export const narrowScreen = createMediaQuery(`(width < ${NARROW_WIDTH}px)`);
 
-/**
- * Whether the sidebar is open over the workspace on a narrow screen. Starts
- * closed, and closes again whenever the window crosses NARROW_WIDTH.
- */
-const [overlayOpen, setOverlayOpen] = createSignal(() => (narrowScreen(), false));
+/** Whether the sidebar is open over the workspace on a narrow screen. */
+const [overlayOpen, setOverlayOpen] = createSignal(() => {
+  // Starts closed, and closes again whenever the window crosses NARROW_WIDTH.
+  narrowScreen();
+  return false;
+});
 
 /** The panes shown. Narrow screens show the last single-pane view instead of split view. */
 export const viewMode = (): ViewMode =>

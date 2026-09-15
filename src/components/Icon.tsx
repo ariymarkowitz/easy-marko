@@ -4,10 +4,10 @@
 import type { IconNode } from 'lucide';
 import { iconAttributes, iconMarkup } from '../lib/icon-markup';
 
-export default function Icon(props: { icon: IconNode; class?: string }) {
+export default function Icon(props: { icon: IconNode }) {
   return (
     <svg
-      class={['icon', props.class]}
+      class="icon"
       {...iconAttributes}
       // eslint-disable-next-line solid/no-innerhtml -- markup is built from Lucide's bundled icon data
       innerHTML={iconMarkup(props.icon)}

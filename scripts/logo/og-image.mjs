@@ -7,17 +7,14 @@
 // Needs rsvg-convert from librsvg (`brew install librsvg`).
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { lightDarkToken } from '../../src/lib/css-tokens.ts';
 import { bannerLayers, bannerSize } from './banner.mjs';
+import { projectPath, readProjectFile } from './files.mjs';
 import { tilingSvg } from './tiling.mjs';
 
-const root = new URL('../../', import.meta.url);
-
 export function generateOgImage() {
-  const wordmark = readFileSync(fileURLToPath(new URL('assets/banner.svg', root)), 'utf8');
-  const tokens = readFileSync(fileURLToPath(new URL('src/styles/tokens.css', root)), 'utf8');
+  const wordmark = readProjectFile('assets/banner.svg');
+  const tokens = readProjectFile('src/styles/tokens.css');
 
   const width = 1200;
   const height = 630;
@@ -34,8 +31,7 @@ export function generateOgImage() {
 ${bannerLayers({ width, height, tiling, wordmark, transform: `translate(${x} ${y}) scale(${scale})` })}
 </svg>`;
 
-  execFileSync('rsvg-convert', ['--width', width, '--height', height, '--output', fileURLToPath(new URL('public/og-image.png', root))], {
-    input: svg,
-  });
-  console.log('public/og-image.png');
+  const path = 'public/og-image.png';
+  execFileSync('rsvg-convert', ['--width', width, '--height', height, '--output', projectPath(path)], { input: svg });
+  console.log(path);
 }
