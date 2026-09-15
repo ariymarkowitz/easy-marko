@@ -12,7 +12,7 @@ export const APP_URL = 'https://ariymarkowitz.github.io/easy-marko/';
  */
 export const APP_COLORS = {
   /** --color-surface: panels and floating surfaces, like the find panel and notices. */
-  surface: { light: '#e6e6e6', dark: '#232323' },
+  surface: { light: '#f7f7f7', dark: '#222222' },
   /** --color-bg: the page and toolbar, which the browser's own UI and the installed app's splash screen blend into. */
   background: { light: '#fafafa', dark: '#101010' },
 };
