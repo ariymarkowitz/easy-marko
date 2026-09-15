@@ -1,3 +1,28 @@
 # TODO
-- [ ] Create branch with a dev tool to try different fonts for the headers
-  - Promising font: Poppins
+- [x] Create branch with a dev tool to try different fonts for the headers
+  - Done on the `heading-fonts` branch (toolbar Fonts panel: Google and local families, sizes, weights, variable axes, Copy CSS).
+- [ ] Implement the fonts chosen with the `heading-fonts` tool
+  - Chosen settings (all Google Fonts, OFL, variable):
+    - Body: Instrument Sans (axes: `ital` 0–1, `wdth` 75–100, `wght` 400–700). Size 97% of the current body size, width 96 (`font-stretch: 96%`), default weight.
+    - Code, in the editor and the preview: Google Sans Code (axes: `ital`, `wght` 300–800, `MONO` 0–1). Current code size, default weight, `MONO` 1 (the default).
+    - Headings: Figtree (axes: `ital`, `wght` 300–900). Weights H1 900, H2 800, H3 800, H4–6 800. Sizes, relative to the current body size: H1 2.4em, H2 1.6em, H3 1.2em, H4–6 1em.
+    - Body word spacing of 5%: `word-spacing: 0.05em` on `.markdown` (5% of the font size). CSS `word-spacing: 5%` would mean 5% of the space's width instead. It inherits as a length, so decide whether headings keep it.
+    - Still undecided: whether the app UI and the editor use these fonts or system fonts.
+  - Sizing: em values are relative to the body font size, so scaling the body to 97% scales everything in em. Resize to compensate (divide by 0.97) wherever the size should stay as chosen:
+    - Heading sizes: H1 2.474em, H2 1.649em, H3 1.237em, H4–6 1.031em. Heading margins are em of the heading's own size, so they stay.
+    - Inline and block code in the preview: 0.875em → 0.902em.
+    - Line heights: the body's is a length (`clamp()` in rem) and stays. Unitless ones (headings, footnotes' 1.5) follow their element's font size, so check each; the tool fixed footnotes' at `calc(var(--md-font-size) * 0.875 * 1.5)`.
+    - Check every other em, `cap` and `lh` value in `markdown.css` and the `--md-*` tokens (list indent, bullets, checkboxes, marker gap, block gap, footnote refs, front matter, `hr` margins, KaTeX) and decide which keep their current size.
+    - The editor's line height is now `calc(var(--text-editor) * 1.6)`, a length, so a code size change leaves it.
+  - Loading:
+    - Self-host rather than link Google Fonts: bundle the WOFF2 files (for example `@fontsource-variable/*` packages), so the service worker precaches them, they work offline, and there's no request to Google.
+    - Declare every subset with its `unicode-range`, so a document downloads only the subsets it uses. Precache only Latin and Latin Extended; runtime-cache (cache first) the rest. Instrument Sans and Figtree only have Latin and Latin Extended, so other scripts fall back to the system font.
+    - Use variable fonts with `@font-face` ranges (`font-weight: 400 700`, `font-stretch: 75% 100%`), not a single weight, which pins the axis. Browsers don't set `ital` for italic text from a variable font's axis: use Fontsource's separate italic files, or set `font-variation-settings: 'ital' 1` on italic elements.
+    - Preload only the body font's Latin file. `font-display: swap`, with `size-adjust`/`ascent-override` on a fallback face so the swap doesn't shift the layout.
+    - CodeMirror measures text when fonts first load; call `view.requestMeasure()` when the code font loads later (the tool listens for `document.fonts` `loadingdone`).
+    - Expected cost: about +50 ms on a first visit and almost nothing cached, for roughly 120–250 KB of fonts.
+  - HTML export:
+    - Embed the fonts as data URIs, as KaTeX's are, so exports stay self-contained and look like the preview. Don't link Google Fonts from exports (offline fallback, privacy).
+    - Embed only what the document uses: the heading font only with headings, the code font only with code, bold and italic only if they appear, and only subsets whose `unicode-range` meets the document's characters. Typically 60–250 KB.
+    - To get close to PDF sizes, subset to the glyphs used at export time with HarfBuzz's `hb-subset` (`harfbuzzjs`, WebAssembly, loaded only when exporting), keeping layout features, then compress to WOFF2, or WOFF1 with `CompressionStream('deflate')`. About 30–80 KB for five faces. The same would shrink KaTeX's 400 KB.
+    - Browser print-to-PDF already subsets and embeds web fonts, if PDF export is added.
