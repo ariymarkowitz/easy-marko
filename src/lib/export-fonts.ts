@@ -1,7 +1,8 @@
 // Fonts embedded in exported HTML as data URLs, so exports look like the
 // preview offline and make no requests. Only the faces a document uses are
 // embedded: by role (body, headings, code), style, and the subsets whose
-// unicode-range covers its characters.
+// unicode-range covers its characters. Each is cut down to the characters it
+// shows (lib/font-subset.ts).
 
 import figtree from '@fontsource-variable/figtree/wght.css?raw';
 import figtreeItalic from '@fontsource-variable/figtree/wght-italic.css?raw';
@@ -74,73 +75,180 @@ const faces: Face[] = Object.entries(stylesheets).flatMap(([role, sheets]) =>
     })),
 );
 
+/** Axes the preview fixes, pinned so their data can be dropped. */
+const pinnedAxes: Record<FontRole, Record<string, number>> = {
+  // markdown.css sets the body's font-stretch to 96%.
+  body: { wdth: 96 },
+  heading: {},
+  code: {},
+};
+
 /** Elements that markdown.css, editor.css or browsers set in italics. */
 const italicSelector = 'em, i, cite, dfn, var, address, .tok-emphasis, .tok-comment';
 
 const faceKey = (role: FontRole, italic: boolean) => `${role} ${italic ? 'italic' : 'normal'}`;
 
-/** The code points of `html`'s text, other than whitespace, by the role and style they're shown in. */
+interface KatexFont {
+  family?: string;
+  style?: string;
+  weight?: string;
+}
+
+/** The rules in KaTeX's stylesheet that set its fonts, in stylesheet order. */
+const katexFontRules = [...katexCss.matchAll(/(\.katex[^{}]*)\{([^}]*)\}/g)].flatMap(([, selector, body]) => {
+  const font: KatexFont = {};
+  for (const declaration of body.split(';')) {
+    const [property, value] = declaration.split(':');
+    if (property === 'font-family') font.family = value.split(',')[0].replaceAll('"', '');
+    else if (property === 'font-style') font.style = value;
+    else if (property === 'font-weight') font.weight = value;
+    else if (property === 'font') {
+      // The shorthand on .katex, like `normal 1.21em KaTeX_Main,serif`.
+      const [, style, family] = /^(\w+) [\d.]+em ([\w-]+)/.exec(value)!;
+      Object.assign(font, { family, style, weight: 'normal' });
+    }
+  }
+  return Object.keys(font).length ? [{ selector, font }] : [];
+});
+
+const katexFaces = (katexCss.match(/@font-face\{[^}]*\}/g) ?? []).map((rule) => ({
+  rule,
+  // Some family names are quoted.
+  family: /font-family:"?([\w-]+)/.exec(rule)![1],
+  italic: /font-style:italic/.test(rule),
+  bold: /font-weight:700/.test(rule),
+  file: /src:url\(fonts\/([\w-]+\.woff2)\)/.exec(rule)![1],
+}));
+
+/**
+ * The file of the KaTeX face that shows text in `element`, from the classes
+ * KaTeX's stylesheet picks fonts by, as the browser would match them.
+ */
+function katexFontFile(element: Element): string | undefined {
+  const font: KatexFont = {};
+  for (let ancestor: Element | null = element; ancestor; ancestor = ancestor.parentElement) {
+    // Later rules win, so they're checked first.
+    for (let i = katexFontRules.length - 1; i >= 0; i--) {
+      const rule = katexFontRules[i];
+      if (!ancestor.matches(rule.selector)) continue;
+      font.family ??= rule.font.family;
+      font.style ??= rule.font.style;
+      font.weight ??= rule.font.weight;
+    }
+    if (font.family && font.style && font.weight) break;
+  }
+  const italic = font.style === 'italic';
+  const bold = font.weight === '700' || font.weight === 'bold';
+  const family = katexFaces.filter((face) => face.family === font.family);
+  // Browsers match the style first, then the weight.
+  const styled = family.some((face) => face.italic === italic) ? family.filter((face) => face.italic === italic) : family;
+  return (styled.find((face) => face.bold === bold) ?? styled[0])?.file;
+}
+
+/**
+ * The code points of `html`'s text, other than whitespace, by the role and
+ * style they're shown in, or for maths, by `katex <file>`.
+ */
 function charactersByFace(html: string): Map<string, Set<number>> {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
   const characters = new Map<string, Set<number>>();
-  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-    const parent = node.parentElement;
-    // KaTeX's own fonts show maths.
-    if (!parent || parent.closest('.katex')) continue;
-    const role = parent.closest('code') ? 'code' : parent.closest('h1, h2, h3, h4, h5, h6') ? 'heading' : 'body';
-    const key = faceKey(role, parent.closest(italicSelector) !== null);
+  const add = (key: string, text: string) => {
     let set = characters.get(key);
-    for (const char of (node as Text).data) {
+    for (const char of text) {
       if (/\s/.test(char)) continue;
       if (!set) characters.set(key, (set = new Set()));
       set.add(char.codePointAt(0)!);
     }
+  };
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const parent = node.parentElement;
+    // KaTeX's MathML copy is for screen readers and isn't shown.
+    if (!parent || parent.closest('.katex-mathml')) continue;
+    if (parent.closest('.katex')) {
+      add(`katex ${katexFontFile(parent)}`, (node as Text).data);
+      continue;
+    }
+    const role = parent.closest('code') ? 'code' : parent.closest('h1, h2, h3, h4, h5, h6') ? 'heading' : 'body';
+    add(faceKey(role, parent.closest(italicSelector) !== null), (node as Text).data);
   }
+  // KaTeX's stylesheet numbers equations as "(1)".
+  const number = doc.querySelector('.katex .eqn-num');
+  if (number) add(`katex ${katexFontFile(number)}`, '()0123456789');
   return characters;
 }
 
-export async function fetchDataUrl(url: string, type: string): Promise<string> {
-  const response = await fetch(url);
+let fontSubset: Promise<typeof import('./font-subset')> | undefined;
+
+/** The subsetting module, loaded on the first export. */
+function loadFontSubset() {
+  fontSubset ??= import('./font-subset');
+  return fontSubset;
+}
+
+/**
+ * A data URL for the font file at `url`, cut down to `codePoints`, or
+ * undefined if the font has none of them.
+ */
+async function subsetDataUrl(
+  url: string,
+  codePoints: Iterable<number>,
+  axes?: Record<string, number>,
+): Promise<string | undefined> {
+  const [{ subsetFont }, response] = await Promise.all([loadFontSubset(), fetch(url)]);
   if (!response.ok) throw new Error(`Couldn't load ${url} (${response.status})`);
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  return `data:${type};base64,${bytes.toBase64()}`;
+  const woff = await subsetFont(new Uint8Array(await response.arrayBuffer()), codePoints, axes);
+  return woff && `data:font/woff;base64,${woff.toBase64()}`;
 }
 
-/** Data URLs for font `files`, keyed by file name, from `urls` keyed by path. */
-async function fontDataUrls(urls: Record<string, string>, files: Iterable<string>): Promise<Map<string, string>> {
-  const byName = new Map(Object.entries(urls).map(([path, url]) => [fileName(path), url]));
-  return new Map(
-    await Promise.all(
-      [...new Set(files)].map(async (file) => {
-        const url = byName.get(file);
-        if (!url) throw new Error(`Missing font ${file}`);
-        return [file, await fetchDataUrl(url, 'font/woff2')] as const;
-      }),
-    ),
+/** The URL of a font `file` among `urls`, keyed by path. */
+function fontUrl(urls: Record<string, string>, file: string): string {
+  const path = Object.keys(urls).find((key) => fileName(key) === file);
+  if (!path) throw new Error(`Missing font ${file}`);
+  return urls[path];
+}
+
+/** The @font-face rules, with embedded files, for the text fonts that `characters` need. */
+async function textFontsCss(characters: Map<string, Set<number>>): Promise<string> {
+  const rules = await Promise.all(
+    faces.map(async (face) => {
+      const inRange = [...(characters.get(faceKey(face.role, face.italic)) ?? [])].filter((code) =>
+        face.ranges.some(([start, end]) => code >= start && code <= end),
+      );
+      if (inRange.length === 0) return '';
+      const dataUrl = await subsetDataUrl(fontUrl(fontUrls, face.file), inRange, pinnedAxes[face.role]);
+      return dataUrl ? face.css.replace(/src:[^;]*/, `src: url(${dataUrl}) format('woff')`) : '';
+    }),
   );
+  return rules.filter(Boolean).join('\n');
 }
 
-/** The @font-face rules, with embedded files, for the fonts that sanitised document `html` shows. */
-export async function documentFontsCss(html: string): Promise<string> {
+/**
+ * KaTeX's stylesheet with the fonts that `characters` need embedded, and the
+ * other @font-face rules left out.
+ */
+async function katexCssWithFonts(characters: Map<string, Set<number>>): Promise<string> {
+  const embedded = await Promise.all(
+    katexFaces.map(async ({ rule, file }) => {
+      const codePoints = characters.get(`katex ${file}`);
+      const dataUrl = codePoints && (await subsetDataUrl(fontUrl(katexFontUrls, file), codePoints));
+      // Each @font-face lists WOFF2, WOFF and TTF files, replaced by the one subset.
+      return dataUrl ? rule.replace(/src:[^;}]*/, `src:url(${dataUrl}) format("woff")`) : '';
+    }),
+  );
+  return katexFaces.reduce((css, { rule }, i) => css.replace(rule, embedded[i]), katexCss);
+}
+
+/**
+ * CSS with embedded fonts for sanitised document `html`: @font-face rules for
+ * its text, and KaTeX's stylesheet if it has maths.
+ */
+export async function exportFontsCss(html: string): Promise<{ text: string; maths: string }> {
   const characters = charactersByFace(html);
-  const used = faces.filter((face) => {
-    const set = characters.get(faceKey(face.role, face.italic));
-    return set !== undefined && [...set].some((code) => face.ranges.some(([start, end]) => code >= start && code <= end));
-  });
-  const dataUrls = await fontDataUrls(fontUrls, used.map((face) => face.file));
-  return used
-    .map((face) => face.css.replace(`url(./files/${face.file})`, `url(${dataUrls.get(face.file)})`))
-    .join('\n');
-}
-
-/** KaTeX's stylesheet with its fonts embedded, so maths renders offline. */
-export async function katexCssWithFonts(): Promise<string> {
-  const dataUrls = await fontDataUrls(katexFontUrls, Object.keys(katexFontUrls).map(fileName));
-  // Each @font-face lists WOFF2, WOFF and TTF files. Browsers that can show
-  // the rest of the page all read WOFF2, so only that one is embedded.
-  return katexCss.replace(
-    /src:url\(fonts\/([\w-]+\.woff2)\)[^;}]*/g,
-    (_, file: string) => `src:url(${dataUrls.get(file)}) format("woff2")`,
-  );
+  const hasMaths = html.includes('class="katex');
+  const [text, maths] = await Promise.all([
+    textFontsCss(characters),
+    hasMaths ? katexCssWithFonts(characters) : '',
+  ]);
+  return { text, maths };
 }

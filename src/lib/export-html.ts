@@ -8,7 +8,7 @@ import fallbackFontsCss from '../styles/fonts.css?raw';
 import markdownCss from '../styles/markdown.css?raw';
 import tokensCss from '../styles/tokens.css?raw';
 import { escapeHtml } from './escape-html';
-import { documentFontsCss, katexCssWithFonts } from './export-fonts';
+import { exportFontsCss } from './export-fonts';
 import { htmlFile, saveFile } from './files';
 import { embedLocalImages } from './local-images';
 import { createMarkdownRenderer } from './markdown';
@@ -70,12 +70,8 @@ export async function buildHtmlDocument(
 ): Promise<string> {
   const rendered = await renderMarkdown(source);
   const body = readImage ? await embedLocalImages(rendered, readImage) : rendered;
-  const hasMaths = body.includes('class="katex');
-  const [fontsCss, mathsCss] = await Promise.all([
-    documentFontsCss(body),
-    hasMaths ? katexCssWithFonts() : '',
-  ]);
-  const css = [documentCss, appColorsCss, tokensCss, fallbackFontsCss, fontsCss, syntaxCss, markdownCss, mathsCss]
+  const fonts = await exportFontsCss(body);
+  const css = [documentCss, appColorsCss, tokensCss, fallbackFontsCss, fonts.text, syntaxCss, markdownCss, fonts.maths]
     .join('\n')
     .trim();
   return `<!doctype html>

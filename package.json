@@ -50,9 +50,11 @@
     "@solidjs/web": "^2.0.0-rc.6",
     "@vscode/markdown-it-katex": "^1.1.2",
     "dompurify": "^3.4.15",
+    "harfbuzzjs": "^1.6.1",
     "katex": "^0.16.47",
     "lucide": "^1.44.0",
     "markdown-it": "^15.0.2",
-    "solid-js": "^2.0.0-rc.6"
+    "solid-js": "^2.0.0-rc.6",
+    "woff2-encoder": "^2.0.0"
   }
 }

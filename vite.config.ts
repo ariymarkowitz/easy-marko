@@ -126,7 +126,8 @@ export default defineConfig(({ mode }) => {
           launch_handler: { client_mode: 'focus-existing' },
         },
         workbox: {
-          globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],
+          // The WebAssembly subsets fonts for HTML exports, which work offline too.
+          globPatterns: ['**/*.{js,css,html,svg,png,woff2,wasm,webmanifest}'],
           // Only link previews use this, so it doesn't need to work offline.
           globIgnores: ['og-image.png', ...uncommonFontFiles],
           navigateFallback: `${base}index.html`,

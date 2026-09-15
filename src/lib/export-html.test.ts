@@ -1,14 +1,33 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { buildHtmlDocument, exportHtml } from './export-html';
+import { subsetFont } from './font-subset';
 import { markdown } from './markdown';
 
-const fetch = vi.fn(async (_url: string) => new Response(new Uint8Array([1, 2, 3])));
+// Subsetting is tested in font-subset.test.ts. Here a font's "subset" is its fetched bytes.
+vi.mock('./font-subset', () => ({ subsetFont: vi.fn(async (bytes: Uint8Array) => bytes) }));
+
+const fileName = (url: string) => url.slice(url.lastIndexOf('/') + 1);
+
+/** A font file's bytes are its name. */
+const fetch = vi.fn(async (url: string) => new Response(fileName(url)));
 
 /** The names of the font files fetched, sorted. */
-const fetchedFiles = () => fetch.mock.calls.map(([url]) => url.slice(url.lastIndexOf('/') + 1)).sort();
+const fetchedFiles = () => fetch.mock.calls.map(([url]) => fileName(url)).sort();
+
+/** The characters and pinned axes each font file was subset to, by file name. */
+function subsets(): Record<string, { text: string; axes?: Record<string, number> }> {
+  return Object.fromEntries(
+    vi.mocked(subsetFont).mock.calls.map(([bytes, codePoints, axes]) => [
+      new TextDecoder().decode(bytes),
+      { text: String.fromCodePoint(...codePoints), ...(axes && Object.keys(axes).length ? { axes } : {}) },
+    ]),
+  );
+}
 
 beforeEach(() => {
   fetch.mockClear();
+  // Back to the implementation in vi.mock.
+  vi.mocked(subsetFont).mockReset();
   vi.stubGlobal('fetch', fetch);
 });
 
@@ -42,9 +61,13 @@ describe('buildHtmlDocument', () => {
     expect(css).toContain('.tok-keyword');
     // The preview CSS styles .katex-display, but KaTeX's own stylesheet and fonts stay out.
     expect(css).not.toContain('KaTeX_');
-    expect(css).toContain("src: url(data:font/woff2;base64,AQID) format('woff2-variations')");
+    const embedded = `data:font/woff;base64,${btoa('figtree-latin-wght-normal.woff2')}`;
+    expect(css).toContain(`src: url(${embedded}) format('woff')`);
     expect(css).not.toContain('url(./files/');
-    expect(fetchedFiles()).toEqual(['figtree-latin-wght-normal.woff2', 'instrument-sans-latin-wdth-normal.woff2']);
+    expect(subsets()).toEqual({
+      'figtree-latin-wght-normal.woff2': { text: 'Helo' },
+      'instrument-sans-latin-wdth-normal.woff2': { text: 'done', axes: { wdth: 96 } },
+    });
   });
 
   test('embeds only the font faces and subsets the document shows', async () => {
@@ -63,6 +86,17 @@ describe('buildHtmlDocument', () => {
       'instrument-sans-latin-wdth-normal.woff2',
     ]);
     expect(css.match(/@font-face/g)?.length).toBe(5 + 2);
+    // Each face gets only the characters in its own unicode-range.
+    expect(subsets()['instrument-sans-latin-ext-wdth-normal.woff2'].text).toBe('Łź');
+    expect(subsets()['instrument-sans-latin-wdth-normal.woff2'].text).toBe('Plainód');
+    expect(subsets()['google-sans-code-latin-wght-italic.woff2'].text).toBe('/coment');
+  });
+
+  test('leaves out a face whose font has none of its characters', async () => {
+    vi.mocked(subsetFont).mockResolvedValueOnce(undefined);
+    const css = parseDocument(await buildHtmlDocument('Text.md', 'Text')).querySelector('style')?.textContent;
+    expect(fetchedFiles()).toEqual(['instrument-sans-latin-wdth-normal.woff2']);
+    expect(css).not.toContain('data:font/woff');
   });
 
   test('leaves out fonts for whitespace and maths', async () => {
@@ -77,15 +111,31 @@ describe('buildHtmlDocument', () => {
     expect(doc.querySelector('style')?.textContent).toContain(":root[data-theme='dark']");
   });
 
-  test('embeds KaTeX styles and fonts when the document has maths', async () => {
-    const html = await buildHtmlDocument('Maths.md', 'Euler: $e^{i\\pi}$');
+  test('embeds KaTeX styles and the fonts its maths is shown in', async () => {
+    const html = await buildHtmlDocument('Maths.md', 'Euler: $\\mathbf{x} + \\sum e^{i\\pi}$');
 
     expect(html).toContain('class="katex"');
     expect(html).toContain('.katex-display');
-    expect(html).toContain('src:url(data:font/woff2;base64,AQID) format("woff2")');
     expect(html).not.toContain('url(fonts/');
-    // KaTeX's 20 fonts and the body font.
-    expect(fetch).toHaveBeenCalledTimes(21);
+    // Only the characters shown count, not those in the MathML copy for screen readers.
+    const { 'instrument-sans-latin-wdth-normal.woff2': _, ...maths } = subsets();
+    expect(maths).toEqual({
+      'KaTeX_Main-Bold.woff2': { text: 'x' },
+      'KaTeX_Main-Regular.woff2': { text: '+' },
+      'KaTeX_Math-Italic.woff2': { text: 'eiπ' },
+      'KaTeX_Size1-Regular.woff2': { text: '∑' },
+    });
+    expect(html.match(/@font-face\{[^}]*\}/g)?.map((rule) => /url\(data:font\/woff;base64,([^)]+)\)/.exec(rule)?.[1]))
+      .toEqual(['KaTeX_Main-Bold.woff2', 'KaTeX_Main-Regular.woff2', 'KaTeX_Math-Italic.woff2', 'KaTeX_Size1-Regular.woff2'].map(btoa));
+  });
+
+  test('leaves out a KaTeX font without the characters', async () => {
+    vi.mocked(subsetFont).mockImplementation(async (bytes) =>
+      new TextDecoder().decode(bytes).startsWith('KaTeX_') ? undefined : bytes,
+    );
+    const html = await buildHtmlDocument('Maths.md', '$x$');
+    expect(html).not.toMatch(/@font-face\{[^}]*KaTeX/);
+    expect(html).toContain('.katex .mathnormal');
   });
 
   test('waits for code languages to load and highlights the code', async () => {
