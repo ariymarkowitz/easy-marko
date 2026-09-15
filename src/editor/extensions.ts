@@ -51,13 +51,14 @@ const theme = EditorView.theme({
   '.cm-searchMatch-selected, .cm-searchMatch.cm-searchMatch-selected': {
     backgroundColor: 'var(--color-selection)',
   },
+  // Panels sit on the page, outside the pane's border (base.css).
   '.cm-panels': {
-    backgroundColor: 'var(--color-surface)',
+    backgroundColor: 'transparent',
     color: 'var(--color-text)',
     fontFamily: 'var(--font-sans)',
     fontSize: 'var(--text-ui)',
   },
-  '.cm-panels.cm-panels-top': { borderBottom: '1px solid var(--color-border)' },
+  '.cm-panels.cm-panels-top': { borderBottom: 'none' },
 });
 
 // Files dropped on the editor open as documents (see state/file-drop.ts), so

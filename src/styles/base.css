@@ -125,8 +125,14 @@ button,
   min-width: 0;
   /* Keeps CodeMirror's z-indexed gutters and panels below the panel edge buttons. */
   isolation: isolate;
-  /* Clips the editor's top panel to the rounded corners. */
-  overflow: hidden;
+}
+
+/*
+ * Panes are bordered boxes. The source pane's box is the editor's scroller,
+ * so the find panel above it sits on the page.
+ */
+.preview-pane,
+.source-pane .cm-scroller {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background-color: var(--color-pane);
