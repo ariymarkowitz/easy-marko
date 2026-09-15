@@ -5,15 +5,14 @@
   - Chosen settings (all Google Fonts, OFL, variable):
     - Body: Instrument Sans (axes: `ital` 0–1, `wdth` 75–100, `wght` 400–700). Size 97% of the current body size, width 96 (`font-stretch: 96%`), default weight.
     - Code, in the editor and the preview: Google Sans Code (axes: `ital`, `wght` 300–800, `MONO` 0–1). Current code size, default weight, `MONO` 1 (the default).
-    - Headings: Figtree (axes: `ital`, `wght` 300–900). Weights H1 900, H2 800, H3 800, H4–6 800. Sizes, relative to the current body size: H1 2.4em, H2 1.6em, H3 1.2em, H4–6 1em.
+    - Headings: Figtree (axes: `ital`, `wght` 300–900). Weights and em sizes stay as they are in `markdown.css` (H1 900 at 2.5em, H2–H6 800 at 1.75em, 1.25em and 1em), so they follow the new body size.
     - Body word spacing of 5%: `word-spacing: 0.05em` on `.markdown` (5% of the font size). CSS `word-spacing: 5%` would mean 5% of the space's width instead. It inherits as a length, so decide whether headings keep it.
-    - Still undecided: whether the app UI and the editor use these fonts or system fonts.
-  - Sizing: em values are relative to the body font size, so scaling the body to 97% scales everything in em. Resize to compensate (divide by 0.97) wherever the size should stay as chosen:
-    - Heading sizes: H1 2.474em, H2 1.649em, H3 1.237em, H4–6 1.031em. Heading margins are em of the heading's own size, so they stay.
+    - The editor uses Google Sans Code, like code in the preview. The app UI (toolbar, sidebar, status bar, panels) keeps the system font.
+  - Sizing: em values are relative to the body font size, so scaling the body to 97% scales everything in em. Headings keep their em sizes and scale with the body. Elsewhere, resize to compensate (divide by 0.97) wherever the size should stay as it is:
     - Inline and block code in the preview: 0.875em → 0.902em.
     - Line heights: the body's is a length (`clamp()` in rem) and stays. Unitless ones (headings, footnotes' 1.5) follow their element's font size, so check each; the tool fixed footnotes' at `calc(var(--md-font-size) * 0.875 * 1.5)`.
     - Check every other em, `cap` and `lh` value in `markdown.css` and the `--md-*` tokens (list indent, bullets, checkboxes, marker gap, block gap, footnote refs, front matter, `hr` margins, KaTeX) and decide which keep their current size.
-    - The editor's line height is now `calc(var(--text-editor) * 1.6)`, a length, so a code size change leaves it.
+    - The editor's line height on `main` is unitless (`1.6` in `editor/extensions.ts`), so it changes with the code font's size. The branch made it `calc(var(--text-editor) * 1.6)`, a length; carry that over if the code size ever changes.
   - Loading:
     - Self-host rather than link Google Fonts: bundle the WOFF2 files (for example `@fontsource-variable/*` packages), so the service worker precaches them, they work offline, and there's no request to Google.
     - Declare every subset with its `unicode-range`, so a document downloads only the subsets it uses. Precache only Latin and Latin Extended; runtime-cache (cache first) the rest. Instrument Sans and Figtree only have Latin and Latin Extended, so other scripts fall back to the system font.
