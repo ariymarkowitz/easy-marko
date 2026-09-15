@@ -58,7 +58,7 @@ describe('buildHtmlDocument', () => {
     const css = doc.querySelector('style')?.textContent ?? '';
     expect(css).toContain('light-dark(');
     expect(css).toContain('.markdown pre');
-    expect(css).toContain('.tok-keyword');
+    expect(css).toContain('.tok-string');
     // The preview CSS styles .katex-display, but KaTeX's own stylesheet and fonts stay out.
     expect(css).not.toContain('KaTeX_');
     const embedded = `data:font/woff;base64,${btoa('figtree-latin-wght-normal.woff2')}`;

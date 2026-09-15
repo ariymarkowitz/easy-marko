@@ -17,6 +17,26 @@ export const yamlKeyHighlighter = tagHighlighter([{ tag: tags.propertyName, clas
   scope: (node) => node === yamlLanguage.parser.topNode,
 });
 
+/**
+ * Classes classHighlighter doesn't add, for the Alabaster-style colours in
+ * styles/editor.css: definitions split into variables (`tok-variableDef`) and
+ * functions, classes, types and members (`tok-functionDef`), and `tok-null`,
+ * which Lezer tags as a keyword.
+ */
+export const codeHighlighter = tagHighlighter([
+  { tag: tags.definition(tags.variableName), class: 'tok-variableDef' },
+  {
+    tag: [
+      tags.function(tags.definition(tags.variableName)),
+      tags.definition(tags.className),
+      tags.definition(tags.typeName),
+      tags.definition(tags.propertyName),
+    ],
+    class: 'tok-functionDef',
+  },
+  { tag: tags.null, class: 'tok-null' },
+]);
+
 /** The language a fence names. Matches fuzzily, like the source pane, so `js` finds JavaScript. */
 export function findLanguage(name: string): LanguageDescription | undefined {
   if (!name) return undefined;
@@ -30,7 +50,7 @@ export function highlight(code: string, language: LanguageDescription): string |
   highlightCode(
     code,
     language.support.language.parser.parse(code),
-    [classHighlighter, yamlKeyHighlighter],
+    [classHighlighter, codeHighlighter, yamlKeyHighlighter],
     (text, classes) => {
       html += classes ? `<span class="${classes}">${escapeHtml(text)}</span>` : escapeHtml(text);
     },

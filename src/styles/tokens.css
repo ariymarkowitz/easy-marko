@@ -10,7 +10,7 @@
 
   /* --color-bg and --color-surface come from src/app-info.ts (virtual:app-colors.css). */
   /* Code in rendered Markdown: fenced blocks, and inline code spans. */
-  --color-code-bg: light-dark(#f3f3f3, #202020);
+  --color-code-bg: light-dark(#f3f3f3, #201f27);
   --color-code-inline-bg: light-dark(#ececec, #292929);
   --color-hover: light-dark(#e6e6e6, #2c2c2c);
   --color-hover-soft: light-dark(rgb(0 0 0 / 3%), rgb(255 255 255 / 3%));
@@ -23,6 +23,11 @@
   --color-accent-soft: light-dark(rgb(52 100 224 / 12%), rgb(122 159 247 / 16%));
   --color-selection: light-dark(rgb(52 100 224 / 22%), rgb(122 159 247 / 30%));
   --color-danger: light-dark(#c9372c, #f47c72);
+  /* Code highlighting (editor.css). */
+  --color-syntax-variable: light-dark(#2755ce, #7a9ff7);
+  --color-syntax-constant: light-dark(#2d7b38, #70c481);
+  --color-syntax-definition: light-dark(#7d37ae, #ca91ef);
+  --color-syntax-comment: light-dark(#a03b00, #967a5a);
   --color-backdrop: light-dark(rgb(0 0 0 / 15%), rgb(0 0 0 / 45%));
 
   /* For surfaces floating over the app, like notices and the narrow-screen sidebar. */

@@ -2,16 +2,19 @@
  * Syntax colours, on the tok-* classes from the highlighters in
  * editor/extensions.ts. The preview's fenced code uses the same classes
  * (lib/highlight.ts). Structural editor styles are in its EditorView.theme.
+ *
+ * Code follows the Alabaster theme (https://tonsky.me/blog/syntax-highlighting/),
+ * in the app's palette: only constants, definitions and comments get a colour,
+ * and punctuation recedes. Keywords, variable uses, calls and operators stay plain.
  */
 
 .tok-heading,
-.tok-strong,
-.tok-typeName,
-.tok-className {
+.tok-strong {
   font-weight: 600;
 }
 
-.tok-emphasis {
+.tok-emphasis,
+.tok-comment {
   font-style: italic;
 }
 
@@ -26,26 +29,45 @@
 .tok-math,
 .tok-yamlKey,
 .tok-link,
-.tok-url,
-.tok-keyword,
-.tok-bool,
-.tok-atom {
+.tok-url {
   color: var(--color-accent);
 }
 
-/* Markdown punctuation and secondary code tokens recede. */
-.tok-mark,
-.tok-quote,
-.tok-meta,
-.tok-comment,
-.tok-punctuation,
+/* Variables where code defines them. */
+.tok-variableDef {
+  color: var(--color-syntax-variable);
+}
+
+/* Functions, classes, types and members where code defines them. */
+.tok-functionDef {
+  color: var(--color-syntax-definition);
+}
+
 .tok-string,
 .tok-string2,
 .tok-number,
-.tok-labelName {
-  color: var(--color-text-muted);
+.tok-bool,
+.tok-atom,
+.tok-null,
+.tok-literal,
+.tok-inserted {
+  color: var(--color-syntax-constant);
 }
 
 .tok-comment {
-  font-style: italic;
+  color: var(--color-syntax-comment);
+}
+
+.tok-deleted,
+.tok-invalid {
+  color: var(--color-danger);
+}
+
+/* Markdown punctuation and code punctuation recede. */
+.tok-mark,
+.tok-quote,
+.tok-meta,
+.tok-punctuation,
+.tok-labelName {
+  color: var(--color-text-muted);
 }
