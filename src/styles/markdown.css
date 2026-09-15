@@ -173,7 +173,7 @@
   position: absolute;
   /* Covers the border too, so the icon's square lines up with the box's border. */
   inset: calc(-1 * var(--md-checkbox-stroke));
-  background-color: var(--color-bg);
+  background-color: var(--color-pane);
   /*
    * The tick from Lucide's square-check. The viewBox is cropped to the square's
    * outer edge, so at a scale of 1 the tick fits the box as it does the icon.
@@ -206,7 +206,7 @@
 .markdown pre {
   padding: var(--space-3) var(--space-4);
   overflow-x: auto;
-  border-radius: var(--radius);
+  border-radius: 6px;
   background-color: var(--color-code-bg);
 }
 

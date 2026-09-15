@@ -5,7 +5,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 ## Layout
 
 - Toolbar, sidebar, workspace and status bar. The editor and preview take up nearly the whole window.
-- The toolbar, sidebar and status bar share the page background with no dividers. The source and preview panes are bordered boxes with rounded corners, separated by a 5px gap that is also the resizer. Edge buttons join the pane beside them like tabs.
+- The toolbar, sidebar and status bar share the page background with no dividers. The source and preview panes are bordered boxes with rounded corners, a shade darker than the page (exported HTML uses the same shade), separated by a 5px gap that is also the resizer. Edge buttons join the pane beside them like tabs.
 - Three views: source, preview, or side by side. Settings (view, sidebar width, split ratio, scroll sync) persist in localStorage.
 - The sidebar lists open documents and recent files. It can be resized and collapsed.
 - Resizers for the sidebar and split panes. They're focusable separators: Left/Right move a step, Shift+Left/Right a larger step, Home/End jump to the limits.

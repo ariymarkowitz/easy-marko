@@ -10,13 +10,14 @@
 
   /* --color-bg and --color-surface come from src/app-info.ts (virtual:app-colors.css). */
   /* Code in rendered Markdown: fenced blocks, and inline code spans. */
-  --color-code-bg: light-dark(#f3f3f3, #201f27);
+  --color-code-bg: light-dark(#eaeaea, #18181e);
   --color-code-inline-bg: light-dark(#ececec, #292929);
-  --color-hover: light-dark(#e6e6e6, #2c2c2c);
-  /* Hover on controls that sit on --color-surface, like the find panel's. */
-  --color-hover-strong: light-dark(#dcdcdc, #363636);
+  /* Translucent, so hovers darken whatever they sit on. */
+  --color-hover: light-dark(rgb(0 0 0 / 5%), rgb(255 255 255 / 4%));
   --color-hover-soft: light-dark(rgb(0 0 0 / 3%), rgb(255 255 255 / 3%));
-  --color-border: light-dark(#e1e1e1, #2e2e2e);
+  --color-border: light-dark(#e1e1e1, #1f1f1f);
+  /* The source and preview panes, a shade darker than the page. Also exported HTML's page. */
+  --color-pane: light-dark(#f1f1f1, #131313);
   --color-text: light-dark(#2a2a2a, #e8e8e8);
   /* Headings and bold text in rendered Markdown. */
   --color-text-strong: light-dark(#161616, #f3f3f3);
