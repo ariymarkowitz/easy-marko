@@ -297,7 +297,7 @@ button,
   width: 1.25rem;
   height: 1.75rem;
   border: 1px solid var(--color-border);
-  background-color: var(--color-pane);
+  background-color: var(--color-bg);
   touch-action: none;
 }
 
@@ -314,7 +314,7 @@ button,
 }
 
 .panel-edge-button.icon-button:hover {
-  background-color: var(--color-hover);
+  background-color: color-mix(in srgb, var(--color-bg), white 5%);
 }
 
 /* Set by lib/drag.ts while a resizer or an edge button is dragged. */
