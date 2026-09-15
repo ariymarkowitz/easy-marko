@@ -10,8 +10,8 @@
 
   /* --color-bg and --color-surface come from src/app-info.ts (virtual:app-colors.css). */
   /* Code in rendered Markdown: fenced blocks, and inline code spans. */
-  --color-code-bg: light-dark(#eaeaea, #18181e);
-  --color-code-inline-bg: light-dark(#ececec, #292929);
+  --color-code-bg: light-dark(#ebebeb, #18181e);
+  --color-code-inline-bg: light-dark(#e9e9e9, #232323);
   /* Translucent, so hovers darken whatever they sit on. */
   --color-hover: light-dark(rgb(0 0 0 / 5%), rgb(255 255 255 / 4%));
   --color-hover-soft: light-dark(rgb(0 0 0 / 3%), rgb(255 255 255 / 3%));

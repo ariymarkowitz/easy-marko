@@ -355,7 +355,7 @@ button,
   padding-right: 2px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  background-color: var(--color-bg);
+  background-color: var(--color-pane);
   transition: var(--transition-colors);
 }
 
