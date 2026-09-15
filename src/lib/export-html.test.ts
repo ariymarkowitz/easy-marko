@@ -167,6 +167,25 @@ describe('exportHtml', () => {
     expect(written).toContain('<h1 id="notes">Notes</h1>');
   });
 
+  test('lets the browser paint after onBuild, before rendering', async () => {
+    const handle = { name: 'Notes.html', createWritable: async () => ({ write: async () => {}, close: async () => {} }) };
+    window.showSaveFilePicker = vi.fn(async () => handle as unknown as FileSystemFileHandle);
+    const events: string[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      events.push('frame');
+      callback(0);
+      return 0;
+    });
+    const parse = markdown.parse.bind(markdown);
+    vi.spyOn(markdown, 'parse').mockImplementation((...args) => {
+      events.push('render');
+      return parse(...args);
+    });
+
+    await exportHtml('Notes.md', '# Notes', { onBuild: () => events.push('build') });
+    expect(events.slice(0, 3)).toEqual(['build', 'frame', 'render']);
+  });
+
   test("doesn't render anything when the save dialog is cancelled", async () => {
     window.showSaveFilePicker = vi.fn(async () => {
       throw new DOMException('Cancelled', 'AbortError');

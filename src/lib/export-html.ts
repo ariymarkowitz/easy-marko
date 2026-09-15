@@ -94,17 +94,31 @@ ${body}</article>
 }
 
 /**
+ * Resolves once the browser has painted, so changes made before it show
+ * before synchronous work starts. A hidden page doesn't paint, so it resolves
+ * straight away.
+ */
+function afterNextPaint(): Promise<void> {
+  if (document.visibilityState === 'hidden') return Promise.resolve();
+  // Frame callbacks run just before painting, so a task queued from one runs after it.
+  return new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve)));
+}
+
+/**
  * Saves a document as `<name>.html`. The HTML is built once a destination is
  * chosen, so the save dialog opens straight from the click, and nothing is
- * built if it's cancelled. `onBuild` is called when building starts.
+ * built if it's cancelled. `onBuild` is called when building starts, and the
+ * browser paints what it changes before the document renders, which blocks
+ * the page for a moment.
  */
 export async function exportHtml(
   name: string,
   source: string,
   { onBuild, ...options }: ExportOptions & { onBuild?: () => void } = {},
 ): Promise<void> {
-  const build = () => {
+  const build = async () => {
     onBuild?.();
+    await afterNextPaint();
     return buildHtmlDocument(name, source, options);
   };
   await saveFile(`${baseName(name)}.html`, build, { type: htmlFile });
