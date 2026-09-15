@@ -14,5 +14,5 @@ export const APP_COLORS = {
   /** --color-surface: panels and floating surfaces, like the find panel and notices. */
   surface: { light: '#f6f6f6', dark: '#1e1e1e' },
   /** --color-bg: the page and toolbar, which the browser's own UI and the installed app's splash screen blend into. */
-  background: { light: '#fafafa', dark: '#161616' },
+  background: { light: '#fafafa', dark: '#101010' },
 };

@@ -15,8 +15,8 @@
   /* Translucent, so hovers darken whatever they sit on. */
   --color-hover: light-dark(rgb(0 0 0 / 5%), rgb(255 255 255 / 4%));
   --color-hover-soft: light-dark(rgb(0 0 0 / 3%), rgb(255 255 255 / 3%));
-  --color-border: light-dark(#e1e1e1, #1f1f1f);
-  /* The source and preview panes, a shade darker than the page. Also exported HTML's page. */
+  --color-border: light-dark(#e1e1e1, #222222);
+  /* The source and preview panes, a shade lighter than the page. Also exported HTML's page. */
   --color-pane: light-dark(#f1f1f1, #131313);
   --color-text: light-dark(#2a2a2a, #e8e8e8);
   /* Headings and bold text in rendered Markdown. */
