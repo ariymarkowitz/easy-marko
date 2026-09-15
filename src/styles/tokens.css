@@ -37,7 +37,7 @@
   --font-body: 'Instrument Sans Variable', 'Instrument Sans Fallback', var(--font-sans);
   --font-heading: 'Figtree Variable', 'Figtree Fallback', var(--font-sans);
   --font-mono:
-    'Google Sans Code Variable', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+    'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
 
   --text-small: 0.75rem;
   --text-ui: 0.8125rem;

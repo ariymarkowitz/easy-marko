@@ -2,13 +2,13 @@ import 'katex/dist/katex.min.css';
 import 'virtual:app-colors.css';
 import './styles/tokens.css';
 // The fonts' faces, as lib/export-fonts.ts embeds them in exports. Instrument
-// Sans's wdth files have both axes; Google Sans Code's wght files fix MONO at 1.
+// Sans's wdth files have both axes.
 import '@fontsource-variable/instrument-sans/wdth.css';
 import '@fontsource-variable/instrument-sans/wdth-italic.css';
 import '@fontsource-variable/figtree/wght.css';
 import '@fontsource-variable/figtree/wght-italic.css';
-import '@fontsource-variable/google-sans-code/wght.css';
-import '@fontsource-variable/google-sans-code/wght-italic.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '@fontsource-variable/jetbrains-mono/wght-italic.css';
 import './styles/fonts.css';
 import './styles/base.css';
 import './styles/editor.css';

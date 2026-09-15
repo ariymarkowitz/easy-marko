@@ -15,7 +15,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 
 ## Presentation
 
-- System sans font for the UI. The preview uses Instrument Sans for text (97% size, 96% width, 5% extra word spacing), Figtree for headings, and Google Sans Code for code, which the source uses too. Lucide icons.
+- System sans font for the UI. The preview uses Instrument Sans for text (97% size, 96% width, 5% extra word spacing), Figtree for headings, and JetBrains Mono (ligatures off) for code, which the source uses too. Lucide icons.
 - Fonts are self-hosted variable fonts (Fontsource), split into subsets by `unicode-range`, so a document downloads only the subsets it uses. The service worker precaches Latin and Latin Extended and caches other subsets when first used. Only the body font's Latin file is preloaded. Until the fonts load, text shows in Arial scaled to the web fonts' widths and vertical metrics, so the swap barely moves it. Scripts Instrument Sans and Figtree don't cover fall back to the system font. The editor measures its text again when a font loads.
 - Greyscale palette plus one accent. Text and icons ease over 0.15s, backgrounds over 0.25s.
 - Light and dark themes follow the system. The toggle stores an override only when it differs from the system preference, and a script in the page head applies it before first paint.

@@ -34,6 +34,7 @@ const theme = EditorView.theme({
   '&.cm-focused': { outline: 'none' },
   '.cm-scroller': {
     fontFamily: 'var(--font-mono)',
+    fontVariantLigatures: 'none',
     fontSize: 'var(--text-editor)',
     lineHeight: '1.6',
   },

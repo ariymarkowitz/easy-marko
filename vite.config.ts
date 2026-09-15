@@ -73,7 +73,7 @@ const mockingTests = globSync('src/**/*.test.{ts,tsx}').filter((file) =>
  * worker caches when first used instead of precaching. Fontsource names
  * files `<font>-<subset>-<axes>-<style>.woff2`, and Vite keeps the name.
  */
-const uncommonFontFiles = ['instrument-sans', 'figtree', 'google-sans-code'].flatMap((font) => {
+const uncommonFontFiles = ['instrument-sans', 'figtree', 'jetbrains-mono'].flatMap((font) => {
   const { subsets } = JSON.parse(
     readFileSync(`node_modules/@fontsource-variable/${font}/metadata.json`, 'utf8'),
   ) as { subsets: string[] };

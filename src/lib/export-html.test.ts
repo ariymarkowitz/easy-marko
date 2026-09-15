@@ -80,16 +80,16 @@ describe('buildHtmlDocument', () => {
     // The heading's italic text is all in the Latin Extended subset.
     expect(fetchedFiles()).toEqual([
       'figtree-latin-ext-wght-italic.woff2',
-      'google-sans-code-latin-wght-italic.woff2',
-      'google-sans-code-latin-wght-normal.woff2',
       'instrument-sans-latin-ext-wdth-normal.woff2',
       'instrument-sans-latin-wdth-normal.woff2',
+      'jetbrains-mono-latin-wght-italic.woff2',
+      'jetbrains-mono-latin-wght-normal.woff2',
     ]);
     expect(css.match(/@font-face/g)?.length).toBe(5 + 2);
     // Each face gets only the characters in its own unicode-range.
     expect(subsets()['instrument-sans-latin-ext-wdth-normal.woff2'].text).toBe('Łź');
     expect(subsets()['instrument-sans-latin-wdth-normal.woff2'].text).toBe('Plainód');
-    expect(subsets()['google-sans-code-latin-wght-italic.woff2'].text).toBe('/coment');
+    expect(subsets()['jetbrains-mono-latin-wght-italic.woff2'].text).toBe('/coment');
   });
 
   test('leaves out a face whose font has none of its characters', async () => {

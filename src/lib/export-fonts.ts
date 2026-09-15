@@ -6,8 +6,8 @@
 
 import figtree from '@fontsource-variable/figtree/wght.css?raw';
 import figtreeItalic from '@fontsource-variable/figtree/wght-italic.css?raw';
-import googleSansCode from '@fontsource-variable/google-sans-code/wght.css?raw';
-import googleSansCodeItalic from '@fontsource-variable/google-sans-code/wght-italic.css?raw';
+import jetbrainsMono from '@fontsource-variable/jetbrains-mono/wght.css?raw';
+import jetbrainsMonoItalic from '@fontsource-variable/jetbrains-mono/wght-italic.css?raw';
 import instrumentSans from '@fontsource-variable/instrument-sans/wdth.css?raw';
 import instrumentSansItalic from '@fontsource-variable/instrument-sans/wdth-italic.css?raw';
 import katexCss from 'katex/dist/katex.min.css?raw';
@@ -28,7 +28,7 @@ const fontUrls = import.meta.glob<string>(
   [
     '/node_modules/@fontsource-variable/instrument-sans/files/*-wdth-*.woff2',
     '/node_modules/@fontsource-variable/figtree/files/*-wght-*.woff2',
-    '/node_modules/@fontsource-variable/google-sans-code/files/*-wght-*.woff2',
+    '/node_modules/@fontsource-variable/jetbrains-mono/files/*-wght-*.woff2',
   ],
   { query: '?url', import: 'default', eager: true, exhaustive: true },
 );
@@ -39,7 +39,7 @@ type FontRole = 'body' | 'heading' | 'code';
 const stylesheets: Record<FontRole, string[]> = {
   body: [instrumentSans, instrumentSansItalic],
   heading: [figtree, figtreeItalic],
-  code: [googleSansCode, googleSansCodeItalic],
+  code: [jetbrainsMono, jetbrainsMonoItalic],
 };
 
 interface Face {

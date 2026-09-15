@@ -193,6 +193,7 @@
   padding: 0.15em 0.35em;
   border-radius: 0.3em;
   font-family: var(--font-mono);
+  font-variant-ligatures: none;
   font-size: calc(1em * var(--md-code-scale) / var(--md-body-scale));
   word-spacing: normal;
   background-color: var(--color-code-inline-bg);
