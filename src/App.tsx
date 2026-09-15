@@ -54,6 +54,9 @@ export default function App() {
   useScrollPositions();
   useScrollSync();
   onSettled(registerServiceWorker);
+  if (import.meta.env.DEV) {
+    onSettled(() => void import('./dev-notices').then((module) => module.showSampleNotices()));
+  }
 
   return (
     <div

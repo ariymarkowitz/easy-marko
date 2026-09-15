@@ -206,7 +206,7 @@
 .markdown pre {
   padding: var(--space-3) var(--space-4);
   overflow-x: auto;
-  border-radius: 6px;
+  border-radius: var(--radius-large);
   background-color: var(--color-code-bg);
 }
 

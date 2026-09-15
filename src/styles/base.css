@@ -604,10 +604,23 @@ button,
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
-  border-radius: 12px;
+  border: 1px solid var(--color-notice-border);
+  border-radius: var(--radius-large);
   background-color: var(--color-surface);
   box-shadow: var(--shadow-overlay);
   animation: notice-in 0.15s ease-out;
+}
+
+.notice-info {
+  border-color: var(--color-notice-info-border);
+  background-color: var(--color-notice-info-bg);
+  color: var(--color-notice-info-text);
+}
+
+.notice-error {
+  border-color: var(--color-notice-error-border);
+  background-color: var(--color-notice-error-bg);
+  color: var(--color-danger);
 }
 
 @keyframes notice-in {
@@ -621,14 +634,6 @@ button,
   .notice {
     animation: none;
   }
-}
-
-.notice-icon {
-  color: var(--color-accent);
-}
-
-.notice-error .notice-icon {
-  color: var(--color-danger);
 }
 
 .notice-message {
