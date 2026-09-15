@@ -68,6 +68,20 @@ const mockingTests = globSync('src/**/*.test.{ts,tsx}').filter((file) =>
   readFileSync(file, 'utf8').includes('vi.mock('),
 );
 
+/**
+ * Font files outside the Latin and Latin Extended subsets, which the service
+ * worker caches when first used instead of precaching. Fontsource names
+ * files `<font>-<subset>-<axes>-<style>.woff2`, and Vite keeps the name.
+ */
+const uncommonFontFiles = ['instrument-sans', 'figtree', 'google-sans-code'].flatMap((font) => {
+  const { subsets } = JSON.parse(
+    readFileSync(`node_modules/@fontsource-variable/${font}/metadata.json`, 'utf8'),
+  ) as { subsets: string[] };
+  return subsets
+    .filter((subset) => subset !== 'latin' && subset !== 'latin-ext')
+    .map((subset) => `**/${font}-${subset}-*.woff2`);
+});
+
 /** GitHub Pages serves the site from the repository's path; see `npm run deploy`. */
 const githubPagesBase = '/easy-marko/';
 
@@ -114,8 +128,17 @@ export default defineConfig(({ mode }) => {
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],
           // Only link previews use this, so it doesn't need to work offline.
-          globIgnores: ['og-image.png'],
+          globIgnores: ['og-image.png', ...uncommonFontFiles],
           navigateFallback: `${base}index.html`,
+          runtimeCaching: [
+            {
+              // Font files are versioned by hash, so a cached one never changes.
+              // Matched by URL, as HTML exports fetch them too.
+              urlPattern: ({ url }) => url.pathname.endsWith('.woff2'),
+              handler: 'CacheFirst',
+              options: { cacheName: 'fonts', expiration: { maxEntries: 100 } },
+            },
+          ],
         },
       }),
       precachePrerenderedShell(),

@@ -1,0 +1,29 @@
+/*
+ * Fallback faces for the body and heading fonts (tokens.css), shown until the
+ * web fonts load. Arial (or its metric-compatible Liberation Sans and Arimo)
+ * is scaled to the web font's average width, at the preview's width and
+ * weights, and given its vertical metrics, so the swap barely moves the text.
+ * The web fonts' own faces come from Fontsource (App.tsx).
+ */
+
+@font-face {
+  font-family: 'Instrument Sans Fallback';
+  src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('Arimo');
+  size-adjust: 97%;
+  ascent-override: 100%;
+  descent-override: 25.8%;
+  line-gap-override: 0%;
+}
+
+/* Headings are bold (800 and 900), so this is Arial Bold. */
+@font-face {
+  font-family: 'Figtree Fallback';
+  src:
+    local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'), local('LiberationSans-Bold'),
+    local('Arimo Bold'), local('Arimo-Bold');
+  font-weight: 700;
+  size-adjust: 98%;
+  ascent-override: 96.9%;
+  descent-override: 25.5%;
+  line-gap-override: 0%;
+}

@@ -15,10 +15,11 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 
 ## Presentation
 
-- System sans font for the UI and system mono for the source. Lucide icons.
+- System sans font for the UI. The preview uses Instrument Sans for text (97% size, 96% width, 5% extra word spacing), Figtree for headings, and Google Sans Code for code, which the source uses too. Lucide icons.
+- Fonts are self-hosted variable fonts (Fontsource), split into subsets by `unicode-range`, so a document downloads only the subsets it uses. The service worker precaches Latin and Latin Extended and caches other subsets when first used. Only the body font's Latin file is preloaded. Until the fonts load, text shows in Arial scaled to the web fonts' widths and vertical metrics, so the swap barely moves it. Scripts Instrument Sans and Figtree don't cover fall back to the system font. The editor measures its text again when a font loads.
 - Greyscale palette plus one accent. Text and icons ease over 0.15s, backgrounds over 0.25s.
 - Light and dark themes follow the system. The toggle stores an override only when it differs from the system preference, and a script in the page head applies it before first paint.
-- The preview is at most 800px wide and the source fills its pane. Preview type scales between 360px and 800px of pane width (font size 1rem to 1.125rem, line height 1.4 to 1.6).
+- The preview is at most 800px wide and the source fills its pane. Preview type scales between 360px and 800px of pane width (font size 1rem to 1.125rem, line height 1.4 to 1.6). Body text is 97% of that size and the rest of the preview's em sizes follow it, except code, which is 85% of the unscaled size, and footnotes' line height. Front matter is 0.9em of the text around it. These factors are tokens in `tokens.css`.
 - Status bar: cursor line and column, and word, character and line counts.
 
 ## Documents and files
@@ -32,7 +33,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 - Drop files on the window to open them. Chromium provides handles for dropped files, so Save writes back to them. Folders and non-text files get reported instead. Dragged text still drops into the editor.
 - Recent files: the sidebar lists the 10 files opened or saved most recently, newest first. Clicking one opens it, or switches to it if it's already open, asking for read permission after a reload. Moved or deleted files get reported and removed, and the X button removes one by hand. Only files with handles appear (Chromium). The list lives in IndexedDB, is shared by tabs, and reloads when the window gains focus.
 - File changes on disk: while the page is visible, the app checks linked files every 2s and on window focus, reading a file only when its modification time changes. A file counts as changed when it matches neither the saved nor the current content. A file that now matches the document marks it saved. The notice offers Reload and says when reloading discards unsaved changes. Reload goes through the editor, so it can be undone. A dismissed notice returns only after another change, and it closes when the document is closed or renamed. Handles restored after a reload aren't checked until permission is granted again by saving.
-- Export as a self-contained HTML file. It inlines the app's tokens, syntax and preview CSS, plus KaTeX's CSS and WOFF2 fonts (about 400 KB) only when the document has maths. Local images the app can already read become data URIs. The export keeps the theme the app shows when exporting, set through `data-theme` on its `<html>`.
+- Export as a self-contained HTML file. It inlines the app's tokens, syntax and preview CSS, plus KaTeX's CSS and WOFF2 fonts (about 400 KB) only when the document has maths. Fonts are embedded as data URIs, only those the document shows: the body, heading and code fonts by where text appears, italic faces only for italic text (including italic code highlighting), and only subsets whose `unicode-range` covers the text's characters (typically 60–250 KB). Local images the app can already read become data URIs. The export keeps the theme the app shows when exporting, set through `data-theme` on its `<html>`.
 
 ## Backup and tabs
 
@@ -55,7 +56,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 
 - markdown-it with raw HTML, linkify and typographer, plus tables and strikethrough.
 - YAML front matter: a `---` line at the very top, up to a closing `---` or `...` line, renders as a YAML-highlighted code block whose lines wrap, in slightly smaller type, with square corners, rules above and below, and keys in the accent colour. The source pane highlights it as YAML too. YAML keys are in the accent colour in both panes, in front matter and fenced YAML alike. Unclosed, indented or nested front matter stays ordinary Markdown.
-- KaTeX maths. Inline `$…$` follows Pandoc's rules, so amounts like `$5 and $10` stay text.
+- KaTeX maths, at 1.18em so its x-height matches the body text's. Inline `$…$` follows Pandoc's rules, so amounts like `$5 and $10` stay text.
 - Fenced code highlighting uses the editor's Lezer parsers and colours. Code shows plain until its language loads, and then only the blocks waiting on that language re-render.
 - Task lists: `- [ ]` and `- [x]` render as disabled checkboxes, labelled by the item's text. An item with only a marker shows just the checkbox.
 - Heading anchors use GitHub's ids: lowercase, punctuation dropped, spaces to hyphens, repeats numbered (`notes`, `notes-1`). Headings in raw HTML don't get ids. Clicking a fragment link scrolls the preview (and the source, with scroll sync) without changing the URL. `#` and `#top` go to the top.

@@ -2,24 +2,16 @@
 // Markdown with the CSS it needs inlined, so it looks like the preview in any
 // browser, offline, in the colour scheme it was exported in.
 
-import katexCss from 'katex/dist/katex.min.css?raw';
 import appColorsCss from 'virtual:app-colors.css?raw';
 import syntaxCss from '../styles/editor.css?raw';
+import fallbackFontsCss from '../styles/fonts.css?raw';
 import markdownCss from '../styles/markdown.css?raw';
 import tokensCss from '../styles/tokens.css?raw';
 import { escapeHtml } from './escape-html';
+import { documentFontsCss, katexCssWithFonts } from './export-fonts';
 import { htmlFile, saveFile } from './files';
 import { embedLocalImages } from './local-images';
 import { createMarkdownRenderer } from './markdown';
-
-/** URLs of KaTeX's WOFF2 fonts, keyed by path. Embedded only in documents with maths. */
-const katexFontUrls = import.meta.glob<string>('/node_modules/katex/dist/fonts/*.woff2', {
-  query: '?url',
-  import: 'default',
-  eager: true,
-  // Globs skip node_modules unless told otherwise.
-  exhaustive: true,
-});
 
 // The parts of base.css that the preview's typography relies on.
 const documentCss = `
@@ -63,31 +55,6 @@ async function renderMarkdown(source: string): Promise<string> {
   return render();
 }
 
-async function fetchDataUrl(url: string, type: string): Promise<string> {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Couldn't load ${url} (${response.status})`);
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  return `data:${type};base64,${bytes.toBase64()}`;
-}
-
-/** KaTeX's stylesheet with its fonts embedded, so maths renders offline. */
-async function katexCssWithFonts(): Promise<string> {
-  const fonts = new Map(
-    await Promise.all(
-      Object.entries(katexFontUrls).map(
-        async ([path, url]) => [path.slice(path.lastIndexOf('/') + 1), await fetchDataUrl(url, 'font/woff2')] as const,
-      ),
-    ),
-  );
-  // Each @font-face lists WOFF2, WOFF and TTF files. Browsers that can show
-  // the rest of the page all read WOFF2, so only that one is embedded.
-  return katexCss.replace(/src:url\(fonts\/([\w-]+\.woff2)\)[^;}]*/g, (_, file: string) => {
-    const dataUrl = fonts.get(file);
-    if (!dataUrl) throw new Error(`Missing KaTeX font ${file}`);
-    return `src:url(${dataUrl}) format("woff2")`;
-  });
-}
-
 export interface ExportOptions {
   /** Reads an image with a relative path as a data URL to embed, or gives undefined to leave it as written. */
   readImage?: (src: string) => Promise<string | undefined>;
@@ -104,7 +71,11 @@ export async function buildHtmlDocument(
   const rendered = await renderMarkdown(source);
   const body = readImage ? await embedLocalImages(rendered, readImage) : rendered;
   const hasMaths = body.includes('class="katex');
-  const css = [documentCss, appColorsCss, tokensCss, syntaxCss, markdownCss, hasMaths ? await katexCssWithFonts() : '']
+  const [fontsCss, mathsCss] = await Promise.all([
+    documentFontsCss(body),
+    hasMaths ? katexCssWithFonts() : '',
+  ]);
+  const css = [documentCss, appColorsCss, tokensCss, fallbackFontsCss, fontsCss, syntaxCss, markdownCss, mathsCss]
     .join('\n')
     .trim();
   return `<!doctype html>

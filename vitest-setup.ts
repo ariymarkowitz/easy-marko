@@ -37,3 +37,8 @@ globalThis.ResizeObserver ??= class {
 Range.prototype.getBoundingClientRect ??= () => new DOMRect();
 Range.prototype.getClientRects ??= () =>
   Object.assign([], { item: () => null }) as unknown as DOMRectList;
+
+// The editor measures again when fonts load.
+if (!document.fonts) {
+  Object.defineProperty(document, 'fonts', { value: new EventTarget() });
+}

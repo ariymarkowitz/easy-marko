@@ -4,6 +4,7 @@ import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { attachEditor, syncEditorState } from '../editor/controller';
 import { editorExtensions } from '../editor/extensions';
+import { listen } from '../lib/events';
 import { textChange } from '../lib/text-change';
 import { activeDocument, documentsState, updateContent } from '../state/documents';
 import { jumpToPreview, restoreScrollPosition, sourceScrollTracking } from '../state/pane-link';
@@ -38,7 +39,11 @@ export default function Editor() {
   const view = new EditorView();
   onSettled(() => {
     const detach = attachEditor(view);
+    // CodeMirror measures its text when the page's first fonts load; the code
+    // font can load later, when code first appears.
+    const stopListening = listen(document.fonts, { loadingdone: () => view.requestMeasure() });
     return () => {
+      stopListening();
       detach();
       view.destroy();
     };

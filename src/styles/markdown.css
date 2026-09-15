@@ -8,13 +8,22 @@
  * 1.125rem, line height 1.4 → 1.6 times the font size. The line height is a
  * length (1.4rem → 1.8rem) because clamp() can't give a unitless ratio, so
  * children inherit the length, not the ratio.
+ *
+ * Body text is `--md-body-scale` of that size (`--md-font-size`), which suits
+ * Instrument Sans. Sizes in em follow it. Code is `--md-code-scale` of the
+ * unscaled size instead, so its em size divides out the body scale.
  */
 
 .markdown {
+  --md-font-size: clamp(1rem, 1rem + (100cqi - 22.5rem) * 0.125 / 27.5, 1.125rem);
   max-width: var(--content-width);
   margin-inline: auto;
   padding: var(--space-6) var(--space-4);
-  font-size: clamp(1rem, 1rem + (100cqi - 22.5rem) * 0.125 / 27.5, 1.125rem);
+  font-family: var(--font-body);
+  font-size: calc(var(--md-font-size) * var(--md-body-scale));
+  font-stretch: 96%;
+  /* 5% of the font size. `word-spacing: 5%` would be 5% of a space. */
+  word-spacing: 0.05em;
   line-height: clamp(1.4rem, 1.4rem + (100cqi - 22.5rem) * 0.4 / 27.5, 1.8rem);
   overflow-wrap: break-word;
   /*
@@ -31,6 +40,9 @@
 
 .markdown :is(h1, h2, h3, h4, h5, h6) {
   margin: var(--md-heading-margin) 0;
+  font-family: var(--font-heading);
+  /* The extra word spacing is for body text. */
+  word-spacing: normal;
   font-weight: 800;
   line-height: 1.4;
   color: var(--color-text-strong);
@@ -145,8 +157,8 @@
   height: var(--md-checkbox-size);
   /* Its width plus margins nets to zero, so the text lines up with other items. */
   margin: 0 var(--md-checkbox-gap) 0 calc(-1 * (var(--md-checkbox-size) + var(--md-checkbox-gap)));
-  /* Centred on the capital letters (about 0.7em tall). */
-  vertical-align: calc(0.35em - var(--md-checkbox-size) / 2);
+  /* Centred on the capital letters. */
+  vertical-align: calc(0.5cap - var(--md-checkbox-size) / 2);
   border: var(--md-checkbox-stroke) solid var(--color-text-muted);
   border-radius: 4px;
 }
@@ -181,7 +193,8 @@
   padding: 0.15em 0.35em;
   border-radius: 0.3em;
   font-family: var(--font-mono);
-  font-size: 0.875em;
+  font-size: calc(1em * var(--md-code-scale) / var(--md-body-scale));
+  word-spacing: normal;
   background-color: var(--color-code-inline-bg);
 }
 
@@ -203,7 +216,7 @@
   border-bottom: 1px solid var(--color-border);
   border-radius: 0;
   white-space: pre-wrap;
-  font-size: 0.9em;
+  font-size: var(--md-front-matter-size);
   line-height: 0.9lh;
   padding-block: var(--space-6);
 }
@@ -234,6 +247,15 @@
 .markdown th {
   font-weight: 600;
   background-color: var(--color-surface);
+}
+
+/*
+ * KaTeX sets maths at 1.21em. At 1.18em, Computer Modern's x-height (0.431em)
+ * matches Instrument Sans's (0.51em). Keeps KaTeX's line height of 1.2, a
+ * ratio, so its smaller parts don't stretch the line.
+ */
+.markdown .katex {
+  font-size: 1.18em;
 }
 
 .markdown .katex-display {
@@ -296,7 +318,8 @@
   padding-top: 1em;
   border-top: 1px solid var(--color-border);
   font-size: 0.875em;
-  line-height: 1.5;
+  /* 1.5 times 0.875 of the unscaled body size. */
+  line-height: calc(var(--md-font-size) * 0.875 * 1.5);
   color: var(--color-text-muted);
 }
 

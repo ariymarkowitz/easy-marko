@@ -1,5 +1,6 @@
 import type { ParentProps } from 'solid-js';
 import { HydrationScript } from '@solidjs/web';
+import bodyFontUrl from '@fontsource-variable/instrument-sans/files/instrument-sans-latin-wdth-normal.woff2?url';
 import { APP_COLORS, APP_DESCRIPTION, APP_NAME, APP_URL } from './app-info';
 import { STORAGE_KEYS } from './lib/storage';
 
@@ -32,6 +33,8 @@ export default function Document(props: ParentProps) {
         <link rel="icon" href={`${import.meta.env.BASE_URL}icon.svg`} type="image/svg+xml" />
         <link rel="apple-touch-icon" href={`${import.meta.env.BASE_URL}apple-touch-icon.png`} />
         <link rel="manifest" href={`${import.meta.env.BASE_URL}manifest.webmanifest`} />
+        {/* The body font's Latin face, which nearly every document needs. Other faces load when used. */}
+        <link rel="preload" href={bodyFontUrl} as="font" type="font/woff2" crossorigin="" />
         <title>{APP_NAME}</title>
         {/* eslint-disable-next-line solid/no-innerhtml -- constant script defined above */}
         <script innerHTML={themeScript} />
