@@ -189,6 +189,10 @@
   color: var(--color-text-muted);
 }
 
+.markdown blockquote :is(strong, b, h1, h2, h3, h4, h5, h6) {
+  color: color-mix(in srgb, var(--color-text-muted) 65%, var(--color-text-strong));
+}
+
 .markdown code {
   padding: 0.15em 0.35em;
   border-radius: 0.3em;
