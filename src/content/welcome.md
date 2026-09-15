@@ -1,4 +1,4 @@
-![Banner](https://ariymarkowitz.github.io/easy-marko/welcome-banner.svg)
+![Banner](https://ariymarkowitz.github.io/easy-marko/banner.svg)
 
 # Welcome to <span style="color: #4c7bf4">Easy Marko!</span>
 
