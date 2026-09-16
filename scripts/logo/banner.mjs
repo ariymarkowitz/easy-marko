@@ -36,15 +36,15 @@ ${bannerLayers({ width, height, tiling, wordmark })}
  * then the vignette and `wordmark` (an SVG in banner units), placed by `transform`.
  */
 export function bannerLayers({ width, height, tiling, wordmark, transform }) {
+  /** Opacity of the black background before adding the tile. */
+  const colorOpacity = 0.1;
   /** How opaque the background (black, tiling and one vignette) is, so the page shows through. */
-  const backgroundOpacity = 0.75;
-  /** How visible the tiling is against the black. */
-  const tilingOpacity = 0.35;
+  const backgroundOpacity = 0.4;
   /**
    * The vignette, in banner units: a blurred black rect behind the wordmark. Drawn twice at this
    * opacity, once inside the translucent background and once above it, so the wordmark stays legible.
    */
-  const vignette = { x: 140, y: 40, width: 1320, height: 320, blur: 110, opacity: 0.7 };
+  const vignette = { x: 140, y: 40, width: 1320, height: 320, blur: 110, opacity: 0.95 };
 
   const place = (content) => (transform ? `<g transform="${transform}">${content}</g>` : content);
   const vignetteRect = place(
@@ -53,11 +53,10 @@ export function bannerLayers({ width, height, tiling, wordmark, transform }) {
 
   return `  <filter id="soften" x="-50%" y="-100%" width="200%" height="300%"><feGaussianBlur stdDeviation="${vignette.blur}"/></filter>
   <g opacity="${backgroundOpacity}">
+  <g opacity="${colorOpacity}">
   <rect width="${width}" height="${height}" fill="#000"/>
-  <g opacity="${tilingOpacity}">
-${innerOf(tiling)}
   </g>
-  ${vignetteRect}
+${innerOf(tiling)}
   </g>
   ${vignetteRect}
 ${place(innerOf(wordmark))}`;
