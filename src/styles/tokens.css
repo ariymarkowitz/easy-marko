@@ -48,10 +48,10 @@
   --color-notice-error-text: light-dark(#8e0f06, #f2877f);
   --color-notice-error-hover: light-dark(#f6c7c3, #3d1816);
   /* Code highlighting (editor.css). */
-  --color-syntax-variable: light-dark(#2755ce, #7a9ff7);
-  --color-syntax-constant: light-dark(#008b15, #81c470);
-  --color-syntax-definition: light-dark(#954c00, #eaa643);
-  --color-syntax-comment: light-dark(#8d50cd, #a87ed4);
+  --color-syntax-variable: light-dark(#2755ce, #64a5ff);
+  --color-syntax-constant: light-dark(#008b15, #88e072);
+  --color-syntax-definition: light-dark(#954c00, #ffab30);
+  --color-syntax-comment: light-dark(#8d50cd, #a177ce);
   --color-backdrop: light-dark(rgb(0 0 0 / 15%), rgb(0 0 0 / 45%));
 
   /* For surfaces floating over the app, like notices and the narrow-screen sidebar. */
