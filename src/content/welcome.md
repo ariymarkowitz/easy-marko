@@ -24,6 +24,15 @@ Straight quotes turn "curly" in the preview, and `--` becomes an en dash, as in 
 2. Bullet lists
    - which nest
    - like this
+     - and this
+
+Notice that the above list has single line spacing. If you want paragraph spacing, here is what you do.
+
+- Put spaces between bullet points.
+
+  - It's that simple!
+
+You can also write checkboxes.
 
 - [x] Write a task list
 - [ ] Tick it off in the source by changing `[ ]` to `[x]`

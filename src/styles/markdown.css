@@ -128,13 +128,13 @@
 }
 
 /* Half a stroke bigger than the others. */
-.markdown ul ul > li:not(.task-list-item)::before {
+.markdown :is(ul, ol) ul > li:not(.task-list-item)::before {
   --size: calc(var(--md-bullet-size) + var(--md-bullet-stroke) / 2);
   border: var(--md-bullet-stroke) solid currentColor;
   background-color: transparent;
 }
 
-.markdown ul ul ul > li:not(.task-list-item)::before {
+.markdown :is(ul, ol) :is(ul, ol) ul > li:not(.task-list-item)::before {
   --size: var(--md-bullet-size);
   border: none;
   border-radius: 0;
