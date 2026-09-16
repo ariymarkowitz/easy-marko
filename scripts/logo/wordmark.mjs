@@ -13,7 +13,7 @@ export async function generateWordmark() {
   // The wordmark over the tagline, centred on the banner.
   const { width, height } = bannerSize;
   const titleSize = 177;
-  const taglineSize = 85;
+  const taglineSize = 70;
   /** From the title's baseline to the tagline's. */
   const lineGap = 115;
   const capHeight = 700;

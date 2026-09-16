@@ -143,4 +143,4 @@ Easy Marko can be installed on your device as a Progressive Web App through Chro
 
 ### About me
 
-This program was created by me, Ari Markowitz. Come to [my website](https://arimarkowitz.net) and check out my blog or the other things I've made!
+This program was created by me, Ari Markowitz. Come to [my website](https://arimarkowitz.com) and check out my blog or the other things I've made!
