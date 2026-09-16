@@ -2,9 +2,11 @@
 
 # Welcome to Easy Marko!
 
-Easy Marko is a simple Markdown editor and viewer. It runs in the browser or on your device as a Progressive Web App. This page is an ordinary document. Edit it, break it, or close it from the sidebar when you're done. You can bring it back by clicking the About button in the toolbar.
+Easy Marko is a simple Markdown editor and viewer. It runs in the browser or on your device as a Progressive Web App. It's designed for a clean, easy reading experience---with some nice editing functions too.
 
-The first half shows the Markdown features Easy Marko supports. The second half covers the parts of the app that are easy to miss. Jump to [the guide](#using-the-app) if you already know Markdown.
+This page is an ordinary document that you can edit or close from the sidebar. You can always bring it back in its original state by clicking the 'About' button in the toolbar.
+
+The first half of this file shows the Markdown features Easy Marko supports. The second half covers features of the app that you might miss. Jump to [the guide](#using-the-app) if you already know Markdown.
 
 ---
 
@@ -66,15 +68,6 @@ $$
 $$
 
 ### Footnotes
-
-**Code**
-```markdown
-You can create footnotes[^label]. Define each one anywhere in the document, and it appears at the bottom of the page.
-
-[^label]: Like this. There's also a handy link back to the source.
-```
-
-**Result**
 
 You can create footnotes[^label]. Define each one anywhere in the document, and it appears at the bottom of the page.
 
@@ -142,6 +135,12 @@ Relative image paths like `![](images/photo.png)` work for documents opened from
 
 The export button saves the document as a self-contained HTML file. It keeps the light or dark theme you're using, and it includes the maths fonts and any local images the app can read, so you can send it to someone as is.
 
+If there's a lot of maths in your file, then the HTML might be pretty big compared to a PDF export---up to 3x the size. But the compressed HTML might be half the size of a compressed PDF.
+
 ### Installing
 
-Easy Marko can be installed on your device as a Progressive Web App. Once installed, you can open `.md` files with it from your file manager.
+Easy Marko can be installed on your device as a Progressive Web App through Chrome, Edge, Safari, and some other browsers. Once installed, you can make it the default for opening `.md` files.
+
+### About me
+
+This program was created by me, Ari Markowitz. Come to [my website](https://arimarkowitz.net) and check out my blog or the other things I've made!
