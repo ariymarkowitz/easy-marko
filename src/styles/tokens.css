@@ -16,7 +16,7 @@
   /* Floating surfaces, like the drop indicator's label. */
   --color-surface: light-dark(#f7f7f7, #222222);
   /* Code in rendered Markdown: fenced blocks, and inline code spans. */
-  --color-code-bg: light-dark(#ebebeb, #26262b);
+  --color-code-bg: light-dark(#ebebeb, #262629);
   --color-code-inline-bg: light-dark(#e9e9e9, #2e2e2e);
   /* The blockquote bar and hr in rendered Markdown. */
   --color-border-strong: light-dark(#e0e0e0, #333333);
@@ -49,9 +49,9 @@
   --color-notice-error-hover: light-dark(#f6c7c3, #3d1816);
   /* Code highlighting (editor.css). */
   --color-syntax-variable: light-dark(#2755ce, #7a9ff7);
-  --color-syntax-constant: light-dark(#2d7b38, #70c481);
-  --color-syntax-definition: light-dark(#7d37ae, #ca91ef);
-  --color-syntax-comment: light-dark(#a03b00, #967a5a);
+  --color-syntax-constant: light-dark(#008b15, #81c470);
+  --color-syntax-definition: light-dark(#954c00, #eaa643);
+  --color-syntax-comment: light-dark(#8d50cd, #a87ed4);
   --color-backdrop: light-dark(rgb(0 0 0 / 15%), rgb(0 0 0 / 45%));
 
   /* For surfaces floating over the app, like notices and the narrow-screen sidebar. */
