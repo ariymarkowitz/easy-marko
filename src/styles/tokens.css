@@ -110,7 +110,7 @@
   --md-checkbox-gap: 0.5em;
   --md-checkbox-stroke: 1.5px;
   /* The tick's size relative to Lucide's square-check. */
-  --md-tick-scale: 1.67;
+  --md-tick-scale: 1.5;
 
   --transition-colors:
     color 0.05s ease, fill 0.05s ease, stroke 0.05s ease, background-color 0.05s ease,
