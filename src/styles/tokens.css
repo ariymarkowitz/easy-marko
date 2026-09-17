@@ -18,9 +18,9 @@
   /* Code in rendered Markdown: fenced blocks, and inline code spans. */
   --color-code-bg: light-dark(#f6f6f6, #26242c);
   --color-code-inline-bg: light-dark(#f1f1f1, #2a2833);
-  /* The blockquote bar and hr in rendered Markdown. */
-  --color-border: light-dark(rgb(0 0 0 / 8%), rgb(255 255 255 / 8%));
-  --color-border-soft: light-dark(rgb(0 0 0 / 6%), rgb(255 255 255 / 5%));
+  /* The blockquote bar, hr and footnotes bar in rendered Markdown. */
+  --color-border: light-dark(rgb(0 0 0 / 8%), rgb(255 255 255 / 6%));
+  --color-border-soft: light-dark(rgb(0 0 0 / 6%), rgb(255 255 255 / 4%));
   --color-border-strong: light-dark(rgb(0 0 0 / 45%), rgb(255 255 255 / 35%));
   /* Tables in rendered Markdown. */
   --color-table: light-dark(#ececec, #302e36);
