@@ -228,7 +228,8 @@
 }
 
 .markdown hr {
-  margin: 2em 0;
+  /* Matching the h1 margin. */
+  margin: 3.75em 0;
   border: 0;
   border-top: 1px solid var(--color-border);
 }
