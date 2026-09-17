@@ -32,6 +32,7 @@
    * the preview instead of covering the rest of the app.
    */
   contain: paint;
+  --color-text-muted: var(--color-md-muted);
 }
 
 .markdown :is(p, ul, ol, dl, blockquote, pre, table, details, figure) {
@@ -185,7 +186,7 @@
 .markdown blockquote {
   margin-inline: 0;
   padding-left: 1em;
-  border-left: 3px solid var(--color-border-strong);
+  border-left: 3px solid var(--color-border);
   color: var(--color-text-muted);
 }
 
@@ -217,8 +218,8 @@
 
 /* YAML front matter: a code block whose lines wrap, set apart by rules above and below. */
 .markdown .front-matter {
-  border-top: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-soft);
+  border-bottom: 1px solid var(--color-border-soft);
   border-radius: 0;
   white-space: pre-wrap;
   font-size: var(--md-front-matter-size);
@@ -229,7 +230,7 @@
 .markdown hr {
   margin: 2em 0;
   border: 0;
-  border-top: 1px solid var(--color-border-strong);
+  border-top: 1px solid var(--color-border);
 }
 
 .markdown img {
@@ -321,7 +322,7 @@
 .markdown .footnotes {
   margin-top: 2em;
   padding-top: 1em;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-soft);
   font-size: 0.875em;
   /* 1.5 times 0.875 of the unscaled body size. */
   line-height: calc(var(--md-font-size) * 0.875 * 1.5);

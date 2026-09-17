@@ -12,29 +12,31 @@
    * The page and toolbar. The browser's UI and the installed app's splash screen
    * use it too (vite.config.ts, Document.tsx), so it must stay light-dark(#hex, #hex).
    */
-  --color-bg: light-dark(#f8f8f8, #131313);
+  --color-bg: light-dark(#f8f8f8, #131215);
   /* Floating surfaces, like the drop indicator's label. */
   --color-surface: light-dark(#f7f7f7, #222222);
   /* Code in rendered Markdown: fenced blocks, and inline code spans. */
-  --color-code-bg: light-dark(#f6f6f6, #262629);
-  --color-code-inline-bg: light-dark(#f1f1f1, #2e2e2e);
+  --color-code-bg: light-dark(#f6f6f6, #26242c);
+  --color-code-inline-bg: light-dark(#f1f1f1, #2a2833);
   /* The blockquote bar and hr in rendered Markdown. */
-  --color-border-strong: light-dark(#e0e0e0, #333333);
+  --color-border: light-dark(#e0e0e0, #34323a);
+  --color-border-soft: light-dark(rgb(0 0 0 / 6%), rgb(255 255 255 / 5%));
+  --color-border-strong: light-dark(#b4b4b4, #69676e);
   /* Tables in rendered Markdown. */
-  --color-table: light-dark(#ececec, #333333);
+  --color-table: light-dark(#ececec, #302e36);
   /* Translucent, so hovers darken/lighten whatever they sit on. */
   --color-hover: light-dark(rgb(0 0 0 / 5%), rgb(255 255 255 / 6%));
   /* An opaque hover for controls on the page, where a translucent one would show what's behind them. */
   --color-bg-hover: light-dark(#eeeeee, #1f1f1f);
-  --color-border: light-dark(rgb(0 0 0 / 6%), rgb(255 255 255 / 5%));
   /* The source and preview panes, a shade lighter than the page. Also exported HTML's page. */
-  --color-pane: light-dark(#ffffff, #1c1c1c);
+  --color-pane: light-dark(#ffffff, #1c1b1f);
   --color-text: light-dark(#2a2a2a, #e8e8e8);
   /* Headings and bold text in rendered Markdown. */
   --color-text-strong: light-dark(#161616, #f3f3f3);
-  --color-text-muted: light-dark(#6e6e6e, #9a9a9a);
+  --color-text-muted: light-dark(#6e6e6e, #9a9a9b);
+  --color-md-muted: light-dark(#6e6e6e, #928f9a);
   --color-accent: light-dark(#3464e0, #7a9ff7);
-  --color-accent-soft: light-dark(rgb(52 100 224 / 12%), rgb(122 159 247 / 16%));
+  --color-accent-soft: light-dark(rgb(52 100 224 / 12%), rgb(129 161 237 / 16%));
   --color-selection: light-dark(rgb(52 100 224 / 22%), rgb(122 159 247 / 30%));
   --color-danger: light-dark(#c9372c, #f47c72);
   /* Notices (Notices.tsx). Info notices are tinted with the accent colour, errors with the danger colour. */
