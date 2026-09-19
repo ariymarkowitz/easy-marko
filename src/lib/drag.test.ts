@@ -37,7 +37,10 @@ describe('trackDrag', () => {
     window.dispatchEvent(pointer('pointerup', 40));
     window.dispatchEvent(pointer('pointermove', 60));
 
-    expect(onMove.mock.calls).toEqual([[20], [40]]);
+    expect(onMove.mock.calls).toEqual([
+      [20, 0],
+      [40, 0],
+    ]);
     expect(document.documentElement).not.toHaveClass('dragging');
   });
 
@@ -66,12 +69,26 @@ describe('trackDrag', () => {
     window.dispatchEvent(pointer('pointermove', 10));
     window.dispatchEvent(pointer('pointerup', 10));
     button.click();
-    expect(onMove).toHaveBeenCalledWith(10);
+    expect(onMove).toHaveBeenCalledWith(10, 0);
     expect(onClick).not.toHaveBeenCalled();
 
     vi.runAllTimers();
     button.click();
     expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  test('shows the cursor given while dragging, and reports the end of a drag', () => {
+    const button = document.body.appendChild(document.createElement('button'));
+    const onEnd = vi.fn();
+    startDrag(button, { onMove: vi.fn(), onEnd, cursor: 'grabbing', threshold: 4 });
+    window.dispatchEvent(pointer('pointermove', 2));
+    expect(document.documentElement.style.getPropertyValue('--drag-cursor')).toBe('');
+
+    window.dispatchEvent(pointer('pointermove', 10));
+    expect(document.documentElement.style.getPropertyValue('--drag-cursor')).toBe('grabbing');
+    window.dispatchEvent(pointer('pointerup', 10));
+    expect(document.documentElement.style.getPropertyValue('--drag-cursor')).toBe('');
+    expect(onEnd).toHaveBeenCalledOnce();
   });
 
   test('ignores buttons other than the primary one', () => {

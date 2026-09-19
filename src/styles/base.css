@@ -320,7 +320,8 @@ button,
 /* Set by lib/drag.ts while a resizer or an edge button is dragged. */
 :root.dragging,
 :root.dragging * {
-  cursor: col-resize !important;
+  /* Set by lib/drag.ts for drags that aren't resizes. */
+  cursor: var(--drag-cursor, col-resize) !important;
   user-select: none !important;
 }
 
@@ -526,6 +527,14 @@ button,
 .document-item:hover,
 .document-item:has([aria-current]) {
   background-color: var(--color-hover);
+}
+
+/* A document being dragged to a new place in the list (Sidebar.tsx). */
+.document-item.dragged {
+  position: relative;
+  z-index: 1;
+  background-color: var(--color-hover);
+  box-shadow: var(--shadow-overlay);
 }
 
 .document-name {

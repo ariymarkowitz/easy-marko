@@ -5,7 +5,9 @@
  * that is behind never undoes a newer change. An item removed from one copy
  * is removed only if the other copy didn't change it, so edits are never dropped.
  *
- * The result keeps the local order, with items added only in `remote` at the end.
+ * The result keeps the local order, with items added only in `remote` at the
+ * end, unless only `remote` reordered the items all three share: then those
+ * items take the remote order, in the places they have locally.
  */
 export function mergeById<T extends { id: string }>(
   base: readonly T[],
@@ -31,5 +33,12 @@ export function mergeById<T extends { id: string }>(
   for (const item of remote) {
     if (!localIds.has(item.id) && !unchanged(item)) merged.push(item);
   }
-  return merged;
+
+  const shared = merged.filter((item) => baseById.has(item.id) && localIds.has(item.id) && remoteById.has(item.id));
+  const sharedIds = new Set(shared.map((item) => item.id));
+  const order = (list: readonly T[]) => list.flatMap((item) => (sharedIds.has(item.id) ? [item.id] : [])).join('\0');
+  if (order(local) !== order(base) || order(remote) === order(base)) return merged;
+  const byId = new Map(shared.map((item) => [item.id, item]));
+  const remoteOrder = remote.filter((item) => sharedIds.has(item.id)).map((item) => byId.get(item.id)!);
+  return merged.map((item) => (sharedIds.has(item.id) ? remoteOrder.shift()! : item));
 }

@@ -65,6 +65,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 - A dot in the sidebar marks unsaved documents. Closing one asks for confirmation.
 
 - Rename by double-clicking a name in the sidebar or pressing F2 on it. Enter or blur renames, Escape cancels, and empty names aren't allowed. Renaming unlinks the document from its file, so the next Save asks where to save. Renaming it back links it again. Files on disk are never moved.
+- Drag a document's name to move it in the sidebar list, or press Alt+Up/Down on it. The list reorders as the pointer moves, and dragging doesn't select the document.
 
 - Drop files on the window to open them. Chromium provides handles for dropped files, so Save writes back to them. Folders and non-text files get reported instead. Dragged text still drops into the editor.
 
@@ -94,7 +95,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 
 - Open documents back up to localStorage automatically. The pending backup flushes on `pagehide` and when the page is hidden.
 
-- Tabs share the backup. Each sync does a three-way merge by document id against the backup as that tab last saw it, and keeps each document's latest version, so a tab that's behind can't undo newer edits. Each tab stores its own active document outside the shared backup. `storage` events and page show/hide trigger a sync immediately.
+- Tabs share the backup. Each sync does a three-way merge by document id against the backup as that tab last saw it, and keeps each document's latest version, so a tab that's behind can't undo newer edits. The list keeps this tab's order, unless only the other tab moved documents, in which case it takes theirs. Each tab stores its own active document outside the shared backup. `storage` events and page show/hide trigger a sync immediately.
 
 ## Editor
 

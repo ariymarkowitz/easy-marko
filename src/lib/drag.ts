@@ -1,4 +1,4 @@
-// Horizontal pointer drags, followed on the window so a drag carries on after
+// Pointer drags, followed on the window so a drag carries on after
 // the element it started on is removed (as when dragging a resizer far enough
 // hides it, or dragging a button that opens a panel).
 
@@ -8,8 +8,12 @@ import { listen } from './events';
 export const CLICK_SLOP = 4;
 
 export interface DragOptions {
-  /** Called with the pointer's clientX each time it moves during the drag. */
-  onMove: (clientX: number) => void;
+  /** Called with the pointer's position each time it moves during the drag. */
+  onMove: (clientX: number, clientY: number) => void;
+  /** Called when a drag that started ends. */
+  onEnd?: () => void;
+  /** The cursor shown everywhere during the drag. Defaults to `col-resize`. */
+  cursor?: string;
   /**
    * How far the pointer moves before the drag starts. Until then nothing is
    * reported, and releasing the pointer is left to be a click.
@@ -19,8 +23,9 @@ export interface DragOptions {
 
 /**
  * Follows the drag that `start`, a pointerdown, begins until the pointer is
- * released. While dragging, the root element has the `dragging` class, and
- * the click that ends the drag is swallowed.
+ * released. While dragging, the root element has the `dragging` class (and
+ * `--drag-cursor`, if `cursor` is given), and the click that ends the drag is
+ * swallowed.
  */
 export function trackDrag(start: PointerEvent, options: DragOptions): void {
   if (start.button !== 0) return;
@@ -31,6 +36,7 @@ export function trackDrag(start: PointerEvent, options: DragOptions): void {
   const begin = () => {
     dragging = true;
     document.documentElement.classList.add('dragging');
+    if (options.cursor) document.documentElement.style.setProperty('--drag-cursor', options.cursor);
     // Keeps the events coming while the pointer is outside the window. Capture
     // ends by itself if the element is removed; the window listeners carry on.
     if (target?.isConnected) target.setPointerCapture?.(start.pointerId);
@@ -41,7 +47,9 @@ export function trackDrag(start: PointerEvent, options: DragOptions): void {
     stop();
     if (!dragging) return;
     document.documentElement.classList.remove('dragging');
+    document.documentElement.style.removeProperty('--drag-cursor');
     if (event.type === 'pointerup') swallowClick();
+    options.onEnd?.();
   };
 
   const stop = listen(window, {
@@ -52,7 +60,7 @@ export function trackDrag(start: PointerEvent, options: DragOptions): void {
         if (distance < threshold) return;
         begin();
       }
-      options.onMove(event.clientX);
+      options.onMove(event.clientX, event.clientY);
     },
     pointerup: end,
     pointercancel: end,

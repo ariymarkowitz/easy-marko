@@ -1,10 +1,17 @@
 import { createSignal, flush, Show } from 'solid-js';
-import { type MarkdownDocument, renameDocument, selectDocument } from '../state/documents';
+import {
+  documentsState,
+  type MarkdownDocument,
+  moveDocument,
+  renameDocument,
+  selectDocument,
+} from '../state/documents';
 
 /**
  * A document's name in the sidebar. Clicking it selects the document;
  * double-clicking it or pressing F2 renames it in place. Enter or leaving the
- * input renames the document, and Escape cancels.
+ * input renames the document, and Escape cancels. Alt+Up and Alt+Down move
+ * the document up and down the list, as dragging it does (see Sidebar).
  */
 export default function DocumentName(props: { doc: MarkdownDocument; active: boolean }) {
   const [editing, setEditing] = createSignal(false);
@@ -28,6 +35,15 @@ export default function DocumentName(props: { doc: MarkdownDocument; active: boo
     input.setSelectionRange(0, extension > 0 ? extension : name.length);
   }
 
+  /** Moves the document `step` places along the list, keeping focus on its name. */
+  function move(step: number) {
+    const index = documentsState.documents.findIndex((doc) => doc.id === props.doc.id);
+    moveDocument(props.doc.id, index + step);
+    flush();
+    // Moving the name in the page takes focus from it.
+    button?.focus();
+  }
+
   /** Ends the rename, returning focus to the name if `refocus`. */
   function stopEditing(refocus: boolean) {
     finished = true;
@@ -45,13 +61,17 @@ export default function DocumentName(props: { doc: MarkdownDocument; active: boo
           type="button"
           class="document-name"
           aria-current={props.active ? 'true' : undefined}
-          aria-keyshortcuts="F2"
+          aria-keyshortcuts="F2 Alt+ArrowUp Alt+ArrowDown"
           onClick={() => selectDocument(props.doc.id)}
           onDblClick={startEditing}
           onKeyDown={(event) => {
-            if (event.key !== 'F2') return;
-            event.preventDefault();
-            startEditing();
+            if (event.key === 'F2') {
+              event.preventDefault();
+              startEditing();
+            } else if (event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+              event.preventDefault();
+              move(event.key === 'ArrowUp' ? -1 : 1);
+            }
           }}
         >
           {props.doc.name}

@@ -238,6 +238,17 @@ export function renameDocument(id: string, name: string): boolean {
   return true;
 }
 
+/** Moves a document to `index` in the list, or as near as the list's ends allow. */
+export function moveDocument(id: string, index: number): void {
+  setState((draft) => {
+    const from = draft.documents.findIndex((d) => d.id === id);
+    const to = clamp(index, 0, draft.documents.length - 1);
+    if (from === -1 || from === to) return;
+    const [doc] = draft.documents.splice(from, 1);
+    draft.documents.splice(to, 0, doc);
+  });
+}
+
 /**
  * Removes a document from the app, asking first if it has unsaved changes.
  * The file on disk, if any, is untouched.

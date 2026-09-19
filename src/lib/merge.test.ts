@@ -57,4 +57,22 @@ describe('mergeById', () => {
       item('b', 'remote'),
     ]);
   });
+
+  test('takes the remote order when only the remote copy reordered the items', () => {
+    const base = [item('a'), item('b'), item('c')];
+    const local = [item('a', 'local'), item('b'), item('c'), item('d')];
+    expect(merge(base, local, [item('c'), item('a'), item('b')])).toEqual([
+      item('c'),
+      item('a', 'local'),
+      item('b'),
+      item('d'),
+    ]);
+  });
+
+  test('keeps the local order when the local copy reordered the items', () => {
+    const base = [item('a'), item('b'), item('c')];
+    const local = [item('b'), item('a'), item('c')];
+    expect(merge(base, local, [item('c'), item('a'), item('b')])).toEqual(local);
+    expect(merge(base, local, base)).toEqual(local);
+  });
 });

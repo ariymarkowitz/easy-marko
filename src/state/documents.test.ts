@@ -14,6 +14,7 @@ import {
   exporting,
   hasUnsavedChanges,
   type MarkdownDocument,
+  moveDocument,
   newDocument,
   openDocument,
   openWelcomeDocument,
@@ -189,6 +190,25 @@ describe('closeDocument', () => {
   });
 });
 
+describe('moveDocument', () => {
+  test('moves a document within the list, stopping at its ends', () => {
+    const first = addDocument();
+    const second = addDocument();
+    const ids = () => documentsState.documents.map((doc) => doc.id).filter((id) => id === first.id || id === second.id);
+    moveDocument(second.id, documentsState.documents.indexOf(first));
+    flush();
+    expect(ids()).toEqual([second.id, first.id]);
+    expect(activeDocument()?.id).toBe(second.id);
+
+    moveDocument(second.id, 100);
+    flush();
+    expect(documentsState.documents.at(-1)?.id).toBe(second.id);
+    moveDocument(second.id, -1);
+    flush();
+    expect(documentsState.documents[0].id).toBe(second.id);
+  });
+});
+
 describe('openWelcomeDocument', () => {
   test('opens the original welcome text, and reuses a copy until it is edited', () => {
     openWelcomeDocument();
@@ -314,6 +334,26 @@ describe('useDocumentsBackup', () => {
     expect(edited.content).toBe('Their edit');
     expect(isOpen(closed.id)).toBe(false);
     expect(activeDocument()?.id).toBe(edited.id);
+    dispose();
+  });
+
+  test('takes the order another tab moved the documents to, unless this tab moved them', () => {
+    const dispose = useBackup();
+    const first = addDocument();
+    const second = addDocument();
+    hidePage();
+    const order = () => documentsState.documents.map((doc) => doc.id).filter((id) => id === first.id || id === second.id);
+
+    changeInOtherTab((documents) => [...documents].reverse());
+    syncFromOtherTab();
+    expect(order()).toEqual([second.id, first.id]);
+
+    moveDocument(first.id, 0);
+    flush();
+    changeInOtherTab((documents) => documents.map((doc) => (doc.id === second.id ? { ...doc, content: 'Edit', updatedAt: doc.updatedAt + 1 } : doc)));
+    syncFromOtherTab();
+    expect(order()).toEqual([first.id, second.id]);
+    expect(second.content).toBe('Edit');
     dispose();
   });
 
