@@ -65,7 +65,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 - A dot in the sidebar marks unsaved documents. Closing one asks for confirmation.
 
 - Rename by double-clicking a name in the sidebar or pressing F2 on it. Enter or blur renames, Escape cancels, and empty names aren't allowed. Renaming unlinks the document from its file, so the next Save asks where to save. Renaming it back links it again. Files on disk are never moved.
-- Drag a document's name to move it in the sidebar list, or press Alt+Up/Down on it. The list reorders as the pointer moves, and dragging doesn't select the document.
+- Drag a document's name to move it in the sidebar list, or press Alt+Up/Down on it. The row follows the pointer, kept within the list, and the other rows slide out of its way (0.15s) as it passes their middles. On release it slides into its place. Reduced motion turns the slides off. Dragging doesn't select the document.
 
 - Touchscreens (no hover) get a ⋯ button on each open document in place of the X, opening a menu with Rename and Close, so a stray tap can't close a document. Unsaved documents show their dot beside it. Recent files keep a visible X, since removing one loses nothing. Rows and buttons are taller on touchscreens, and document buttons highlight a small square around the icon.
 

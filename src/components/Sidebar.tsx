@@ -1,7 +1,7 @@
-import { createMemo, createSignal, For, Loading, Show } from 'solid-js';
+import { createMemo, createSignal, flush, For, Loading, Show } from 'solid-js';
 import { Ellipsis, X } from 'lucide';
-import { CLICK_SLOP, HOLD_DELAY, TOUCH_SLOP, trackDrag } from '../lib/drag';
 import { listen } from '../lib/events';
+import { dragListItem } from '../lib/list-drag';
 import { createMediaQuery } from '../reactive';
 import { closeDocument, documentsState, hasUnsavedChanges, moveDocument, openRecentFile } from '../state/documents';
 import { forgetFile, recentFiles } from '../state/recent-files';
@@ -13,11 +13,6 @@ import IconButton from './IconButton';
 /** Touchscreens can't hover to show a document's close button, so they get a menu button instead. */
 const noHover = createMediaQuery('(hover: none)');
 
-/** How close, in pixels, a dragged document comes to the sidebar's top or bottom before the sidebar scrolls. */
-const SCROLL_EDGE = 32;
-/** How far, in pixels, the sidebar scrolls each frame while a dragged document is at its edge. */
-const SCROLL_STEP = 6;
-
 export default function Sidebar() {
   /** The document whose name is being dragged to a new place in the list. */
   const [dragged, setDragged] = createSignal<string>();
@@ -25,66 +20,29 @@ export default function Sidebar() {
   const [menuTarget, setMenuTarget] = createSignal<DocumentMenuTarget>();
 
   /**
-   * Follows a drag of a document's name, moving the document to where the
-   * pointer is in the list. A touch drags only after it's held still for a
-   * moment, so a swipe still scrolls; a touch held and released without moving
-   * opens the document's menu.
+   * Follows a drag of a document's name, moving the document in the list. A
+   * touch held and released without moving opens the document's menu.
    */
   function dragDocument(event: PointerEvent & { currentTarget: HTMLLIElement }, id: string, menu: () => void) {
     // The close button and the rename input don't start a drag.
     if (!(event.target as Element).closest('button.document-name')) return;
-    const item = event.currentTarget;
-    const list = item.parentElement!;
-    const sidebar = list.closest<HTMLElement>('.sidebar')!;
     const touch = event.pointerType === 'touch';
-    const start = { x: event.clientX, y: event.clientY };
-    let moved = false;
-    let pointerY = start.y;
-    let frame = 0;
-
-    /** Moves the document to its place among the other items: after those whose middle is above the pointer. */
-    const place = () => {
-      const others = [...list.children].filter((other) => other !== item);
-      const index = others.filter((other) => {
-        const bounds = other.getBoundingClientRect();
-        return bounds.top + bounds.height / 2 < pointerY;
-      }).length;
-      moveDocument(id, index);
-    };
-
-    /** Scrolls the sidebar while the pointer is near its top or bottom, so the document can go anywhere in a long list. */
-    const scroll = () => {
-      const bounds = sidebar.getBoundingClientRect();
-      const step =
-        pointerY < bounds.top + SCROLL_EDGE ? -SCROLL_STEP : pointerY > bounds.bottom - SCROLL_EDGE ? SCROLL_STEP : 0;
-      if (step) {
-        const before = sidebar.scrollTop;
-        sidebar.scrollTop += step;
-        if (sidebar.scrollTop !== before) place();
-      }
-      frame = requestAnimationFrame(scroll);
-    };
-
-    trackDrag(event, {
-      threshold: touch ? TOUCH_SLOP : CLICK_SLOP,
-      hold: touch ? HOLD_DELAY : undefined,
-      cursor: 'grabbing',
+    dragListItem(event, event.currentTarget, {
+      scroller: event.currentTarget.closest<HTMLElement>('.sidebar')!,
+      move: (index) => {
+        moveDocument(id, index);
+        flush();
+      },
       onStart: () => {
         setDragged(id);
         if (touch && typeof navigator.vibrate === 'function') navigator.vibrate(10);
-        frame = requestAnimationFrame(scroll);
       },
-      onMove: (clientX, clientY) => {
-        pointerY = clientY;
-        moved ||= Math.hypot(clientX - start.x, clientY - start.y) >= TOUCH_SLOP;
-        place();
-      },
-      onEnd: (released) => {
-        cancelAnimationFrame(frame);
-        setDragged(undefined);
+      onEnd: (released, moved) => {
         // Opened after the release has been handled, so the release doesn't count as a tap outside the menu.
         if (touch && released && !moved) setTimeout(menu);
       },
+      // The row stays raised until it's in its place, unless another drag has started meanwhile.
+      onSettle: () => setDragged((current) => (current === id ? undefined : current)),
     });
   }
 
@@ -117,14 +75,7 @@ export default function Sidebar() {
             const unsaved = createMemo(() => hasUnsavedChanges(doc), { name: 'unsaved' });
             let row: HTMLLIElement | undefined;
             let rename = () => {};
-            const openMenu = () =>
-              row &&
-              setMenuTarget({
-                name: doc.name,
-                row,
-                rename,
-                close: () => closeDocument(doc.id),
-              });
+            const openMenu = () => row && setMenuTarget({ doc, row, rename });
             return (
               <li
                 ref={(element) => (row = element)}
@@ -156,7 +107,7 @@ export default function Sidebar() {
                     icon={Ellipsis}
                     label={unsaved() ? `Actions for ${doc.name} (unsaved changes)` : `Actions for ${doc.name}`}
                     class="document-more"
-                    menuOpen={!!row && menuTarget()?.row === row}
+                    menuOpen={menuTarget()?.doc === doc}
                     onClick={openMenu}
                   />
                 </Show>

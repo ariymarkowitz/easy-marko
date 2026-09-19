@@ -1,12 +1,13 @@
 import { onSettled } from 'solid-js';
+import { closeDocument, type MarkdownDocument } from '../state/documents';
 
 /** What the document menu acts on, and where it opens. */
 export interface DocumentMenuTarget {
-  name: string;
+  doc: MarkdownDocument;
   /** The document's row in the sidebar. The menu opens below it, or above it near the window's bottom. */
   row: HTMLElement;
+  /** Starts renaming the document in its row. */
   rename: () => void;
-  close: () => void;
 }
 
 /** The gap, in pixels, between the menu and its row, and the least between the menu and the window's edges. */
@@ -44,25 +45,15 @@ export default function DocumentMenu(props: { target: DocumentMenuTarget; onClos
   function onKeyDown(event: KeyboardEvent) {
     const all = items();
     const index = all.indexOf(document.activeElement as HTMLElement);
-    const next =
-      event.key === 'ArrowDown'
-        ? all[(index + 1) % all.length]
-        : event.key === 'ArrowUp'
-          ? all[(index - 1 + all.length) % all.length]
-          : event.key === 'Home'
-            ? all[0]
-            : event.key === 'End'
-              ? all.at(-1)
-              : undefined;
-    if (next) {
+    // Where each key moves focus. Up and Down wrap around.
+    const next = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: -1 }[event.key];
+    if (next !== undefined) {
       event.preventDefault();
-      next.focus();
+      all.at(next % all.length)?.focus();
     } else if (event.key === 'Escape') {
-      // Handled here, so it doesn't also close the sidebar overlay.
+      // Handled here, so it doesn't also close the sidebar overlay. Hiding the menu returns focus to where it was.
       event.preventDefault();
       menu?.hidePopover();
-      const row = props.target.row;
-      (row.querySelector<HTMLElement>('.document-more') ?? row.querySelector<HTMLElement>('.document-name'))?.focus();
     } else if (event.key === 'Tab') {
       menu?.hidePopover();
     }
@@ -74,7 +65,7 @@ export default function DocumentMenu(props: { target: DocumentMenuTarget; onClos
       popover="auto"
       role="menu"
       class="document-menu"
-      aria-label={`Actions for ${props.target.name}`}
+      aria-label={`Actions for ${props.target.doc.name}`}
       onKeyDown={onKeyDown}
       onToggle={(event) => {
         if (event.newState === 'closed') props.onClose();
@@ -83,7 +74,7 @@ export default function DocumentMenu(props: { target: DocumentMenuTarget; onClos
       <button type="button" role="menuitem" class="document-menu-item" onClick={() => pick(props.target.rename)}>
         Rename
       </button>
-      <button type="button" role="menuitem" class="document-menu-item" onClick={() => pick(props.target.close)}>
+      <button type="button" role="menuitem" class="document-menu-item" onClick={() => pick(() => closeDocument(props.target.doc.id))}>
         Close
       </button>
     </div>
