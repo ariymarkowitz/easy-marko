@@ -128,7 +128,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 
 - The preview shows "Loading…" until its first render has what it needs (the stored file handles, and any code languages or local images). After that, edits keep showing the previous render until the new one is ready.
 
-- YAML front matter: a `---` line at the very top, up to a closing `---` or `...` line, renders as a YAML-highlighted code block whose lines wrap, in slightly smaller type, with square corners and rules above and below. Unclosed, indented or nested front matter stays ordinary Markdown. The source pane highlights it as YAML too, and YAML keys are in the accent colour in both panes, in front matter and fenced YAML alike.
+- YAML front matter: a `---` line at the very top, up to a closing `---` or `...` line, renders as a YAML-highlighted code block whose lines wrap, in slightly smaller type, with square corners and rules above and below. Unclosed, indented or nested front matter stays ordinary Markdown. The source pane highlights it as YAML too, and YAML keys are in the definition colour in both panes, in front matter and fenced YAML alike.
 
 - KaTeX maths, at 1.18em so its x-height matches the body text's. Inline `$…$` follows Pandoc's rules, so amounts like `$5 and $10` stay text.
 

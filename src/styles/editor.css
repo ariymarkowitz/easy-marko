@@ -22,27 +22,21 @@
   text-decoration: line-through;
 }
 
-/*
- * Maths content (its $ delimiters are marks), and YAML keys, since YAML leaves
- * plain values untyped.
- */
-.tok-math,
-.tok-yamlKey,
-.tok-link,
-.tok-url {
-  color: var(--color-accent);
-}
-
 /* Variables where code defines them. */
 .tok-variableDef {
   color: var(--color-syntax-variable);
 }
 
-/* Functions, classes, types and members where code defines them. */
-.tok-functionDef {
+/*
+ * Functions, classes, types and members where code defines them, and YAML
+ * keys, since YAML leaves plain values untyped.
+ */
+.tok-functionDef,
+.tok-yamlKey {
   color: var(--color-syntax-definition);
 }
 
+/* Literals, and in Markdown, URLs and maths content (its $ delimiters are marks). Link text stays plain. */
 .tok-string,
 .tok-string2,
 .tok-number,
@@ -50,7 +44,9 @@
 .tok-atom,
 .tok-null,
 .tok-literal,
-.tok-inserted {
+.tok-inserted,
+.tok-url,
+.tok-math {
   color: var(--color-syntax-constant);
 }
 
