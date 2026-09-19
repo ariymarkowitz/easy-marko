@@ -20,6 +20,7 @@ This is a SolidJS 2.x project. Solid is not React: components run once (there is
 - Run `npm run status` before testing with a server. Use an existing server if one exists. Otherwise start your own server, and stop it after testing with `npm run stop -- <pid>`.
 - When merging, fast-forward if possible.
 - Update FEATURES.md when adding or modify features. Keep the document concise but comprehensive.
+- There's no formatter. Don't run Prettier; match the surrounding style by hand (single quotes, lines up to about 120 characters).
 
 ## Structure
 
