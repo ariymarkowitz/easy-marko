@@ -3,6 +3,7 @@ import { createSignal, For, onSettled, Show } from 'solid-js';
 import { ChevronLeft, ChevronRight, Eye, PanelLeft, type IconNode } from 'lucide';
 import { CLICK_SLOP, trackDrag } from '../lib/drag';
 import { listen } from '../lib/events';
+import { after, scheduler } from '../lib/timers';
 import { hidePane, revealPane, startSidebarDrag, startSplitDrag } from '../state/layout';
 import { setSidebarOpen } from '../state/settings';
 import Icon from './Icon';
@@ -59,12 +60,7 @@ export default function PanelEdge(props: {
 }) {
   let edge!: HTMLDivElement;
   const [revealed, setRevealed] = createSignal(false);
-  let revealTimer: ReturnType<typeof setTimeout> | undefined;
-
-  const cancelReveal = () => {
-    clearTimeout(revealTimer);
-    revealTimer = undefined;
-  };
+  const reveal = scheduler(() => setRevealed(true), after(REVEAL_DELAY));
 
   /** How far the pointer is from the edge, or `undefined` when it isn't alongside it. */
   function distanceTo(event: PointerEvent): number | undefined {
@@ -83,11 +79,8 @@ export default function PanelEdge(props: {
     const revealDistance = props.position ? WINDOW_EDGE_REVEAL_DISTANCE : RESIZER_REVEAL_DISTANCE;
     // Not while a button is held, as when selecting text past the edge.
     if (distance !== undefined && distance <= revealDistance && event.buttons === 0) {
-      revealTimer ??= setTimeout(() => {
-        revealTimer = undefined;
-        setRevealed(true);
-      }, REVEAL_DELAY);
-    } else cancelReveal();
+      reveal.schedule();
+    } else reveal.cancel();
   }
 
   // Tracked on the window rather than with a hover area, so the area near the
@@ -101,7 +94,7 @@ export default function PanelEdge(props: {
       },
     }),
   );
-  onSettled(() => cancelReveal);
+  onSettled(() => reveal.cancel);
 
   return (
     <div

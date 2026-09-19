@@ -9,6 +9,7 @@ import { EditorView } from '@codemirror/view';
 import { editorView } from '../editor/controller';
 import { listen } from '../lib/events';
 import { createScrollMap, mapOffset } from '../lib/scroll-map';
+import { nextFrame, scheduler, type Scheduler } from '../lib/timers';
 import { createAttachment } from '../reactive';
 import { revealPane, viewMode } from './layout';
 import { activeScrollPosition, type ScrollPosition, setActiveScrollPosition } from './scroll-positions';
@@ -304,8 +305,15 @@ export function jumpToSource(event: MouseEvent): void {
 /** Aligns the other pane with the one the user scrolled, while the panes are linked. */
 let syncLinkedPanes: (() => void) | undefined;
 
-/** Scroll frames waiting to record the scroll anchor, by pane. */
-const anchorFrames = new Map<PanelMode, number>();
+/** Records where a pane is scrolled to as the scroll anchor, unless another pane has been scrolled since. */
+const recordAnchor = (pane: PanelMode) =>
+  scheduler(() => {
+    if (scrollAnchor.pane !== pane) return;
+    scrollAnchor.line = recordScrollPosition()[pane] ?? scrollAnchor.line;
+  }, nextFrame);
+
+/** Each pane's anchor recording, done once a frame while it scrolls. */
+const anchorRecorders: Record<PanelMode, Scheduler> = { source: recordAnchor('source'), preview: recordAnchor('preview') };
 
 /** Records where the user scrolled a pane to, and brings a linked pane along. */
 function onScroll(pane: PanelMode, element: HTMLElement): void {
@@ -315,15 +323,7 @@ function onScroll(pane: PanelMode, element: HTMLElement): void {
   scrollAnchor.pane = pane;
   syncLinkedPanes?.();
   // Measuring every block on each scroll event would be wasteful outside split view, so record once a frame.
-  if (anchorFrames.has(pane)) return;
-  anchorFrames.set(
-    pane,
-    requestAnimationFrame(() => {
-      anchorFrames.delete(pane);
-      if (scrollAnchor.pane !== pane) return;
-      scrollAnchor.line = recordScrollPosition()[pane] ?? scrollAnchor.line;
-    }),
-  );
+  anchorRecorders[pane].schedule();
 }
 
 /**

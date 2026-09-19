@@ -1,5 +1,6 @@
 import { createEffect, createSignal } from 'solid-js';
 import { readText, removeKey, STORAGE_KEYS, writeText } from '../lib/storage';
+import { delay } from '../lib/timers';
 import { createMediaQuery } from '../reactive';
 
 export type Theme = 'light' | 'dark';
@@ -51,9 +52,9 @@ export function useTheme(): void {
     () => {
       const root = document.documentElement;
       root.classList.add('theme-transition');
-      const timer = setTimeout(() => root.classList.remove('theme-transition'), 300);
+      const cancel = delay(() => root.classList.remove('theme-transition'), 300);
       return () => {
-        clearTimeout(timer);
+        cancel();
         root.classList.remove('theme-transition');
       };
     },

@@ -3,6 +3,7 @@
 
 import { createEffect } from 'solid-js';
 import { readJSON, STORAGE_KEYS, writeText } from '../lib/storage';
+import { after, scheduler } from '../lib/timers';
 import { documentsState } from './documents';
 import type { PanelMode } from './settings';
 
@@ -35,18 +36,12 @@ const scrollPositions = new Map(
   ),
 );
 
-let saveTimer: ReturnType<typeof setTimeout> | undefined;
-
 /** Saves the scroll positions of open documents, at most twice a second. */
-function saveScrollPositions(): void {
-  if (saveTimer !== undefined) return;
-  saveTimer = setTimeout(() => {
-    saveTimer = undefined;
-    const ids = new Set(documentsState.documents.map((doc) => doc.id));
-    for (const id of scrollPositions.keys()) if (!ids.has(id)) scrollPositions.delete(id);
-    writeText(STORAGE_KEYS.scrollPositions, JSON.stringify(Object.fromEntries(scrollPositions)));
-  }, 500);
-}
+const save = scheduler(() => {
+  const ids = new Set(documentsState.documents.map((doc) => doc.id));
+  for (const id of scrollPositions.keys()) if (!ids.has(id)) scrollPositions.delete(id);
+  writeText(STORAGE_KEYS.scrollPositions, JSON.stringify(Object.fromEntries(scrollPositions)));
+}, after(500));
 
 /** Where the active document's panes were scrolled to: the top if they haven't been. */
 export const activeScrollPosition = (): ScrollPosition => scrollPositions.get(documentsState.activeId) ?? topPosition;
@@ -54,14 +49,14 @@ export const activeScrollPosition = (): ScrollPosition => scrollPositions.get(do
 /** Records where the active document's panes are scrolled to. */
 export function setActiveScrollPosition(position: ScrollPosition): void {
   scrollPositions.set(documentsState.activeId, position);
-  saveScrollPositions();
+  save.schedule();
 }
 
 /** Drops closed documents' scroll positions from storage. Call once from the app root. */
 export function useScrollPositions(): void {
   createEffect(
     () => documentsState.documents.map((doc) => doc.id).join(),
-    () => saveScrollPositions(),
+    () => save.schedule(),
     { name: 'pruneScrollPositions' },
   );
 }

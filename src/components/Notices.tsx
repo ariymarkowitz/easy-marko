@@ -1,5 +1,6 @@
 import { createEffect, createSignal, For } from 'solid-js';
 import { CircleAlert, Info, X } from 'lucide';
+import { delay } from '../lib/timers';
 import { dismissNotice, type Notice, notices, type NoticeTone } from '../state/notices';
 import Icon from './Icon';
 import IconButton from './IconButton';
@@ -37,9 +38,7 @@ function NoticeItem(props: { notice: Notice }) {
   createEffect(
     () => (hovered() || focused() ? 0 : props.notice.timeout),
     (timeout) => {
-      if (timeout <= 0) return;
-      const timer = setTimeout(dismiss, timeout);
-      return () => clearTimeout(timer);
+      if (timeout > 0) return delay(dismiss, timeout);
     },
     { name: 'noticeTimeout' },
   );

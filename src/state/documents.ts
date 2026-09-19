@@ -24,6 +24,7 @@ import { hashText } from '../lib/hash';
 import { localImageReader } from '../lib/local-images';
 import { mergeById } from '../lib/merge';
 import { parseJSON, readText, STORAGE_KEYS, writeText } from '../lib/storage';
+import { delay } from '../lib/timers';
 import { createMediaQuery } from '../reactive';
 import { grantedFolders } from './granted-folders';
 import { errorMessage, showNotice } from './notices';
@@ -477,10 +478,7 @@ export function useDocumentsBackup(): void {
 
   createEffect(
     () => deep(state),
-    () => {
-      const timer = setTimeout(syncBackup, 300);
-      return () => clearTimeout(timer);
-    },
+    () => delay(syncBackup, 300),
     { name: 'documentsBackup' },
   );
 

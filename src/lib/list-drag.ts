@@ -3,6 +3,7 @@
 
 import { clamp } from './clamp';
 import { CLICK_SLOP, HOLD_DELAY, TOUCH_SLOP, trackDrag } from './drag';
+import { nextFrame, scheduler } from './timers';
 
 /** How close, in pixels, the pointer comes to the scroller's top or bottom before it scrolls. */
 const SCROLL_EDGE = 32;
@@ -42,7 +43,6 @@ export function dragListItem(event: PointerEvent, item: HTMLElement, options: Li
   const start = { x: event.clientX, y: event.clientY };
   let pointerY = start.y;
   let moved = false;
-  let frame = 0;
   /** Where the pointer is on the item, from the item's top. */
   let grab = 0;
   /** How far the item is drawn from its place in the list. */
@@ -80,8 +80,9 @@ export function dragListItem(event: PointerEvent, item: HTMLElement, options: Li
     const before = scroller.scrollTop;
     scroller.scrollTop += step;
     if (scroller.scrollTop !== before) follow();
-    frame = requestAnimationFrame(scroll);
+    scrolling.schedule();
   };
+  const scrolling = scheduler(scroll, nextFrame);
 
   trackDrag(event, {
     threshold: touch ? TOUCH_SLOP : CLICK_SLOP,
@@ -93,7 +94,7 @@ export function dragListItem(event: PointerEvent, item: HTMLElement, options: Li
       cancelSlides(item);
       draw(top - item.getBoundingClientRect().top);
       grab = start.y - top;
-      frame = requestAnimationFrame(scroll);
+      scrolling.schedule();
       options.onStart?.();
     },
     onMove: (clientX, clientY) => {
@@ -102,7 +103,7 @@ export function dragListItem(event: PointerEvent, item: HTMLElement, options: Li
       follow();
     },
     onEnd: (released) => {
-      cancelAnimationFrame(frame);
+      scrolling.cancel();
       const settle = slide(item, offset);
       draw(0);
       // A new drag of the item cancels the slide, and the new drag carries on instead.

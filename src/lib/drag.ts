@@ -3,6 +3,7 @@
 // hides it, or dragging a button that opens a panel).
 
 import { listen } from './events';
+import { delay } from './timers';
 
 /** How far, in pixels, a press on a button moves before it's a drag rather than a click. */
 export const CLICK_SLOP = 4;
@@ -49,7 +50,6 @@ export function trackDrag(start: PointerEvent, options: DragOptions): void {
   const target = start.currentTarget instanceof Element ? start.currentTarget : undefined;
   const threshold = options.threshold ?? 0;
   let dragging = false;
-  let holdTimer: ReturnType<typeof setTimeout> | undefined;
 
   const begin = () => {
     dragging = true;
@@ -88,13 +88,13 @@ export function trackDrag(start: PointerEvent, options: DragOptions): void {
     pointercancel: end,
   });
 
+  const cancelHold = options.hold ? delay(begin, options.hold) : undefined;
   const stop = () => {
-    clearTimeout(holdTimer);
+    cancelHold?.();
     unlisten();
   };
 
-  if (options.hold) holdTimer = setTimeout(begin, options.hold);
-  else if (threshold <= 0) begin();
+  if (!options.hold && threshold <= 0) begin();
 }
 
 /** Stops the click that follows a pointerup, which would otherwise activate a dragged button. */
@@ -110,5 +110,5 @@ function swallowClick(): void {
     { capture: true },
   );
   // The click, if any, is dispatched in the same task as the pointerup.
-  setTimeout(stop);
+  delay(stop);
 }
