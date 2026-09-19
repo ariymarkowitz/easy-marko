@@ -59,10 +59,7 @@ export default function App() {
   }
 
   return (
-    <div
-      class={['app', { narrow: narrowScreen() }]}
-      style={{ '--sidebar-width': `${settings.sidebarWidth}px` }}
-    >
+    <div class={['app', { narrow: narrowScreen() }]}>
       <Toolbar />
       <div class="app-body">
         <Show

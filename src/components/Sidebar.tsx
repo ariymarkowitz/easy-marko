@@ -2,12 +2,19 @@ import { createMemo, For, Loading, Show } from 'solid-js';
 import { X } from 'lucide';
 import { closeDocument, documentsState, hasUnsavedChanges, openRecentFile } from '../state/documents';
 import { forgetFile, recentFiles } from '../state/recent-files';
+import { settings } from '../state/settings';
 import DocumentName from './DocumentName';
 import IconButton from './IconButton';
 
 export default function Sidebar() {
   return (
-    <aside id="sidebar" class="sidebar" aria-labelledby="sidebar-heading">
+    // The width is set here rather than higher up, where a change would restyle the whole page.
+    <aside
+      id="sidebar"
+      class="sidebar"
+      aria-labelledby="sidebar-heading"
+      style={{ '--sidebar-width': `${settings.sidebarWidth}px` }}
+    >
       <h2 id="sidebar-heading" class="sidebar-heading">Documents</h2>
       <ul class="document-list">
         <For each={documentsState.documents}>
