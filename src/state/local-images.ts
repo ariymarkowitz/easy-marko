@@ -1,4 +1,4 @@
-import { action, createMemo, createRoot, refresh } from 'solid-js';
+import { action, createMemo, refresh } from 'solid-js';
 import { hasAccess } from '../lib/file-access';
 import {
   type FileLocation,
@@ -34,16 +34,14 @@ async function accessTo(
     : { status: 'prompt', file: handle, location };
 }
 
-const access = createRoot(() =>
-  createMemo(
-    (): Access | Promise<Access> => {
-      const doc = activeDocument();
-      if (!doc || typeof window.showDirectoryPicker !== 'function') return { status: 'unavailable' };
-      // Before the stored handles have loaded, wait for them.
-      return accessTo(documentFile(doc) ?? loadDocumentFile(doc.id), grantedFolders());
-    },
-    { lazy: true },
-  ),
+const access = createMemo(
+  (): Access | Promise<Access> => {
+    const doc = activeDocument();
+    if (!doc || typeof window.showDirectoryPicker !== 'function') return { status: 'unavailable' };
+    // Before the stored handles have loaded, wait for them.
+    return accessTo(documentFile(doc) ?? loadDocumentFile(doc.id), grantedFolders());
+  },
+  { lazy: true },
 );
 
 /**

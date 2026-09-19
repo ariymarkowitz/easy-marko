@@ -1,4 +1,4 @@
-import { action, createRoot, createSignal } from 'solid-js';
+import { action, createSignal } from 'solid-js';
 import { withoutEntry } from '../lib/file-access';
 import { readFolders, writeFolders } from '../lib/folder-store';
 
@@ -7,9 +7,7 @@ import { readFolders, writeFolders } from '../lib/folder-store';
  * IndexedDB when first needed. Refresh it to pick up folders other tabs
  * granted.
  */
-const [grantedFolders, setGrantedFolders] = createRoot(() =>
-  createSignal(async () => (await readFolders()) ?? [], { lazy: true }),
-);
+const [grantedFolders, setGrantedFolders] = createSignal(async () => (await readFolders()) ?? [], { lazy: true });
 
 export { grantedFolders };
 
