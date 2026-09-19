@@ -37,3 +37,17 @@ export function listen<T extends EventTarget>(
   }
   return () => controller.abort();
 }
+
+/** Calls `callback` when the window gains focus or the page becomes visible. Returns a function removing the listeners. */
+export function listenPageShown(callback: () => void): () => void {
+  const unlistenWindow = listen(window, { focus: callback });
+  const unlistenDocument = listen(document, {
+    visibilitychange: () => {
+      if (document.visibilityState === 'visible') callback();
+    },
+  });
+  return () => {
+    unlistenWindow();
+    unlistenDocument();
+  };
+}

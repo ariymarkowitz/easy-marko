@@ -6,10 +6,9 @@
 //
 // Needs rsvg-convert from librsvg (`brew install librsvg`).
 
-import { execFileSync } from 'node:child_process';
 import { lightDarkToken } from '../../src/lib/css-tokens.ts';
 import { bannerLayers, bannerSize } from './banner.mjs';
-import { projectPath, readProjectFile } from './files.mjs';
+import { readProjectFile, writeProjectPng } from './files.mjs';
 import { tilingSvg } from './tiling.mjs';
 
 export function generateOgImage() {
@@ -31,7 +30,5 @@ export function generateOgImage() {
 ${bannerLayers({ width, height, tiling, wordmark, transform: `translate(${x} ${y}) scale(${scale})` })}
 </svg>`;
 
-  const path = 'public/og-image.png';
-  execFileSync('rsvg-convert', ['--width', width, '--height', height, '--output', projectPath(path)], { input: svg });
-  console.log(path);
+  writeProjectPng('public/og-image.png', svg, width, height);
 }

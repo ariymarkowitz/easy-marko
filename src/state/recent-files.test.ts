@@ -2,8 +2,9 @@ import { flush } from 'solid-js';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { fakeFileHandle } from '../lib/file-system.fakes';
 import type { RecentFile } from '../lib/recent-store';
-import { activeDocument, closeDocument, documentsState, openRecentFile } from './documents';
-import { dismissNotice, notices } from './notices';
+import { clearNotices, closeAllDocuments } from '../test-helpers';
+import { activeDocument, documentsState, openRecentFile } from './documents';
+import { notices } from './notices';
 import { forgetFile, RECENT_FILES_LIMIT, recentFiles, rememberFile } from './recent-files';
 
 /** The list in IndexedDB, which all tabs share. */
@@ -26,9 +27,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  for (const notice of notices()) dismissNotice(notice.id);
-  for (const id of documentsState.documents.map((doc) => doc.id)) closeDocument(id);
-  flush();
+  clearNotices();
+  closeAllDocuments();
   vi.restoreAllMocks();
 });
 

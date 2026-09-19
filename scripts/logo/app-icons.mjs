@@ -3,8 +3,7 @@
 //
 // Needs rsvg-convert from librsvg (`brew install librsvg`).
 
-import { execFileSync } from 'node:child_process';
-import { projectPath, readProjectFile } from './files.mjs';
+import { readProjectFile, writeProjectPng } from './files.mjs';
 
 /**
  * The icon as a full square: the background rect without its rounded corners,
@@ -20,21 +19,15 @@ function fullBleed(svg, scale) {
   return `${head}${rectStart}${rectEnd}<g transform="${transform}">${artwork}</g>${tail}`;
 }
 
-function render(source, size, file) {
-  const path = `public/${file}`;
-  execFileSync('rsvg-convert', ['--width', size, '--height', size, '--output', projectPath(path)], { input: source });
-  console.log(path);
-}
-
 export function generateAppIcons() {
   const svg = readProjectFile('public/icon.svg');
 
-  render(svg, 192, 'icon-192.png');
-  render(svg, 512, 'icon-512.png');
+  writeProjectPng('public/icon-192.png', svg, 192);
+  writeProjectPng('public/icon-512.png', svg, 512);
   // Maskable icons are cropped to as little as a centred circle 80% as wide
   // as the icon. The artwork's corners reach 44% of the width from the
   // centre, so at 80% scale (35%) they stay inside that circle's 40% radius.
-  render(fullBleed(svg, 0.8), 512, 'icon-maskable-512.png');
+  writeProjectPng('public/icon-maskable-512.png', fullBleed(svg, 0.8), 512);
   // iOS rounds the corners itself and fills transparent pixels with black.
-  render(fullBleed(svg, 1), 180, 'apple-touch-icon.png');
+  writeProjectPng('public/apple-touch-icon.png', fullBleed(svg, 1), 180);
 }

@@ -1,6 +1,7 @@
 import { flush } from 'solid-js';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { openFile } from '../lib/files';
+import { clearNotices } from '../test-helpers';
 import {
   activeDocument,
   closeDocument,
@@ -52,8 +53,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  for (const notice of notices()) dismissNotice(notice.id);
-  flush();
+  clearNotices();
   vi.restoreAllMocks();
 });
 

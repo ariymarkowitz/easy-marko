@@ -1,10 +1,11 @@
-import { createEffect, createMemo, createRoot, flush } from 'solid-js';
+import { createEffect, createMemo, flush } from 'solid-js';
 import { afterAll, afterEach, beforeAll, expect, test, vi } from 'vitest';
 import { openFile } from '../lib/files';
 import { fakeFileHandle, fakeFolder } from '../lib/file-system.fakes';
-import { closeDocument, documentsState, newDocument, openDocument } from './documents';
+import { clearNotices, closeAllDocuments, mountHooks } from '../test-helpers';
+import { newDocument, openDocument } from './documents';
 import { allowImageAccess, useLocalImages, withLocalImages } from './local-images';
-import { dismissNotice, notices } from './notices';
+import { notices } from './notices';
 
 vi.mock('../lib/files');
 
@@ -30,12 +31,10 @@ beforeAll(() => {
   window.showDirectoryPicker = vi.fn();
   URL.createObjectURL = (blob) => `blob:${(blob as File).name}`;
   vi.spyOn(window, 'confirm').mockReturnValue(true);
-  dispose = createRoot((dispose) => {
-    useLocalImages();
+  dispose = mountHooks(useLocalImages, () =>
     // Through a memo, like the preview, as withLocalImages can be async.
-    createEffect(createMemo(() => withLocalImages(html)), (value) => void (shown = value));
-    return dispose;
-  });
+    createEffect(createMemo(() => withLocalImages(html)), (value) => void (shown = value)),
+  );
 });
 
 afterAll(() => {
@@ -43,10 +42,7 @@ afterAll(() => {
   delete window.showDirectoryPicker;
 });
 
-afterEach(() => {
-  for (const notice of notices()) dismissNotice(notice.id);
-  flush();
-});
+afterEach(clearNotices);
 
 function render() {
   const root = document.createElement('div');
@@ -118,5 +114,5 @@ test('reports images missing from a granted folder', async () => {
   await openDocument();
   flush();
   await vi.waitFor(() => expect(render().placeholders).toEqual(['A (not found)', 'Logo']));
-  for (const id of documentsState.documents.map((doc) => doc.id)) closeDocument(id);
+  closeAllDocuments();
 });

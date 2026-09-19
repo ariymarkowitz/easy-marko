@@ -3,13 +3,11 @@
 // into outlines so the generated SVGs need no fonts to render.
 
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import * as hb from 'harfbuzzjs';
 import decompressWoff2 from 'woff2-encoder/decompress';
+import { projectPath } from './files.mjs';
 
-const fontFile = fileURLToPath(
-  new URL('../../node_modules/@fontsource-variable/figtree/files/figtree-latin-wght-normal.woff2', import.meta.url),
-);
+const fontFile = projectPath('node_modules/@fontsource-variable/figtree/files/figtree-latin-wght-normal.woff2');
 
 export const accent = '#4c7bf4';
 export const light = '#fafafa';

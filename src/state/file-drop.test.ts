@@ -1,5 +1,6 @@
-import { createRoot, flush } from 'solid-js';
+import { flush } from 'solid-js';
 import { afterEach, expect, test, vi } from 'vitest';
+import { mountHooks } from '../test-helpers';
 import { activeDocument, documentsState } from './documents';
 import { draggingFiles, useFileDrop } from './file-drop';
 
@@ -7,14 +8,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function useDrop() {
-  const dispose = createRoot((dispose) => {
-    useFileDrop();
-    return dispose;
-  });
-  flush();
-  return dispose;
-}
+const useDrop = () => mountHooks(useFileDrop);
 
 /** Fires a drag event carrying `data` on the window, and returns it. */
 function drag(type: string, data: DataTransfer): Event {

@@ -1,12 +1,10 @@
 import { flush } from 'solid-js';
 import { beforeEach, describe, expect, test } from 'vitest';
-import { dismissNotice, INFO_NOTICE_TIMEOUT, notices, showNotice } from './notices';
+import { clearNotices } from '../test-helpers';
+import { INFO_NOTICE_TIMEOUT, notices, showNotice } from './notices';
 
 // Test files share modules, so clear the notices that other files left.
-beforeEach(() => {
-  for (const notice of notices()) dismissNotice(notice.id);
-  flush();
-});
+beforeEach(clearNotices);
 
 describe('showNotice', () => {
   test('stacks notices in the order they were shown', () => {

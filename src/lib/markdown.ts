@@ -16,6 +16,7 @@ import {
 import { frontMatterBlock } from './markdown-front-matter';
 import { maths } from './markdown-math';
 import { taskLists } from './markdown-tasks';
+import { allMaybe, type MaybePromise, thenMaybe } from './maybe-promise';
 import { sanitizeHtml } from './sanitize';
 import { createSlugger, slugify } from './slug';
 
@@ -27,7 +28,7 @@ export interface RenderedBlock {
   /** Zero-based source line just past the block's end. */
   endLine: number;
   /** Sanitised HTML, or a promise of it while the languages of its code load. */
-  html: string | Promise<string>;
+  html: MaybePromise<string>;
 }
 
 interface RenderEnv extends Env, FootnoteEnv {
@@ -171,7 +172,7 @@ interface Rendered {
 
 interface BlockOutput {
   /** A promise while the languages of the block's code load. */
-  rendered: Rendered | Promise<Rendered>;
+  rendered: MaybePromise<Rendered>;
   anchors: BlockAnchors;
 }
 
@@ -195,7 +196,7 @@ function loadLanguage(language: LanguageDescription): Promise<void> {
  * promise if a language of its code hasn't loaded, which renders the block
  * again once it has. Code in a language that failed to load stays plain.
  */
-function renderBlock(tokens: Token[], env: RenderEnv, ids: BlockIds, wait = true): Rendered | Promise<Rendered> {
+function renderBlock(tokens: Token[], env: RenderEnv, ids: BlockIds, wait = true): MaybePromise<Rendered> {
   applyIds(tokens, ids);
   const loads = new Set<Promise<void>>();
   const options = {
@@ -219,18 +220,15 @@ function renderBlock(tokens: Token[], env: RenderEnv, ids: BlockIds, wait = true
 }
 
 /** A block's output, which is kept once its rendering settles, so later renders use it straight away. */
-function blockOutput(rendered: Rendered | Promise<Rendered>, anchors: BlockAnchors): BlockOutput {
+function blockOutput(rendered: MaybePromise<Rendered>, anchors: BlockAnchors): BlockOutput {
   const output = { rendered, anchors };
   if (rendered instanceof Promise) void rendered.then((settled) => (output.rendered = settled));
   return output;
 }
 
 /** The footnotes list of the blocks' notes, placed after the last block. */
-function footnotesBlock(blocks: (Rendered | Promise<Rendered>)[], line: number): RenderedBlock {
-  const listHtml = (all: Rendered[]) => footnotesListHtml(all.flatMap((block) => block.footnotes));
-  const html = blocks.some((block) => block instanceof Promise)
-    ? Promise.all(blocks).then(listHtml)
-    : listHtml(blocks as Rendered[]);
+function footnotesBlock(blocks: MaybePromise<Rendered>[], line: number): RenderedBlock {
+  const html = thenMaybe(allMaybe(blocks), (all) => footnotesListHtml(all.flatMap((block) => block.footnotes)));
   return { key: '\0footnotes', line, endLine: line, html };
 }
 
@@ -343,7 +341,7 @@ export function createMarkdownRenderer() {
         key: seen === 0 ? id : `${id}\0${seen}`,
         line: block.line,
         endLine: block.endLine,
-        html: output.rendered instanceof Promise ? output.rendered.then((settled) => settled.html) : output.rendered.html,
+        html: thenMaybe(output.rendered, (rendered) => rendered.html),
       };
     });
 

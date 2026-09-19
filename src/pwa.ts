@@ -1,4 +1,5 @@
 import { registerSW } from 'virtual:pwa-register';
+import { APP_NAME } from './app-info';
 import { showNotice } from './state/notices';
 
 /** How often an open app checks for a new version, besides whenever the page is shown again. */
@@ -21,13 +22,13 @@ export function registerServiceWorker(): void {
     immediate: true,
     onNeedRefresh() {
       dismissUpdateNotice?.();
-      dismissUpdateNotice = showNotice('A new version of Easy Marko is available.', {
+      dismissUpdateNotice = showNotice(`A new version of ${APP_NAME} is available.`, {
         actions: [{ label: 'Reload', run: () => void updateServiceWorker(true) }],
       });
     },
     // Only on the first install, so it shows once per browser.
     onOfflineReady() {
-      showNotice('Easy Marko is ready to work offline.');
+      showNotice(`${APP_NAME} is ready to work offline.`);
     },
     onRegisteredSW(_url, registration) {
       if (registration) checkForUpdates(registration);

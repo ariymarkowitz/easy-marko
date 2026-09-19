@@ -17,6 +17,7 @@ import {
   Undo2,
   type IconNode,
 } from 'lucide';
+import { APP_NAME } from '../app-info';
 import { canRedo, canUndo, editorCommands, findOpen } from '../editor/controller';
 import {
   exportActiveDocument,
@@ -105,7 +106,7 @@ export default function Toolbar() {
         label={theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
         onClick={toggleTheme}
       />
-      <IconButton icon={Info} label="About Easy Marko" onClick={openWelcomeDocument} />
+      <IconButton icon={Info} label={`About ${APP_NAME}`} onClick={openWelcomeDocument} />
     </header>
   );
 }

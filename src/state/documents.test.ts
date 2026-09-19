@@ -1,10 +1,11 @@
-import { createRoot, flush } from 'solid-js';
+import { flush } from 'solid-js';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { storedHandles } from '../lib/__mocks__/handle-store';
 import { fakeFileHandle } from '../lib/file-system.fakes';
 import { chooseSaveFile, openFile, saveFile } from '../lib/files';
 import { STORAGE_KEYS } from '../lib/storage';
 import welcome from '../content/welcome.md?raw';
+import { mountHooks, setMediaMatches } from '../test-helpers';
 import {
   activeDocument,
   closeDocument,
@@ -241,14 +242,7 @@ describe('useDocumentsBackup', () => {
     documents: MarkdownDocument[];
   }
 
-  function useBackup() {
-    const dispose = createRoot((dispose) => {
-      useDocumentsBackup();
-      return dispose;
-    });
-    flush();
-    return dispose;
-  }
+  const useBackup = () => mountHooks(useDocumentsBackup);
 
   const readBackup = (): Backup => JSON.parse(localStorage.getItem(STORAGE_KEYS.documents)!);
   const backedUp = (id: string) => readBackup().documents.find((doc) => doc.id === id);
@@ -471,19 +465,11 @@ describe('useDocumentsBackup', () => {
 });
 
 describe('window title', () => {
-  /** Opens or closes the app as an installed app, as the stand-in matchMedia in vitest-setup.ts sees it. */
-  function setInstalled(installed: boolean) {
-    const list = window.matchMedia('(display-mode: standalone)') as { matches: boolean } & EventTarget;
-    list.matches = installed;
-    list.dispatchEvent(new Event('change'));
-    flush();
-  }
+  /** Opens or closes the app as an installed app. */
+  const setInstalled = (installed: boolean) => setMediaMatches('(display-mode: standalone)', installed);
 
   test("shows the active document's name, and the app's name outside the installed app", () => {
-    const dispose = createRoot((dispose) => {
-      useWindowTitle();
-      return dispose;
-    });
+    const dispose = mountHooks(useWindowTitle);
     const doc = addDocument();
     expect(document.title).toBe(`${doc.name} — Easy Marko`);
 

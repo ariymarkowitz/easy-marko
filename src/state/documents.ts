@@ -265,9 +265,9 @@ export function closeDocument(id: string): void {
 
 // File actions
 
-function reportFileError(action: 'open' | 'save' | 'export', error: unknown): undefined {
+function reportFileError(task: 'open' | 'save' | 'export', error: unknown): undefined {
   console.error(error);
-  showNotice(`Couldn't ${action} the file: ${errorMessage(error)}`, { tone: 'error' });
+  showNotice(`Couldn't ${task} the file: ${errorMessage(error)}`, { tone: 'error' });
   return undefined;
 }
 

@@ -1,6 +1,7 @@
-import { createRoot, flush } from 'solid-js';
+import { flush } from 'solid-js';
 import { afterEach, expect, test, vi } from 'vitest';
 import { fakeFileHandle } from '../lib/file-system.fakes';
+import { mountHooks } from '../test-helpers';
 import { activeDocument, documentsState, newDocument } from './documents';
 import { useLaunchQueue } from './launch-queue';
 
@@ -33,11 +34,7 @@ test('opens the files the app was launched with, and switches to them when launc
   window.launchQueue = queue;
   queue.launch([fakeFileHandle('Launched.md'), folderHandle]);
 
-  const dispose = createRoot((dispose) => {
-    useLaunchQueue();
-    return dispose;
-  });
-  flush();
+  const dispose = mountHooks(useLaunchQueue);
   await vi.waitFor(() => expect(activeDocument()?.name).toBe('Launched.md'));
   const launched = activeDocument()!;
   expect(launched.content).toBe('# Launched.md');

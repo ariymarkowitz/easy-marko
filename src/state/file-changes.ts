@@ -1,5 +1,5 @@
 import { createEffect, onSettled, resolve } from 'solid-js';
-import { listen } from '../lib/events';
+import { listenPageShown } from '../lib/events';
 import { hasAccess } from '../lib/file-access';
 import { hashText } from '../lib/hash';
 import { documentsState, hasUnsavedChanges, isSaving, linkedFiles, reloadDocument } from './documents';
@@ -107,6 +107,5 @@ export function useFileChanges(): void {
     { name: 'fileChanges' },
   );
 
-  onSettled(() => listen(window, { focus: check }));
-  onSettled(() => listen(document, { visibilitychange: check }));
+  onSettled(() => listenPageShown(check));
 }

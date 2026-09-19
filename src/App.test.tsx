@@ -4,17 +4,14 @@ import type { EditorView } from '@codemirror/view';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import App from './App';
 import { editorView } from './editor/controller';
-import { activeDocument, closeDocument, documentsState, newDocument } from './state/documents';
+import { activeDocument, documentsState, newDocument } from './state/documents';
+import { closeAllDocuments } from './test-helpers';
 
 // Module state is shared with other test files, so every test starts from a
 // single empty document. Closing the last document opens a new one.
 beforeEach(() => {
   vi.spyOn(window, 'confirm').mockReturnValue(true);
-  // Ids first: closing a document removes it from the array being iterated.
-  for (const id of documentsState.documents.map((doc) => doc.id)) {
-    closeDocument(id);
-    flush();
-  }
+  closeAllDocuments();
 });
 
 afterEach(() => {

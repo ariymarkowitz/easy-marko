@@ -1,5 +1,6 @@
-import { createRoot, flush } from 'solid-js';
+import { flush } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { mountHooks, setMediaMatches } from '../test-helpers';
 import { activeDocument, closeDocument, newDocument, selectDocument } from './documents';
 import {
   hidePane,
@@ -24,12 +25,7 @@ import {
 } from './settings';
 
 /** Changes the window width as the stand-in matchMedia in vitest-setup.ts sees it. */
-function setNarrowWindow(narrow: boolean) {
-  const list = window.matchMedia(`(width < ${NARROW_WIDTH}px)`) as { matches: boolean } & EventTarget;
-  list.matches = narrow;
-  list.dispatchEvent(new Event('change'));
-  flush();
-}
+const setNarrowWindow = (narrow: boolean) => setMediaMatches(`(width < ${NARROW_WIDTH}px)`, narrow);
 
 function run(action: () => void) {
   action();
@@ -39,11 +35,7 @@ function run(action: () => void) {
 let dispose: () => void;
 
 beforeEach(() => {
-  dispose = createRoot((dispose) => {
-    useLayout();
-    return dispose;
-  });
-  flush();
+  dispose = mountHooks(useLayout);
   run(() => {
     setViewMode('split');
     setLastPanel('source');

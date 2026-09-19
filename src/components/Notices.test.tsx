@@ -1,13 +1,13 @@
 import { flush } from 'solid-js';
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { dismissNotice, INFO_NOTICE_TIMEOUT, notices, showNotice } from '../state/notices';
+import { INFO_NOTICE_TIMEOUT, showNotice } from '../state/notices';
+import { clearNotices } from '../test-helpers';
 import Notices from './Notices';
 
 beforeEach(() => {
   // Test files share modules, so clear the notices that other files left.
-  for (const notice of notices()) dismissNotice(notice.id);
-  flush();
+  clearNotices();
   vi.useFakeTimers();
   render(() => <Notices />);
 });

@@ -4,6 +4,7 @@
 import { ImageOff } from 'lucide';
 import { hasAccess, unlessAborted } from './file-access';
 import { iconSvg } from './icon-markup';
+import { allMaybe, type MaybePromise, thenMaybe } from './maybe-promise';
 
 /** Whether `src` is a path relative to the document, rather than a URL, an absolute path or a fragment. */
 export function isRelativePath(src: string): boolean {
@@ -143,11 +144,10 @@ function parseRelativeImages(html: string): RelativeImages | undefined {
  */
 export function showLocalImages(
   html: string,
-  imageFor: (src: string) => LocalImage | Promise<LocalImage>,
-): string | Promise<string> {
+  imageFor: (src: string) => MaybePromise<LocalImage>,
+): MaybePromise<string> {
   const parsed = parseRelativeImages(html);
   if (!parsed) return html;
-  const found = parsed.images.map(({ src }) => imageFor(src));
   const show = (images: LocalImage[]) => {
     parsed.images.forEach(({ img, src }, i) => {
       const image = images[i];
@@ -156,7 +156,7 @@ export function showLocalImages(
     });
     return parsed.template.innerHTML;
   };
-  return found.some((image) => image instanceof Promise) ? Promise.all(found).then(show) : show(found as LocalImage[]);
+  return thenMaybe(allMaybe(parsed.images.map(({ src }) => imageFor(src))), show);
 }
 
 /** Sanitised HTML with its relatively addressed images embedded as the data URLs `read` gives, where it gives one. */

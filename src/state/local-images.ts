@@ -10,6 +10,7 @@ import {
   resolvePath,
   showLocalImages,
 } from '../lib/local-images';
+import type { MaybePromise } from '../lib/maybe-promise';
 import { activeDocument, documentFile } from './documents';
 import { addGrantedFolder, grantedFolders } from './granted-folders';
 import { errorMessage, showNotice } from './notices';
@@ -30,7 +31,7 @@ async function accessTo(file: FileSystemFileHandle, folders: readonly FileSystem
 }
 
 const access = createMemo(
-  (): Access | Promise<Access> => {
+  (): MaybePromise<Access> => {
     if (typeof window.showDirectoryPicker !== 'function') return { status: 'unavailable' };
     const doc = activeDocument();
     const file = doc && documentFile(doc);
@@ -43,9 +44,9 @@ const access = createMemo(
  * Images by folder, then by path in the folder, each file read once and kept
  * while the page is open. An image is a promise until its read settles.
  */
-const images = new WeakMap<FileSystemDirectoryHandle, Map<string, LocalImage | Promise<LocalImage>>>();
+const images = new WeakMap<FileSystemDirectoryHandle, Map<string, MaybePromise<LocalImage>>>();
 
-function imageIn(folder: FileSystemDirectoryHandle, path: string[]): LocalImage | Promise<LocalImage> {
+function imageIn(folder: FileSystemDirectoryHandle, path: string[]): MaybePromise<LocalImage> {
   let byPath = images.get(folder);
   if (!byPath) images.set(folder, (byPath = new Map()));
   const key = path.join('/');
@@ -67,7 +68,7 @@ function imageIn(folder: FileSystemDirectoryHandle, path: string[]): LocalImage 
  * Images show a placeholder while no folder is granted, with a button that
  * calls allowImageAccess. A promise while images it needs are being read.
  */
-export function withLocalImages(html: string): string | Promise<string> {
+export function withLocalImages(html: string): MaybePromise<string> {
   const current = access();
   if (current.status === 'unavailable') return html;
   return showLocalImages(html, (src) => {
