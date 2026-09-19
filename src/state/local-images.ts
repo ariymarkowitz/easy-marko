@@ -22,43 +22,29 @@ type Access =
   | { status: 'prompt'; file: FileSystemFileHandle; location?: FileLocation }
   | { status: 'granted'; file: FileSystemFileHandle; location: FileLocation };
 
-function sameAccess(a: Access, b: Access): boolean {
-  if (a.status === 'unavailable' || b.status === 'unavailable') return a.status === b.status;
-  return (
-    a.status === b.status &&
-    a.file === b.file &&
-    a.location?.folder === b.location?.folder &&
-    a.location?.path.join('/') === b.location?.path.join('/')
-  );
-}
-
-async function accessTo(file: FileSystemFileHandle, folders: FileSystemDirectoryHandle[]): Promise<Access> {
-  const location = await locateFile(folders, file);
+async function accessTo(
+  file: FileSystemFileHandle | Promise<FileSystemFileHandle | undefined>,
+  folders: FileSystemDirectoryHandle[],
+): Promise<Access> {
+  const handle = await file;
+  if (!handle) return { status: 'unavailable' };
+  const location = await locateFile(folders, handle);
   return location && (await hasAccess(location.folder))
-    ? { status: 'granted', file, location }
-    : { status: 'prompt', file, location };
+    ? { status: 'granted', file: handle, location }
+    : { status: 'prompt', file: handle, location };
 }
 
-const access = createRoot(() => {
-  /** The active document's file, if the browser can grant folders to read its images from. */
-  const activeFile = createMemo(
-    () => {
-      const doc = activeDocument();
-      if (!doc || typeof window.showDirectoryPicker !== 'function') return undefined;
-      // Before the stored handles have loaded, wait for them.
-      return documentFile(doc) ?? loadDocumentFile(doc.id);
-    },
-    { lazy: true, name: 'activeFile' },
-  );
-
-  return createMemo(
+const access = createRoot(() =>
+  createMemo(
     (): Access | Promise<Access> => {
-      const file = activeFile();
-      return file ? accessTo(file, grantedFolders()) : { status: 'unavailable' };
+      const doc = activeDocument();
+      if (!doc || typeof window.showDirectoryPicker !== 'function') return { status: 'unavailable' };
+      // Before the stored handles have loaded, wait for them.
+      return accessTo(documentFile(doc) ?? loadDocumentFile(doc.id), grantedFolders());
     },
-    { lazy: true, equals: sameAccess, name: 'imageAccess' },
-  );
-});
+    { lazy: true },
+  ),
+);
 
 /**
  * Images by folder, then by path in the folder, each file read once and kept

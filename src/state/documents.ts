@@ -100,14 +100,9 @@ export function hasUnsavedChanges(doc: MarkdownDocument): boolean {
  */
 const [fileHandles, setFileHandles] = createSignal<ReadonlyMap<string, FileSystemFileHandle>>(new Map());
 
-/** Replaces the file handles with `edit` applied to a copy of them. */
-function editFileHandles(edit: (handles: Map<string, FileSystemFileHandle>) => void): void {
-  setFileHandles((handles) => {
-    const next = new Map(handles);
-    edit(next);
-    return next;
-  });
-}
+/** Keeps the file handles of the documents that `keep` accepts. */
+const keepFileHandles = (keep: (id: string) => boolean) =>
+  setFileHandles((handles) => new Map([...handles].filter(([id]) => keep(id))));
 
 /** Counts this tab's handle changes, so a load can tell that its read is out of date. */
 let handleChanges = 0;
@@ -117,13 +112,13 @@ let handlesLoaded: Promise<void> = Promise.resolve();
 
 function setFileHandle(id: string, handle: FileSystemFileHandle): void {
   handleChanges++;
-  editFileHandles((handles) => handles.set(id, handle));
+  setFileHandles((handles) => new Map(handles).set(id, handle));
   void storeHandle(id, handle);
 }
 
 function removeFileHandle(id: string): void {
   handleChanges++;
-  editFileHandles((handles) => handles.delete(id));
+  keepFileHandles((other) => other !== id);
   void deleteHandles([id]);
 }
 
@@ -447,11 +442,11 @@ function syncBackup(): void {
     const baseIds = new Set(base.map((doc) => doc.id));
     const remoteIds = new Set(remote.map((doc) => doc.id));
     for (const [id, handle] of fileHandles()) {
-      // Closed in another tab, which removed the stored handle.
-      if (!openIds.has(id)) editFileHandles((handles) => handles.delete(id));
       // Closed in another tab too, but kept because this tab changed it.
-      else if (baseIds.has(id) && !remoteIds.has(id)) setFileHandle(id, handle);
+      if (openIds.has(id) && baseIds.has(id) && !remoteIds.has(id)) setFileHandle(id, handle);
     }
+    // Closed in another tab, which removed the stored handles.
+    keepFileHandles((id) => openIds.has(id));
     setState((draft) => {
       reconcile(documents, 'id')(draft.documents);
       draft.activeId = activeId;

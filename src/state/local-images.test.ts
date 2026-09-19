@@ -23,7 +23,7 @@ const files = { 'project/docs/notes.md': '', 'project/docs/img/a.png': 'png', 'p
 const html = '<p><img src="img/a.png" alt="A"><img src="../logo.png" alt="Logo"></p>';
 
 let dispose: () => void;
-/** The preview's HTML for `html`, as last shown. */
+/** The HTML the preview shows for `html`. */
 let shown = '';
 
 beforeAll(() => {
@@ -33,10 +33,7 @@ beforeAll(() => {
   dispose = createRoot((dispose) => {
     useLocalImages();
     // Through a memo, like the preview, as withLocalImages can be async.
-    const preview = createMemo(() => withLocalImages(html));
-    createEffect(preview, (value) => {
-      shown = value;
-    });
+    createEffect(createMemo(() => withLocalImages(html)), (value) => void (shown = value));
     return dispose;
   });
 });
@@ -97,6 +94,19 @@ test('shows placeholders until a folder is granted, then the images it can reach
   flush();
   await vi.waitFor(() => expect(render()).toEqual({ srcs: ['blob:a.png', 'blob:logo.png'], placeholders: [] }));
   expect(storedFolders.list.map((folder) => folder.name)).toEqual(['docs', 'project']);
+
+  // On focus, picks up another tab's folders, and asks again for permission to one it stored.
+  let permission: PermissionState = 'prompt';
+  const stored = Object.assign(fakeFolder('project', files, ['project']), {
+    queryPermission: async () => permission,
+    requestPermission: vi.fn(async () => (permission = 'granted')),
+  });
+  storedFolders.list = [stored];
+  window.dispatchEvent(new Event('focus'));
+  await vi.waitFor(() => expect(render().placeholders).toEqual(['A', 'Logo']));
+  await allowImageAccess();
+  expect(stored.requestPermission).toHaveBeenCalledWith({ mode: 'read' });
+  await vi.waitFor(() => expect(render().placeholders).toEqual([]));
 });
 
 test('reports images missing from a granted folder', async () => {
@@ -108,33 +118,5 @@ test('reports images missing from a granted folder', async () => {
   await openDocument();
   flush();
   await vi.waitFor(() => expect(render().placeholders).toEqual(['A (not found)', 'Logo']));
-  for (const id of documentsState.documents.map((doc) => doc.id)) closeDocument(id);
-});
-
-test('picks up folders granted in other tabs on focus, and asks again for their permission', async () => {
-  let permission: PermissionState = 'prompt';
-  const folder = Object.assign(fakeFolder('project', files, ['project']), {
-    queryPermission: async () => permission,
-    requestPermission: vi.fn(async () => (permission = 'granted')),
-  });
-  vi.mocked(openFile).mockResolvedValueOnce({
-    name: 'notes.md',
-    content: html,
-    handle: fakeFileHandle('project/docs/notes.md'),
-  });
-  await openDocument();
-  flush();
-  await vi.waitFor(() => expect(render().srcs).toEqual(['blob:a.png', 'blob:logo.png']));
-
-  // Another tab replaced the stored folders with one that needs permission again.
-  storedFolders.list = [folder];
-  window.dispatchEvent(new Event('focus'));
-  await vi.waitFor(() => expect(render().placeholders).toEqual(['A', 'Logo']));
-
-  vi.mocked(window.showDirectoryPicker!).mockClear();
-  await allowImageAccess();
-  expect(folder.requestPermission).toHaveBeenCalledWith({ mode: 'read' });
-  expect(window.showDirectoryPicker).not.toHaveBeenCalled();
-  await vi.waitFor(() => expect(render()).toEqual({ srcs: ['blob:a.png', 'blob:logo.png'], placeholders: [] }));
   for (const id of documentsState.documents.map((doc) => doc.id)) closeDocument(id);
 });

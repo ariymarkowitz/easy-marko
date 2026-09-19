@@ -8,7 +8,7 @@ import { readFolders, writeFolders } from '../lib/folder-store';
  * granted.
  */
 const [grantedFolders, setGrantedFolders] = createRoot(() =>
-  createSignal(async () => (await readFolders()) ?? [], { lazy: true, name: 'grantedFolders' }),
+  createSignal(async () => (await readFolders()) ?? [], { lazy: true }),
 );
 
 export { grantedFolders };
