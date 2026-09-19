@@ -21,8 +21,7 @@ export type ListenOptions = Omit<AddEventListenerOptions, 'signal'>;
 
 /**
  * Adds each listener to `target` and returns a function removing them all.
- * Return the result from onSettled or an effect to unbind on cleanup, or use
- * `useListeners` (`src/reactive.ts`) to listen for an owner's lifetime.
+ * Return the result from onSettled or an effect to unbind on cleanup.
  */
 export function listen<T extends EventTarget>(
   target: T,

@@ -2,7 +2,7 @@ import type { JSX } from '@solidjs/web';
 import { createSignal, For, onSettled, Show } from 'solid-js';
 import { ChevronLeft, ChevronRight, Eye, PanelLeft, type IconNode } from 'lucide';
 import { CLICK_SLOP, trackDrag } from '../lib/drag';
-import { useListeners } from '../reactive';
+import { listen } from '../lib/events';
 import { hidePane, revealPane, startSidebarDrag, startSplitDrag } from '../state/layout';
 import { setSidebarOpen } from '../state/settings';
 import Icon from './Icon';
@@ -92,13 +92,15 @@ export default function PanelEdge(props: {
 
   // Tracked on the window rather than with a hover area, so the area near the
   // window's edges still takes clicks (on a scrollbar, for example).
-  useListeners(window, { pointermove: (event) => update(event, distanceTo(event)) });
+  onSettled(() => listen(window, { pointermove: (event) => update(event, distanceTo(event)) }));
   // A pointer that leaves the window is away from every edge.
-  useListeners(document, {
-    pointerout: (event) => {
-      if (!event.relatedTarget) update(event, undefined);
-    },
-  });
+  onSettled(() =>
+    listen(document, {
+      pointerout: (event) => {
+        if (!event.relatedTarget) update(event, undefined);
+      },
+    }),
+  );
   onSettled(() => cancelReveal);
 
   return (

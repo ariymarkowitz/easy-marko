@@ -1,7 +1,7 @@
-import { createEffect, resolve } from 'solid-js';
+import { createEffect, onSettled, resolve } from 'solid-js';
+import { listen } from '../lib/events';
 import { hasAccess } from '../lib/file-access';
 import { hashText } from '../lib/hash';
-import { useListeners } from '../reactive';
 import { documentsState, hasUnsavedChanges, isSaving, linkedFiles, reloadDocument } from './documents';
 import { showNotice } from './notices';
 
@@ -107,6 +107,6 @@ export function useFileChanges(): void {
     { name: 'fileChanges' },
   );
 
-  useListeners(window, { focus: check });
-  useListeners(document, { visibilitychange: check });
+  onSettled(() => listen(window, { focus: check }));
+  onSettled(() => listen(document, { visibilitychange: check }));
 }

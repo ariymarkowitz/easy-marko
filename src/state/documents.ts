@@ -7,6 +7,7 @@ import {
   deep,
   flush,
   latest,
+  onSettled,
   reconcile,
   refresh,
   resolve,
@@ -14,6 +15,7 @@ import {
 } from 'solid-js';
 import { APP_NAME } from '../app-info';
 import { clamp } from '../lib/clamp';
+import { listen } from '../lib/events';
 import { chooseExportFile } from '../lib/export-html';
 import { isDomError, requestAccess } from '../lib/file-access';
 import { type OpenedFile, openFile, readFileHandle, saveFile } from '../lib/files';
@@ -22,7 +24,7 @@ import { hashText } from '../lib/hash';
 import { localImageReader } from '../lib/local-images';
 import { mergeById } from '../lib/merge';
 import { parseJSON, readText, STORAGE_KEYS, writeText } from '../lib/storage';
-import { createMediaQuery, useListeners } from '../reactive';
+import { createMediaQuery } from '../reactive';
 import { grantedFolders } from './granted-folders';
 import { errorMessage, showNotice } from './notices';
 import { forgetFile, rememberFile } from './recent-files';
@@ -483,14 +485,16 @@ export function useDocumentsBackup(): void {
   // browsers can discard a background tab without firing pagehide, so also
   // sync whenever the page is hidden. A page restored from the back/forward
   // cache missed other tabs' storage events, so sync when it's shown too.
-  useListeners(window, {
-    storage: (event) => {
-      if (event.key === STORAGE_KEYS.documents) syncBackup();
-    },
-    pagehide: syncBackup,
-    pageshow: syncBackup,
-  });
-  useListeners(document, { visibilitychange: syncBackup });
+  onSettled(() =>
+    listen(window, {
+      storage: (event) => {
+        if (event.key === STORAGE_KEYS.documents) syncBackup();
+      },
+      pagehide: syncBackup,
+      pageshow: syncBackup,
+    }),
+  );
+  onSettled(() => listen(document, { visibilitychange: syncBackup }));
 }
 
 /** Whether the app runs in its own window, installed as a PWA. */

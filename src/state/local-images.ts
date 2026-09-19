@@ -1,4 +1,5 @@
-import { action, createMemo, refresh } from 'solid-js';
+import { action, createMemo, onSettled, refresh } from 'solid-js';
+import { listen } from '../lib/events';
 import { hasAccess } from '../lib/file-access';
 import {
   type FileLocation,
@@ -9,7 +10,6 @@ import {
   resolvePath,
   showLocalImages,
 } from '../lib/local-images';
-import { useListeners } from '../reactive';
 import { activeDocument, documentFile } from './documents';
 import { addGrantedFolder, grantedFolders } from './granted-folders';
 import { errorMessage, showNotice } from './notices';
@@ -117,5 +117,5 @@ export const allowImageAccess = action(async function* () {
  * tab may have granted one. Call once from the app root.
  */
 export function useLocalImages(): void {
-  useListeners(window, { focus: () => void refresh(grantedFolders) });
+  onSettled(() => listen(window, { focus: () => void refresh(grantedFolders) }));
 }

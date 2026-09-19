@@ -1,7 +1,7 @@
-import { refresh } from 'solid-js';
+import { onSettled, refresh } from 'solid-js';
+import { listen } from '../lib/events';
 import { withoutEntry } from '../lib/file-access';
 import { readRecentFiles, writeRecentFiles } from '../lib/recent-store';
-import { useListeners } from '../reactive';
 import { createStoredList } from './stored-list';
 
 /** How many files the list keeps. */
@@ -26,10 +26,12 @@ export const forgetFile = (handle: FileSystemFileHandle): Promise<void> =>
 /** Reloads the recent files whenever the page is shown, to pick up other tabs' changes. Call once from the app root. */
 export function useRecentFiles(): void {
   const reload = () => void refresh(recentFiles);
-  useListeners(window, { focus: reload });
-  useListeners(document, {
-    visibilitychange: () => {
-      if (document.visibilityState === 'visible') reload();
-    },
-  });
+  onSettled(() => listen(window, { focus: reload }));
+  onSettled(() =>
+    listen(document, {
+      visibilitychange: () => {
+        if (document.visibilityState === 'visible') reload();
+      },
+    }),
+  );
 }

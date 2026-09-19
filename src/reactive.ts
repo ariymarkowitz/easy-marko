@@ -1,7 +1,7 @@
 // Small Solid primitives that aren't tied to any part of the app.
 
-import { createRoot, createSignal, onCleanup, onSettled } from 'solid-js';
-import { type ListenOptions, type Listeners, listen } from './lib/events';
+import { createRoot, createSignal, onCleanup } from 'solid-js';
+import { listen } from './lib/events';
 
 /**
  * Whether `query` matches, as a signal, current from the moment it's created.
@@ -28,13 +28,4 @@ export function createAttachment<T>(): [value: () => T | undefined, attach: (val
     return () => setValue(undefined);
   };
   return [value, attach];
-}
-
-/**
- * Adds each listener to `target` once the current owner settles, and removes
- * them when it's disposed. Call from a component body or a `use*` hook; inside
- * an effect or onSettled callback, return `listen`'s result instead.
- */
-export function useListeners<T extends EventTarget>(target: T, listeners: Listeners<T>, options?: ListenOptions): void {
-  onSettled(() => listen(target, listeners, options));
 }
