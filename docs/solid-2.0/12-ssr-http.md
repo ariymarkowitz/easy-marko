@@ -1,0 +1,379 @@
+# RFC: SSR and the HTTP exchange
+
+**Start here:** If you’re migrating an app, read the migration guide first: [MIGRATION.md](MIGRATION.md)
+
+> **Status note:** Everything here is **shipped** in the 2.0 prerelease line. This document collects the server-rendering entry points and the HTTP exchange surface of `@solidjs/web` — pieces that previously lived in SolidStart or in scattered subpath lore. The per-primitive hydration policy (`ssrSource` / `deferStream`) is documented with async data in [RFC 05](05-async-data.md); `clientOnly` with control flow in [RFC 03](03-control-flow.md); server functions and server components in [RFC 10](10-server-functions.md) / [RFC 11](11-server-components.md).
+
+## Summary
+
+`@solidjs/web` owns both halves of server rendering: the render entry points (`renderToString` and `renderToStream` on the server; `render`, `hydrate` on the client) and the HTTP exchange they run inside (the request event, the response head, the render tree’s authority over it via `httpStatus`/`httpHeader`, and the cookie codec `parseCookieHeader`/`serializeCookie` over native `Headers`). Any Vite app — with or without a metaframework — can server-render, stream, and shape its HTTP responses from core alone.
+
+## Motivation
+
+Peer ecosystems park Request/Response handling in a metaframework (React→Next/Remix, Vue→Nuxt, Svelte→SvelteKit). Solid 2.0 collapses that layer: the exchange vocabulary lives in core, per the decision record in [RFC 10 — What belongs in `@solidjs/web`](10-server-functions.md#what-belongs-in-solidjsweb-decision-record). The boundary rule is **own the exchange, not the application semantics above it** — status, headers, redirects, and streaming commitment are core’s; caching policy, routing, sessions, and data layers belong to the layer above.
+
+## Detailed design
+
+### Render entry points
+
+Client (`@solidjs/web` in the browser):
+
+- `render(() => <App />, element)` — mount fresh; returns a dispose function.
+- `hydrate(() => <App />, element)` — claim server-rendered DOM. Hydration happens once, at t = 0 (see RFC 11’s hard rule); the document must have been rendered with the hydration script in place (below).
+
+Server (`@solidjs/web` under the `node`/`deno`/`worker` conditions):
+
+- `renderToString(() => <App />)` — synchronous; async boundaries render their fallbacks.
+- `renderToStream(() => <App />, options?)` — the streaming renderer: the shell flushes first, and each async boundary streams its resolved fragment plus the activation script that swaps it in. A primitive marked `deferStream: true` (RFC 05) holds the shell flush until its first value resolves instead of letting the enclosing `<Loading>` fallback into the HTML. The returned stream is also a thenable: `await renderToStream(...)` resolves once the tree settles with the fully-resolved HTML string — the settled-string form of the render (what `renderToStringAsync` was before its removal).
+
+For hydration, the document needs the hydration script ahead of the app markup: `generateHydrationScript({ nonce?, eventNames? })` returns it as a string for hand-built documents, and `<HydrationScript />` renders it in JSX documents.
+
+### Consuming the stream: `pipe`, `pipeTo`, `readable`
+
+`renderToStream` returns a result with three consumption surfaces — **exactly one may be used per render** (a second consumer throws with a directed message):
+
+- `pipe(writable)` — Node-style writable streams.
+- `pipeTo(writable)` — web `WritableStream`; returns a promise that settles when the render has been fully written.
+- `readable` — a getter that builds a web `ReadableStream` internally and hands it back. The stream yields `Uint8Array` bytes, `Response`-body ready:
+
+```tsx
+import { renderToStream } from "@solidjs/web";
+
+export function handler(request: Request): Response {
+  const stream = renderToStream(() => <App />);
+  return new Response(stream.readable, {
+    headers: { "content-type": "text/html" }
+  });
+}
+```
+
+`readable` exists because web-standard servers (workers, Deno, fetch-shaped Node frameworks) construct a `Response` from a `ReadableStream` — with only `pipeTo`, every integration re-derived the same `TransformStream` dance by hand.
+
+### The request event
+
+The per-request context on the server is the **request event**: the incoming `Request` plus a `locals` bag integrations and middleware hang state on.
+
+```ts
+export interface RequestEventLocals {
+  [key: string | number | symbol]: any;
+}
+
+export interface RequestEvent {
+  request: Request;
+  locals: RequestEventLocals;
+}
+```
+
+`RequestEventLocals` is the typing seam for `locals`: a plain exported interface applications **module-augment** — no ambient `App.*` namespace (Start's `App.RequestEventLocals` pattern is retired with it). The blessed augmentation target is `@solidjs/web`, and the merge flows to `getRequestEvent()!.locals` everywhere the event surfaces (the main entry, `createRequestEvent`, the server-functions event):
+
+```ts
+declare module "@solidjs/web" {
+  interface RequestEventLocals {
+    user: User;
+  }
+}
+```
+
+The index signature keeps un-augmented usage permissive — `event.locals.whatever = x` typechecks today and keeps typechecking — so augmentation adds precision for the keys it names without gating anything. The deliberate trade (over a strict empty interface intersected with `Record<string, unknown>` at use sites): unaugmented keys read as `any` rather than erroring, and the permissiveness travels with the one interface instead of depending on every use site remembering the intersection. This matches Start's precedent, whose `RequestEventLocals` carried the same index signature.
+
+**Scope under direct (SSR-time) server-function calls:** each direct call runs under a derived event whose `locals` is a per-call **shallow copy** of the render's. Reads see everything middleware put there — auth, tenant, handles — since middleware ran before the render; nested objects stay shared by reference, so a request-scoped cache or DB client works across calls. Top-level _assignments_ are call-local: two concurrent calls writing `locals.x` no longer overwrite each other or the render (they used to share the object outright, silently and interleaving-dependently). To affect the outgoing response from inside a call, use the shared `event.response` stub — that channel is shared on purpose.
+
+Two TypeScript sharp edges around the augmentation, both of which manifest as "the augmentation doesn't apply":
+
+- **The augmenting file must be a module.** A `.ts` file with any top-level import/export qualifies; a standalone `.d.ts` needs an explicit `export {}`. In a global _script_ file, `declare module "@solidjs/web"` is an ambient module **declaration**, not an augmentation — TypeScript replaces the package's types with the block wholesale, so ordinary imports start failing with `has no exported member` and every augmentation of the module anywhere in the project stops applying.
+- **Don't give the declaration file a sibling `.ts` file's basename.** A `foo.d.ts` next to a `foo.ts` is treated as that file's compiled _output_ and silently dropped from the program — no error, the augmentation just never applies.
+
+(The published types carry `RequestEventLocals` to the entry through a real — non-type-only — re-export, so the merge does not depend on TypeScript's `export type` alias handling across compiler versions; acceptance type tests cover augmentation from a `.ts` module that imports nothing from the package and from a module-form `.d.ts`.)
+
+- `getRequestEvent()` (from `@solidjs/web`) reads the current event anywhere under a request scope — component bodies during SSR, server function bodies, loaders. Returns `undefined` outside one.
+- `provideRequestEvent(event, cb)` (from `@solidjs/web/storage`) establishes the scope, backed by an `AsyncLocalStorage` instance parked on the global under a registered symbol — separately bundled copies of the runtime find the same one. Integrations call it around the render; it throws on the client, where there is no request to scope.
+
+```tsx
+import { provideRequestEvent } from "@solidjs/web/storage";
+import { renderToStream } from "@solidjs/web";
+
+async function handleRequest(request: Request) {
+  return provideRequestEvent({ request, locals: {} }, () => renderToStream(() => <App />));
+}
+```
+
+Frameworks extend the event shape with richer fields via module augmentation. The one core knows about structurally is `response`:
+
+```ts
+export interface ResponseStub {
+  status?: number;
+  statusText?: string;
+  headers: Headers;
+  /** Set by the integration once the response head has been derived/sent —
+      status and headers can no longer change. */
+  committed?: boolean;
+}
+```
+
+`ResponseStub` is the response head _as it forms_: the integration exposes it as `event.response`, derives the real head from it when it flushes (for streaming that is the shell flush — well before rendering finishes), and sets `committed` at that point. Everything that writes response metadata during render — including the primitives below — treats `committed` as the gate: later writes and cleanup-time retractions become no-ops rather than errors.
+
+### The response head from the render tree: `httpStatus` / `httpHeader`
+
+```tsx
+import { httpStatus, httpHeader } from "@solidjs/web";
+
+function NotFound() {
+  httpStatus(404);
+  httpHeader("cache-control", "no-store");
+  return <h1>Not found</h1>;
+}
+```
+
+`httpStatus(code, text?)` and `httpHeader(name, value, { append? })` declare response status and headers during SSR **for the lifetime of the calling reactive scope**, writing to the request event’s `response` head. On the client both are no-ops — the response head was sent long ago. They are the whole core API: core ships functions only (SolidStart may provide component wrappers for compatibility).
+
+The naming is deliberate — these are scope-tied _declarations_, not mutations: “while this reactive scope is live, the response has this status/header.” Solid reserves `set*` verbs for event-time mutation; like `createSignal`/`onCleanup`, these are called bare in component or reactive-scope bodies (including behind an `if`) and un-declare on scope disposal.
+
+Retraction is what makes the scope tie meaningful: each write snapshots the prior value at write time and restores it when the owning scope is disposed — a header deleted if there was none, a status returned to what a surviving part of the tree set. An error boundary that renders a 500 fallback, declares a status, and later recovers retracts its write instead of stomping to defaults; a 404 page whose inner boundary recovers stays a 404. Both writes and retractions no-op once the head is `committed`.
+
+Under streaming this implies the natural constraint: status and headers must be decided by content in the shell. Anything that resolves after the shell flush is past `committed` and can no longer speak — use `deferStream` (RFC 05) on the source that decides the status if it must be waited for.
+
+Said plainly, `httpHeader` is a **shell-time API**. Headers declared by streamed route content — anything below a `<Loading>` boundary that resolves after the shell went out — run post-flush and are committed no-ops by contract. There is no queue that holds them for a later response; the head is on the wire. If a header matters, it belongs to the shell (or to a `deferStream`-held source that keeps the shell waiting for it).
+
+### What a render failure looks like from the client
+
+A render failure reaches the client on several roads: the error an `<Errored>` caught, serialized so the client hydrates the same fallback; a rejected async source serialized into the stream; a `<Loading>` fragment rejecting its `_fr` promise; a frame stream's error chunks. On every one of them the **non-dev** build hands the client a generic `Error` (`"Internal Server Error"`) in place of a plain thrown value — `message`, `cause` and own properties stay on the server — the same policy the server-function wire applies ([RFC 10](10-server-functions.md#thrown-errors-sanitized-by-default)). A `"use server"` function called in-process during a render never touches that wire, so without this the production page load leaked exactly what the RPC withheld ([#3468](https://github.com/solidjs/solid/issues/3468)).
+
+The boundary sanitizes _before_ rendering its fallback, and serializes the same replacement: the fallback is rendered on the server with the error and hydrates against the record, so the two must agree. A fallback that prints `err().message` therefore shows the generic message in production, as it would for a server-function failure. `markSafeError` is the escape hatch on both wires — a branded error passes through with its own properties. An Error reached as a _value_ (never thrown — a form's field errors, say) is data and passes as written.
+
+The dev/prod line is the build variant: the `development` export condition's server artifacts keep full fidelity; the production and observe artifacts sanitize. The observe tier records each replacement once as `SSR_ERROR_SANITIZED` (advisory; `data.error` the original, `data.wire` what replaced it), beside the `SSR_RENDER_ERROR_CONTAINED` finding that carries the failure itself — the server keeps the truth, the wire gets the generic.
+
+#### The server error hook: `configureServerErrors` / `onError`
+
+Everything above is what the runtime does on its own. What it _handles_ — a fallback rendered, a fragment rejected and re-rendered by the client, a server-function throw sanitized — was, until this hook, invisible outside the app: the observe tier records it, a prod build has no `OBSERVE`, and `renderToStream`'s `onError` heard only the failure that fails the request. The server error hook is the one seam for both **reporting** and **mapping**, and `onError` is that hook — on `renderToStream`/`renderToString`, on `handleServerFunctionRequest`, and ambiently:
+
+```ts
+import { configureServerErrors } from "@solidjs/web";
+
+configureServerErrors({
+  onError(error, { kind, handling, boundary, boundaryPath, functionId, direct, ownerPath, event }) {
+    Sentry.captureException(error, {
+      mechanism: { type: `solid.${kind}.${handling}`, handled: handling !== "failed" }
+    });
+    // return nothing: the default wire policy applies
+    // return new Error("Something went wrong"): the client receives this instead
+  }
+});
+// per request, winning over the ambient hook:
+renderToStream(code, { onError });
+handleServerFunctionRequest(request, { onError });
+```
+
+- **Called once per error object, at first sight**, with where the failure was met. `kind: "render"` — `fallback` (an `<Errored>` rendered its fallback; `boundary` is its hydration id and `boundaryPath` its component labels — where the error was **met** — while `ownerPath` is where it was **thrown**, the labels up the owner chain it escaped, when the compiler emitted them), `client` (a `<Loading>` fragment rejected, the client re-renders the subtree), `failed` (nothing contained it; the request fails), `serialize` (a hydration value would not serialize and the render went on without it — reported for a render that passed `onError`, as seroval's own `onError` always was). `kind: "server-function"` — `thrown` (the body threw; `functionId`, and `direct: true` for an in-process call during SSR) or `channel` (a rejection or throw escaping through the result graph, the head already committed). `event` is the request, when the failure happened inside one.
+- **The return is the wire value**: rendered into the fallback, serialized for hydration, sent as the RPC error. `undefined` leaves the default policy in place (generic outside dev, fidelity in dev). A returned value is the author's intent — like a `wrapInvocation` mapping — and is not sanitized again; `markSafeError` is not needed on it. Ignored for `failed` and `serialize`, which have no wire. One road a mapping does not reach: a rejected async source's serialized rejection is encoded the moment the source rejects, ahead of the boundary, and carries the default policy's value; the hydrating client renders from the boundary's record, which carries the mapping.
+- **Once means once across roads.** A direct server-function call that throws during SSR is met first by the invocation (`kind: "server-function"`, `direct: true`) and then by the `<Errored>` that contains it; the boundary reuses the verdict — the same replacement in the fallback and the record — and does not report again. A `<Loading>` re-pull recurring the same throw is the same object, the same verdict. The observe tier keeps the multi-event picture (an `"invocation"` record _and_ an `SSR_RENDER_ERROR_CONTAINED` finding) for consumers that want it.
+- **Two tiers, as `wrapInvocation` has.** Ambient: `configureServerErrors({ onError })`, once per process, registered on `globalThis` under a registered symbol so a bundled server build and an instrumented `--import`ed module share it — and the only tier that sees direct in-process calls. Per request, overriding it: `onError` on `renderToStream`/`renderToString`, and on `handleServerFunctionRequest` for the call it dispatches. A throwing hook is reported on the console and treated as silent. With no hook anywhere, a failure that fails the request goes to `console.error` — never silent.
+- **One listener, every failure.** A `renderToStream` `onError` written for the old single-argument shape keeps working; it now hears every handled failure, not only the one that fails the request — filter on `context.handling === "failed"` for the old behaviour. The hook fires in every tier, dev included; only the _default_ mapping differs by tier.
+- **The client twin** is `configureClientErrors` / `render`'s `onError` ([RFC 03](03-control-flow.md#reporting-what-a-boundary-caught-the-client-error-hook)): a boundary's fallback, no wire to map for. An uncaught client error halts and reaches `reportError`.
+
+### The trace the request belongs to: `getTraceContext()`
+
+A distributed trace follows one user action across every service it touches; each hop needs the trace's id and the id of the span that called it, carried across HTTP by the W3C Trace Context header `traceparent` (`00-<traceId>-<parentId>-<flags>`, with `tracestate` and `baggage` beside it). The runtime reads that half of the exchange once per request and exposes it:
+
+```ts
+import { getTraceContext } from "@solidjs/web";
+
+// in a server function: forward the trace to the service it calls
+const trace = getTraceContext();
+const res = await fetch("https://orders.internal/api", {
+  headers: trace ? { traceparent: trace.entries.traceparent } : {}
+});
+```
+
+```ts
+interface TraceContext {
+  traceId: string; // 32 hex — the whole trace
+  spanId: string; // 16 hex — this request's span
+  parentId?: string; // the incoming parent span, when the request continued a trace
+  sampled?: boolean; // the incoming flags' sampled bit; undefined when the runtime originated
+  state?: string; // incoming `tracestate`, verbatim
+  baggage?: string; // incoming `baggage`, verbatim
+  entries: Record<string, string>; // what the browser is handed — `traceparent`, plus a provider's
+}
+```
+
+`getTraceContext()` **continues** an incoming `traceparent` (version `00`, or a later version read as `00`; malformed values — version `ff`, all-zero ids, wrong lengths — are ignored) and **originates** a trace when none came in (random ids, no parent, no sampled decision). It is one object per request: repeated reads, and the derived events direct (SSR-time) server-function calls run under, return the same context. A render outside any request scope has its own; outside both, and on the client, it is `undefined`. This is core HTTP behavior in every build tier, like `getRequestEvent()` — forwarding a trace to a traced backend must work in production with no observer installed.
+
+The runtime also hands the trace **down to the browser**, which cannot send a header on the initial document request and has to learn the server's trace from the response: `entries` are emitted as `Server-Timing` metrics (`traceparent;desc="00-…"`) on the response head when it commits — every exit, so frames, server-function responses and redirects carry it too — and, for HTML documents, as `<meta name="traceparent" content="…">` in the shell head (the `</head>` splice or the `onHead` string; a headless fragment ships only the header). A `Server-Timing` name the application already wrote (an `httpHeader` declaration, an integration's metrics) is respected; the runtime's entries fold in beside it. One rule governs when the browser is told: **only when something is recording the trace** — the incoming `traceparent` had its sampled flag set (the caller says it recorded), or (observe/dev builds) a provider answered. Two things therefore stay silent while remaining fully available to `getTraceContext()`: a trace the runtime originated alone, and an **unsampled** upstream trace (`00-…-00`). Neither has a recorded server span for the browser to attach to, and a parent with flags `00` would make a parent-based browser sampler drop the pageload it would otherwise record. The unsampled case is everyday infrastructure — load balancers and meshes (GCP, Envoy/Istio, Azure Front Door) stamp `traceparent` on every request they forward — so an app on them with no APM sees zero wire change, while forwarding that trace downstream from a server function stays correct W3C propagation. The incoming `baggage` is likewise never echoed to the page — it is upstream context; a provider that wants its own in the document adds it.
+
+**The provider** (observe and dev builds — `OBSERVE.server.trace`, see RFC 08) is how an APM overrides or extends the derivation once, globally: Sentry's server SDK answers from OpenTelemetry's active span and adds its `sentry-trace`/`baggage` entries, which the browser SDK reads from the same two carriers. A provider answers every field its vendor decides — `parentId` included, since a vendor continuing from its own header (`sentry-trace`) has a parent the runtime's `traceparent` derivation cannot know. That is the entire integration surface a server-side observer needs from the render — it never owns the head, never re-streams the body, and never has to know the host.
+
+### Cookies: the codec + native `Headers`
+
+```ts
+import { parseCookieHeader, serializeCookie, getRequestEvent } from "@solidjs/web";
+
+// inside a server function, loader, or handler:
+const event = getRequestEvent()!; // `response` is the integration-augmented stub (see above)
+
+const cookies = parseCookieHeader(event.request.headers.get("cookie"));
+const theme = cookies.theme; // string | undefined
+
+event.response.headers.append(
+  "set-cookie",
+  serializeCookie("session", token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 7
+  })
+);
+
+// deleting = expiring: empty value + Max-Age=0, matching the path/domain it was set under
+event.response.headers.append("set-cookie", serializeCookie("session", "", { maxAge: 0 }));
+```
+
+Cookies are **not core API** — core owns the **exchange** (the request’s headers in, the response stub’s headers out) and the **codec**, nothing ambient. The web platform hands you whole `Cookie`/`Set-Cookie` headers but no codec for the pairs inside them; `parseCookieHeader`/`serializeCookie` are that codec — the platform-gap primitives — and the two lines above are the whole blessed pattern. Everything built _on_ cookies (sessions, auth, an ambient jar) is policy and lives above the line.
+
+- **The codec is dependency-free and does one thing.** Names and values travel percent-encoded and the parser decodes symmetrically, so any string round-trips; `path` defaults to `/` — the only default — and `domain`/`maxAge`/`expires`/`httpOnly`/`secure`/`sameSite` are emitted exactly when given. No signing, no encryption: integrity layers belong to the caller (see the sessions recipe).
+- **Both entries export the one real implementation.** A pure value transformer has legitimate browser uses (`document.cookie = serializeCookie(...)`, parsing `document.cookie`), and a client-side no-op stub would hand back silent garbage — so isomorphic code like a shared render path can call it anywhere. Nothing in the client runtime imports it internally, so it tree-shakes out of bundles that don’t.
+- **Reads are a request-only view.** The `Cookie` header is what the client sent; an appended `Set-Cookie` in the same request does **not** read back — the request is what arrived, the response is what you’re building, and merging the two invents a browser round trip that hasn’t happened.
+- **Writes are event-time mutations of the outgoing head** — `Headers.append` semantics exactly, owning no scope and never retracting. (Cookies declared through `httpHeader` are also simply correct now — its retraction snapshots and restores `set-cookie` entry-exactly instead of comma-joining — but the append above is the blessed spelling.)
+- **Committed is a hard line, never a silent one — enforced on the stub itself.** A late cookie is imperative data (a session being established); losing it is a bug. The moment the head freezes (shell flush, or the server-function commit seam), the stub’s `headers` mutating methods fail loudly: a post-commit write **throws in the dev build** and reports through `console.error` (and no-ops) in production, where crashing a request that is already streaming would compound the bug. Because the enforcement lives on the stub, it covers every writer uniformly — direct appends, middleware, anything — not just code polite enough to check `committed` first.
+
+**The multi-`Set-Cookie` guarantee.** `Set-Cookie` is the one header that must never fold: multiple values are separate headers, commas are legal _inside_ a single value (`Expires`), and `Headers` iteration semantics differ across runtimes. Every place core materializes a response head — `createSSRResponse`’s derivation (including its redirect paths), the server-function handler’s response encoding and forwarded `respond()`/`redirect()` metadata, the no-JS form redirect — carries `Set-Cookie` values entry-by-entry via `getSetCookie()` + append, never `get`/`set` or constructor-copy folding. That is the portability contract across Node/undici, workerd, and Deno; integrations merging headers themselves should follow the same rule.
+
+During a server function the handler folds the event’s response stub onto the outgoing response as the head freezes — cookies appended by the mutation ride whatever leaves, thrown redirects included (the set-session-then-`throw redirect()` login flow works by construction) — and commits the stub, so a straggling write after the response is on the wire fails loudly instead of vanishing.
+
+### Sessions (recipe)
+
+Sessions are deliberately **app-layer**, and this is the final ruling, held under pressure twice: the ambient-cookie round in the freeze pass, and a fully designed-and-built first-party session primitive retired before shipping (see Alternatives). The principle is standards vs. opinion: core ships what the web standards define — the RFC 6265 codec, the exchange, the committed-stub semantics — while a session protocol (which bytes go in the cookie, signed vs. sealed, what invalidates it) is an _invented format serving one architecture choice_. Blessing one in core is metaframework territory. What core guarantees instead is the seam: anything that can read `event.request.headers` and append to `event.response.headers` composes, in server functions, SSR handlers, and middleware alike.
+
+The recommended composition is [`@remix-run/cookie`](https://www.npmjs.com/package/@remix-run/cookie) from the remix-the-web utility line (MIT; WebCrypto only, so node/deno/bun/workerd all work; one small dependency): signed, tamper-evident cookie values with built-in secret rotation. It carries its own RFC 6265 parse/serialize, so the whole session helper is the package plus the request event:
+
+```ts
+import { getRequestEvent } from "@solidjs/web";
+import { createCookie } from "@remix-run/cookie";
+
+export interface SessionData {
+  userId?: string;
+}
+
+const MAX_AGE = 60 * 60 * 24 * 7; // seconds — drives the cookie AND the enforced expiry
+
+const cookie = createCookie("session", {
+  // secrets[0] signs; every entry verifies. Rotation = prepend the new
+  // secret and keep old ones until outstanding cookies expire.
+  secrets: process.env.SESSION_SECRET!.split(","),
+  httpOnly: true, // set explicitly — the package defaults httpOnly/secure to false
+  secure: true,
+  sameSite: "Lax",
+  maxAge: MAX_AGE
+});
+
+export async function getSession(): Promise<SessionData | null> {
+  const raw = await cookie.parse(getRequestEvent()!.request.headers.get("cookie"));
+  if (!raw) return null; // absent, tampered, or signed by a rotated-out secret
+  try {
+    const { data, exp } = JSON.parse(raw);
+    return typeof exp === "number" && Date.now() < exp * 1000 ? (data as SessionData) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function setSession(data: SessionData): Promise<void> {
+  const exp = Math.floor(Date.now() / 1000) + MAX_AGE;
+  getRequestEvent()!.response.headers.append(
+    "set-cookie",
+    await cookie.serialize(JSON.stringify({ data, exp }))
+  );
+}
+
+export async function clearSession(): Promise<void> {
+  getRequestEvent()!.response.headers.append(
+    "set-cookie",
+    await cookie.serialize("", { maxAge: 0 })
+  );
+}
+```
+
+- **Signed, not encrypted.** HMAC-SHA256 keeps the payload tamper-proof; it stays client-readable, so nothing secret goes in it. `parse` returns `null` for anything short of a valid signature — tampered, malformed, or rotated-out — no exceptions to catch at call sites.
+- **Rotation** is the `secrets` array: the first entry signs, every entry verifies. Prepend a new secret to rotate (`SESSION_SECRET="new,old"`), drop the old one after a `MAX_AGE` window. Dropping every old secret invalidates every outstanding session — that is the entire invalidation story, and it is a feature.
+- **Expiry is enforced server-side.** The signed format itself carries no expiry (the MAC covers the value only), so the recipe embeds `exp` in the payload and checks it on read. Cookie `Max-Age` is browser hygiene; `exp` is the guarantee — a client that keeps the cookie past `Max-Age` still gets `null`.
+- **The stub is the commit step.** No `commitSession`: `event.response` _is_ the uncommitted response head, so appends ride whatever leaves — including thrown redirects in server functions (the set-session-then-`throw redirect()` login flow works by construction), and a post-commit write fails loudly per the stub contract above.
+
+The storage-backed variant is the same shape with the payload swapped for a pointer: the cookie carries only a random id (`crypto.randomUUID()`, signed the same way), and `getSession`/`setSession` read and write against your store (KV, Redis, a database row) keyed by it. That keeps the cookie small, makes sessions revocable server-side, and lets the data hold what a readable cookie never could. Migrating from Start 1.x's `useSession` (h3's _sealed_ cookies): sealed values cannot be verified by a signed helper — sessions reset at the migration boundary, which for login sessions means a re-login, not data loss.
+
+### The response-head lifecycle: `createRequestEvent` / `createSSRResponse` / `commitEventResponse`
+
+The stub only means something if a handler actually runs the lifecycle: build the stub-backed event, run inside its scope, and derive the outgoing `Response` head at the moment it freezes on the wire. That choreography is core protocol, not integration policy — every handler that reimplements it drifts on the same edges (when exactly `committed` flips, what a redirect set before vs. after the shell flush should do, which stub headers may fold onto a non-page response) — so core ships it. A handler's response leaves through one of exactly **two exits**: page results through `createSSRResponse`, any other `Response` — a middleware early return, an API result — through `commitEventResponse`.
+
+```tsx
+import { renderToStream, createRequestEvent, createSSRResponse } from "@solidjs/web";
+import { provideRequestEvent } from "@solidjs/web/storage";
+
+export function handleRequest(request: Request): Promise<Response> {
+  const event = createRequestEvent(request);
+  return provideRequestEvent(event, () =>
+    createSSRResponse(
+      renderToStream(() => <App />),
+      event
+    )
+  );
+}
+```
+
+- `createRequestEvent(request, init?)` builds the canonical event: `request`, `locals`, and a fresh uncommitted `response` stub (`createResponseStub()` is exported separately). `init` spreads over the defaults, so a framework extends the shape — or substitutes its own structurally-compatible `response` — while every event still looks the same to code reading it.
+- `createSSRResponse(result, event, options?)` accepts a string (from `renderToString`, or an awaited stream) or a `renderToStream` result, and runs the head lifecycle against `event.response`:
+  - **At shell flush** — the moment the head freezes — the stub is `committed` and its status/headers are merged over `options.responseInit` (`Set-Cookie` values survive as separate entries; `Server-Timing` folds entry by entry; `content-type` defaults to `text/html; charset=utf-8`). The commit is also where the request's trace reaches the head (`Server-Timing: traceparent;desc="…"` — see `getTraceContext()`).
+  - **A `Location` present before the flush** becomes a real redirect instead of an HTML response: bodyless, carrying the stub’s cookies, with the status from `getExpectedRedirectStatus` (also exported — the stub’s own status when it is a redirect status, `302` otherwise, because a status set for the page render doesn’t describe the redirect that preempts it).
+  - **A `Location` set after the flush** can only be honored client-side: stream completion appends `<script>window.location=…</script>` before closing, carrying `options.nonce` so a strict `script-src` CSP doesn’t block it.
+  - `options.transformChunk(chunk)` rewrites each outgoing HTML chunk — the seam handlers use for entry-script injection and doctype prefixes.
+
+  String results return a `Response` synchronously; stream results return a promise that resolves at shell flush, so returning it from a fetch handler sends the head at the right moment by construction.
+
+- `commitEventResponse(response, event?)` is the **other exit** — handler-lifecycle plumbing for a `Response` that did not go through `createSSRResponse` (a middleware early return, an API result), the same fold the server-function handler's own responses take. It folds the event's stub onto the response — `Set-Cookie` appends entry-by-entry alongside the response's own, `Server-Timing` folds by name beside the response's own metrics, other stub headers fill gaps only (never the wire-protocol family the handlers own, never `Content-Type`/`Content-Length` on a bodiless response), the status is never taken from the stub — then commits the stub, so later writes fail loudly. An event **without** a `response` stub (the server-function handler's default event, a bare integration) still hands the request's trace on: the response is rebuilt with the `Server-Timing` entries when there is something to say, and comes back untouched otherwise. `event` defaults to the ambient `getRequestEvent()`. It is **idempotent at the handler edge**: an already-committed stub passes the response through untouched, so a handler applies it unconditionally after its middleware chain fully unwinds — page responses come back from `createSSRResponse` committed and do not double-fold. Like `createResponseStub` and `getExpectedRedirectStatus`, this is an integrator-tier export: application middleware never calls it — writes to `event.response` inside the request scope are the application surface; the handler edge runs the fold once.
+
+Handlers compose request middleware with the same web-standard shape everything else uses — `(request, next) => Response | Promise<Response>`:
+
+```ts
+import { composeMiddleware, getRequestEvent } from "@solidjs/web";
+
+const run = composeMiddleware([
+  async (request, next) => {
+    getRequestEvent()!.locals.user = await authenticate(request);
+    const response = await next();
+    response.headers.set("x-served-by", "solid");
+    return response;
+  }
+]);
+```
+
+`next()` advances the chain (an optional `Request` argument substitutes the request downstream); the terminal `next` handed to the composed function dispatches to the actual handler. Two properties are load-bearing:
+
+- The chain runs **inside the request scope** the handler established, so `getRequestEvent()` — `locals`, the response stub — works in middleware exactly as it does in application code.
+- Nothing reaches the wire until the outermost middleware returns: a streamed body hasn’t been consumed yet when `next()` resolves, so headers on the returned `Response` are still mutable through the whole unwind. Error middleware is a plain `try { return await next(); } catch { … }`.
+
+What core deliberately does not ship: routing of middleware (per-path matching), session policy (see the recipe above — cookie _access_ is core, what you build on it is not), and platform adapters — those belong to the layer above, which composes them out of this shape.
+
+## Migration / replacement
+
+| Old (1.x / SolidStart)                                                                   | New                                                                                                                                                                                                                                                   |
+| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `import { renderToStream } from "solid-js/web"`                                          | `import { renderToStream } from "@solidjs/web"`                                                                                                                                                                                                       |
+| `import { getRequestEvent } from "solid-js/web"`                                         | `import { getRequestEvent } from "@solidjs/web"`                                                                                                                                                                                                      |
+| Start’s `<HttpStatusCode code={404} />` / `<HttpHeader />` components (`@solidjs/start`) | `httpStatus(404)` / `httpHeader(...)` primitives from `@solidjs/web` — core ships functions only                                                                                                                                                      |
+| Hand-rolled `TransformStream` around `pipeTo` for `Response` bodies                      | `renderToStream(...).readable`                                                                                                                                                                                                                        |
+| Start’s `createMiddleware` (h3 `Middleware` shapes)                                      | `composeMiddleware` over web-standard `(request, next) => Response` functions                                                                                                                                                                         |
+| Hand-rolled head merging / redirect handling in server handlers                          | `createRequestEvent` + `createSSRResponse` (commit at shell flush, redirect protocol, post-flush script fallback)                                                                                                                                     |
+| Start’s `getCookie`/`setCookie` (vinxi/h3 re-exports)                                    | `parseCookieHeader`/`serializeCookie` from `@solidjs/web` over `event.request.headers` / `event.response.headers` — the codec + native `Headers`; jars and sessions are app-layer by ruling (see the sessions recipe)                                 |
+| Start’s `useSession` (vinxi/h3 sealed cookies)                                           | app-layer composition — `@remix-run/cookie` (signed, rotating) + the request event, per the sessions recipe; sealed 1.x cookies cannot be verified by a signed helper, so sessions reset (re-login) at the migration boundary                         |
+| Start’s ambient `App.RequestEventLocals` namespace (`@solidjs/start/env`)                | module-augmented `RequestEventLocals` from `@solidjs/web`: `declare module "@solidjs/web" { interface RequestEventLocals { user: User } }` — a plain exported interface, no global `App.*` namespace; flows to `getRequestEvent()!.locals` everywhere |
+| Hand-folding stub cookies/headers onto middleware or API responses                       | `commitEventResponse(response, event?)` from `@solidjs/web` at the handler edge — committed stubs pass through untouched                                                                                                                              |
+
+## Removals
+
+- No component forms of the response primitives ship from core (see the boundary rule in RFC 10’s decision record: scope-tied declarations over the core response contract are the last stop on that line).
+
+## Alternatives considered
+
+- **Leaving the exchange to metaframeworks** — rejected; see the decision record in [RFC 10](10-server-functions.md#what-belongs-in-solidjsweb-decision-record).
+- **`set`-verb naming (`setHttpStatus`)** — rejected: the primitives declare for a scope’s lifetime and retract on disposal; `set*` is reserved for event-time mutation that owns no scope.
+- **Ambient cookie conveniences (`getCookie`/`setCookie`/`deleteCookie`)** — the final ruling, after the position moved twice. Originally declined as sugar over `httpHeader`; then briefly **added** during the C6 round (ambient helpers riding `getRequestEvent()`, committed-aware writes) on the correctness argument; then **cut before release** with the line redrawn where it stays: cookies are not core API — core owns the exchange and the codec, nothing ambient. The parts of C6 with a correctness story core alone can tell survive it (the codec’s round-trip grammar, the committed-stub loudness, the multi-`Set-Cookie` merge guarantee); the ambient _reading and writing_ did not — it is convenience, and convenience over the exchange is middleware’s job. This matches the Remix/React Router precedent: the codec lives in core, ambience ships as router middleware.
+- **A first-party session primitive (`@solidjs/web/session`)** — designed, built to working code, and retired before shipping. The build: a `createSessionCookie(options)` factory over an HMAC-SHA256 WebCrypto codec with a version-prefixed wire format (`v1.<base64url JSON payload>.<base64url MAC>`, MAC covering the version tag), server-side expiry in the payload, and Remix-style `secrets`-array rotation — unit-tested for round-trip, tamper, expiry, and rotation. Retired on the standards-vs-opinion line: `parseCookieHeader`/`serializeCookie` transcribe RFC 6265 (a standard core may own), but a signed-session wire format is an _invented_ protocol serving one architecture choice — exactly the opinion tier the RFC 10 decision record says to decline. The survey that settled it: h3 v2 chose to vendor-and-harden the iron algorithm rather than depend on `iron-webcrypto` (whose defaults leave password entropy as the entire security boundary); Remix ships sessions as standalone packages rather than in router core; and `@remix-run/cookie` already provides signed-with-rotation on pure WebCrypto — there is no gap a core primitive would fill that an app-layer dependency does not. The sessions recipe above is that composition.
+- **Throw-through-boundaries for response control flow** — rejected: letting redirects/`notFound` be thrown during render and caught by `<Loading>`/`<Errored>` boundaries as the way to answer them. After the shell flush the status is frozen and a boundary may already have streamed fallback HTML, so a boundary-caught response throw has no coherent post-commit meaning — there is nothing left it could truthfully do to the exchange. The stub + data-layer model answers every case explicitly instead: pre-flush `Location` becomes a real redirect, post-flush `Location` becomes the client-side script fallback, and server functions carry thrown `Response`s to the client transport whole. A thrown `Response` is control flow for the _integration_, never an error for a boundary to swallow.

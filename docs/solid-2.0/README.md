@@ -1,0 +1,32 @@
+> Copied from [`solidjs/solid`](https://github.com/solidjs/solid/tree/5933499cf56eef6e7b2aa42f255afc207b781de1/documentation/solid-2.0) at commit `5933499` on the `next` branch (MIT License, © Ryan Carniato). The project uses `solid-js` 2.0.0-rc.7, so where these docs and the installed version disagree, the installed version wins. Update the copy with the same commit-pinned raw URLs when upgrading Solid.
+
+# Solid 2.0 RFCs
+
+Temporary prerelease documentation for Solid 2.0. Treat **`MIGRATION.md`** as the primary entrypoint for migrating apps; the RFCs below are deeper, topic-focused docs that may be folded into the main documentation over time.
+
+**Overview:** [Solid 2.0 Proposed API Changes (HackMD)](https://hackmd.io/@0u1u3zEAQAO0iYWVAStEvw/SyXYy2swbg)
+
+**Start here (migration guide):** [MIGRATION.md](MIGRATION.md)
+
+**Quick API reference:** [`CHEATSHEET.md`](../../node_modules/solid-js/CHEATSHEET.md) (ships with the `solid-js` npm package).
+
+The RFCs below are **deep dives** on specific topic areas. Over time, it’s expected that the most important bits will be folded into the main docs; these are intentionally detailed and “proposal-shaped”.
+
+---
+
+## RFC index (12)
+
+| #   | RFC                                                                                    | One-line summary                                                                                 |
+| --- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| 01  | [Reactivity, batching, and effects](01-reactivity-batching-effects.md)                 | ownedWrite, strict top-level reads, flush, split effects, lazy memos, unobserved, onSettled      |
+| 02  | [Signals, derived primitives, ownership, and context](02-signals-derived-ownership.md) | Derived signal/store, createRoot dispose-by-parent, Context as Provider                          |
+| 03  | [Control flow](03-control-flow.md)                                                     | For/Repeat/Reveal, Show/Switch, Loading, Errored, dynamic, clientOnly                            |
+| 04  | [Stores](04-stores.md)                                                                 | draft-first setters, merge/omit, reconcile, projections (createProjection/createStore(fn)), deep |
+| 05  | [Async data](05-async-data.md)                                                         | Async in computations, isPending, latest, Loading `on` prop, transitions, ssrSource/deferStream  |
+| 06  | [Actions and optimistic](06-actions-optimistic.md)                                     | action (generator), createOptimistic / createOptimisticStore                                     |
+| 07  | [DOM](07-dom.md)                                                                       | HTML standards, class, booleans                                                                  |
+| 08  | [Dev-mode diagnostics](08-dev-diagnostics.md)                                          | Dev warnings/errors, diagnostic codes, attribution engine, responsiveness, programmatic API       |
+| 09  | [TypeScript and JSX ownership](09-typescript-jsx.md)                                   | Renderer-owned JSX namespaces, `jsxImportSource`, and core renderable types                      |
+| 10  | [Server functions](10-server-functions.md)                                             | `"use server"` runtime, response helpers, single-flight, GET/metadata/prepareRequest, validation |
+| 11  | [Server components (experimental)](11-server-components.md)                           | Functions returned from server functions; `dynamic` is the API; single-copy frame streams        |
+| 12  | [SSR and the HTTP exchange](12-ssr-http.md)                                            | Render entry points, streaming (`pipe`/`pipeTo`/`readable`), request event, httpStatus/httpHeader |

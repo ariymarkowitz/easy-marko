@@ -4,7 +4,7 @@ Easy Marko is a single-page, client-only Markdown editor that works offline and 
 
 This is a SolidJS 2.x project. Solid is not React: components run once (there is no re-render), reactivity is fine-grained through signals, and effects/memos have Solid-specific semantics. Do not port React patterns.
 
-**Read `node_modules/solid-js/CHEATSHEET.md` before writing or changing Solid code.**
+**Read `node_modules/solid-js/CHEATSHEET.md` before writing or changing Solid code.** For async code (anything that awaits and feeds the UI), follow `.claude/skills/solid-async/SKILL.md`. The Solid 2.0 RFCs are in `docs/solid-2.0/`.
 
 ## Commands
 
