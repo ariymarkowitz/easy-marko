@@ -12,6 +12,8 @@ export default function IconButton(props: {
   busy?: boolean;
   /** The id of the element the button shows or hides. */
   controls?: string;
+  /** Set for buttons that open a menu: whether it's open. */
+  menuOpen?: boolean;
   class?: string;
 }) {
   return (
@@ -21,6 +23,8 @@ export default function IconButton(props: {
       title={props.label}
       aria-pressed={props.pressed === undefined ? undefined : props.pressed ? 'true' : 'false'}
       aria-controls={props.controls}
+      aria-haspopup={props.menuOpen === undefined ? undefined : 'menu'}
+      aria-expanded={props.menuOpen === undefined ? undefined : props.menuOpen ? 'true' : 'false'}
       aria-busy={props.busy ? 'true' : undefined}
       disabled={props.disabled}
       onClick={() => props.onClick()}

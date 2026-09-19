@@ -1,4 +1,4 @@
-import { createSignal, flush, Show } from 'solid-js';
+import { createSignal, flush, onSettled, Show } from 'solid-js';
 import {
   documentsState,
   type MarkdownDocument,
@@ -13,7 +13,12 @@ import {
  * input renames the document, and Escape cancels. Alt+Up and Alt+Down move
  * the document up and down the list, as dragging it does (see Sidebar).
  */
-export default function DocumentName(props: { doc: MarkdownDocument; active: boolean }) {
+export default function DocumentName(props: {
+  doc: MarkdownDocument;
+  active: boolean;
+  /** Receives the function that starts renaming, for other controls that rename, like the document menu. */
+  renameRef?: (rename: () => void) => void;
+}) {
   const [editing, setEditing] = createSignal(false);
   const [invalid, setInvalid] = createSignal(false);
   let button: HTMLButtonElement | undefined;
@@ -34,6 +39,10 @@ export default function DocumentName(props: { doc: MarkdownDocument; active: boo
     const extension = name.lastIndexOf('.');
     input.setSelectionRange(0, extension > 0 ? extension : name.length);
   }
+
+  onSettled(() => {
+    props.renameRef?.(startEditing);
+  });
 
   /** Moves the document `step` places along the list, keeping focus on its name. */
   function move(step: number) {

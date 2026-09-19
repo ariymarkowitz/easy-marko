@@ -91,6 +91,47 @@ describe('trackDrag', () => {
     expect(onEnd).toHaveBeenCalledOnce();
   });
 
+  test('with a hold, starts once the pointer has been held still', () => {
+    const button = document.body.appendChild(document.createElement('button'));
+    const onStart = vi.fn();
+    const onMove = vi.fn();
+    const onEnd = vi.fn();
+    startDrag(button, { onStart, onMove, onEnd, threshold: 10, hold: 400 });
+
+    window.dispatchEvent(pointer('pointermove', 5));
+    vi.advanceTimersByTime(399);
+    expect(onStart).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(onStart).toHaveBeenCalledOnce();
+    expect(document.documentElement).toHaveClass('dragging');
+
+    window.dispatchEvent(pointer('pointermove', 6));
+    window.dispatchEvent(pointer('pointerup', 6));
+    expect(onMove).toHaveBeenCalledWith(6, 0);
+    expect(onEnd).toHaveBeenCalledWith(true);
+  });
+
+  test('with a hold, gives up if the pointer moves past the threshold first', () => {
+    const button = document.body.appendChild(document.createElement('button'));
+    const onStart = vi.fn();
+    const onMove = vi.fn();
+    startDrag(button, { onStart, onMove, threshold: 10, hold: 400 });
+
+    window.dispatchEvent(pointer('pointermove', 20));
+    vi.advanceTimersByTime(400);
+    window.dispatchEvent(pointer('pointermove', 30));
+    expect(onStart).not.toHaveBeenCalled();
+    expect(onMove).not.toHaveBeenCalled();
+  });
+
+  test('reports a cancelled drag as not released', () => {
+    const button = document.body.appendChild(document.createElement('button'));
+    const onEnd = vi.fn();
+    startDrag(button, { onMove: vi.fn(), onEnd });
+    window.dispatchEvent(pointer('pointercancel', 0));
+    expect(onEnd).toHaveBeenCalledWith(false);
+  });
+
   test('ignores buttons other than the primary one', () => {
     const button = document.body.appendChild(document.createElement('button'));
     const onMove = vi.fn();

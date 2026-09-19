@@ -549,6 +549,9 @@ button,
   white-space: nowrap;
   color: var(--color-text-muted);
   cursor: pointer;
+  /* A held touch lifts the document (Sidebar.tsx), rather than selecting text or showing the browser's menu. */
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .document-name[aria-current] {
@@ -565,6 +568,14 @@ button,
   outline-offset: -2px;
   text-overflow: clip;
   cursor: text;
+}
+
+/* A document's buttons keep their full size to be easy to hit, but highlight a smaller square around the icon. */
+.document-item .icon-button {
+  --highlight-inset: 0.1875rem;
+  border: var(--highlight-inset) solid transparent;
+  border-radius: calc(var(--radius) + var(--highlight-inset));
+  background-clip: padding-box;
 }
 
 .document-close {
@@ -590,6 +601,65 @@ button,
     border-radius: 50%;
     background-color: currentColor;
   }
+}
+
+/* Touchscreens can't hover, so rows are taller, and open documents have a menu button in place of the close button. */
+@media (hover: none) {
+  .document-name {
+    padding-block: var(--space-2);
+  }
+
+  .document-item .icon-button {
+    --highlight-inset: 0.4375rem;
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  /* Only recent files have one here; removing a recent file loses nothing. */
+  .document-close {
+    opacity: 1;
+  }
+}
+
+/* Beside the menu button of an unsaved document. */
+.unsaved-dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: var(--color-text-muted);
+}
+
+/* A document's menu (DocumentMenu.tsx), placed beside its row by script. */
+.document-menu {
+  position: fixed;
+  inset: auto;
+  min-width: 8rem;
+  margin: 0;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-overlay);
+  color: var(--color-text);
+}
+
+.document-menu-item {
+  display: block;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.document-menu-item:hover,
+.document-menu-item:focus-visible {
+  background-color: var(--color-hover);
 }
 
 /* Notices (components/Notices.tsx) */

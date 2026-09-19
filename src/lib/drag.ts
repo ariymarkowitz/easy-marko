@@ -7,11 +7,22 @@ import { listen } from './events';
 /** How far, in pixels, a press on a button moves before it's a drag rather than a click. */
 export const CLICK_SLOP = 4;
 
+/** How far, in pixels, a touch moves before it's a scroll or drag rather than a tap or a hold. */
+export const TOUCH_SLOP = 10;
+
+/** How long, in milliseconds, a touch is held still before it lifts something to be dragged. */
+export const HOLD_DELAY = 400;
+
 export interface DragOptions {
   /** Called with the pointer's position each time it moves during the drag. */
   onMove: (clientX: number, clientY: number) => void;
-  /** Called when a drag that started ends. */
-  onEnd?: () => void;
+  /** Called when a drag starts, before its first move. */
+  onStart?: () => void;
+  /**
+   * Called when a drag that started ends: `released` is true when the pointer
+   * was released, and false when the browser cancelled it.
+   */
+  onEnd?: (released: boolean) => void;
   /** The cursor shown everywhere during the drag. Defaults to `col-resize`. */
   cursor?: string;
   /**
@@ -19,6 +30,12 @@ export interface DragOptions {
    * reported, and releasing the pointer is left to be a click.
    */
   threshold?: number;
+  /**
+   * If set, the drag starts only once the pointer has been held this long,
+   * in milliseconds, without moving past `threshold`. Moving further first gives
+   * up on the drag, leaving the pointer to scroll or click.
+   */
+  hold?: number;
 }
 
 /**
@@ -32,9 +49,11 @@ export function trackDrag(start: PointerEvent, options: DragOptions): void {
   const target = start.currentTarget instanceof Element ? start.currentTarget : undefined;
   const threshold = options.threshold ?? 0;
   let dragging = false;
+  let holdTimer: ReturnType<typeof setTimeout> | undefined;
 
   const begin = () => {
     dragging = true;
+    options.onStart?.();
     document.documentElement.classList.add('dragging');
     if (options.cursor) document.documentElement.style.setProperty('--drag-cursor', options.cursor);
     // Keeps the events coming while the pointer is outside the window. Capture
@@ -48,16 +67,19 @@ export function trackDrag(start: PointerEvent, options: DragOptions): void {
     if (!dragging) return;
     document.documentElement.classList.remove('dragging');
     document.documentElement.style.removeProperty('--drag-cursor');
-    if (event.type === 'pointerup') swallowClick();
-    options.onEnd?.();
+    const released = event.type === 'pointerup';
+    if (released) swallowClick();
+    options.onEnd?.(released);
   };
 
-  const stop = listen(window, {
+  const unlisten = listen(window, {
     pointermove: (event) => {
       if (event.pointerId !== start.pointerId) return;
       if (!dragging) {
         const distance = Math.hypot(event.clientX - start.clientX, event.clientY - start.clientY);
         if (distance < threshold) return;
+        // Moved before the hold was up: not a drag.
+        if (options.hold) return stop();
         begin();
       }
       options.onMove(event.clientX, event.clientY);
@@ -66,7 +88,13 @@ export function trackDrag(start: PointerEvent, options: DragOptions): void {
     pointercancel: end,
   });
 
-  if (threshold <= 0) begin();
+  const stop = () => {
+    clearTimeout(holdTimer);
+    unlisten();
+  };
+
+  if (options.hold) holdTimer = setTimeout(begin, options.hold);
+  else if (threshold <= 0) begin();
 }
 
 /** Stops the click that follows a pointerup, which would otherwise activate a dragged button. */

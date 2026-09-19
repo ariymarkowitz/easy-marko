@@ -67,6 +67,14 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 - Rename by double-clicking a name in the sidebar or pressing F2 on it. Enter or blur renames, Escape cancels, and empty names aren't allowed. Renaming unlinks the document from its file, so the next Save asks where to save. Renaming it back links it again. Files on disk are never moved.
 - Drag a document's name to move it in the sidebar list, or press Alt+Up/Down on it. The list reorders as the pointer moves, and dragging doesn't select the document.
 
+- Touchscreens (no hover) get a ⋯ button on each open document in place of the X, opening a menu with Rename and Close, so a stray tap can't close a document. Unsaved documents show their dot beside it. Recent files keep a visible X, since removing one loses nothing. Rows and buttons are taller on touchscreens, and document buttons highlight a small square around the icon.
+
+  - Holding a name still for 0.4s lifts the document (with a short vibration where supported); moving then reorders it, and releasing without moving opens its menu. Moving sooner scrolls the sidebar as usual. A held touch doesn't select text or open the browser's menu.
+
+  - Dragging a document near the sidebar's top or bottom scrolls it (mouse and touch).
+
+  - The menu opens below the row (above it near the window's bottom) with focus on Rename. It closes on picking an item, Escape (which leaves the sidebar overlay open), or a tap outside it. Up/Down, Home and End move between items.
+
 - Drop files on the window to open them. Chromium provides handles for dropped files, so Save writes back to them. Folders and non-text files get reported instead. Dragged text still drops into the editor.
 
 - Recent files: the sidebar lists the 10 files opened or saved most recently, newest first. Clicking one opens it, or switches to it if it's already open, asking for read permission after a reload. Moved or deleted files get reported and removed, and the X button removes one by hand. Only files with handles appear (Chromium). The list lives in IndexedDB, is shared by tabs, and reloads when the window gains focus. It appears once it has been read. Changes take turns, so files remembered together (like several dropped at once) are all kept. If IndexedDB can't be used, the list lasts until the tab closes.
