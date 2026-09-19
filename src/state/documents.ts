@@ -1,4 +1,4 @@
-import { createEffect, createSignal, createStore, deep, flush, reconcile, snapshot } from 'solid-js';
+import { createEffect, createSignal, createStore, deep, flush, reconcile, resolve, snapshot } from 'solid-js';
 import { APP_NAME } from '../app-info';
 import { clamp } from '../lib/clamp';
 import { exportHtml } from '../lib/export-html';
@@ -96,9 +96,18 @@ export function hasUnsavedChanges(doc: MarkdownDocument): boolean {
  * File System Access API handles by document id: this tab's copy of the
  * handles in IndexedDB, which all tabs share. A tab stores the handles it gets
  * and removes the handles of the documents it closes, and reloads them when it
- * picks up another tab's changes.
+ * picks up another tab's changes. A signal, so documentFile can be tracked.
  */
-const fileHandles = new Map<string, FileSystemFileHandle>();
+const [fileHandles, setFileHandles] = createSignal<ReadonlyMap<string, FileSystemFileHandle>>(new Map());
+
+/** Replaces the file handles with `edit` applied to a copy of them. */
+function editFileHandles(edit: (handles: Map<string, FileSystemFileHandle>) => void): void {
+  setFileHandles((handles) => {
+    const next = new Map(handles);
+    edit(next);
+    return next;
+  });
+}
 
 /** Counts this tab's handle changes, so a load can tell that its read is out of date. */
 let handleChanges = 0;
@@ -108,13 +117,13 @@ let handlesLoaded: Promise<void> = Promise.resolve();
 
 function setFileHandle(id: string, handle: FileSystemFileHandle): void {
   handleChanges++;
-  fileHandles.set(id, handle);
+  editFileHandles((handles) => handles.set(id, handle));
   void storeHandle(id, handle);
 }
 
 function removeFileHandle(id: string): void {
   handleChanges++;
-  fileHandles.delete(id);
+  editFileHandles((handles) => handles.delete(id));
   void deleteHandles([id]);
 }
 
@@ -131,10 +140,7 @@ async function loadFileHandles(prune = false): Promise<void> {
   if (changes !== handleChanges) return loadFileHandles(prune);
 
   const openIds = new Set(state.documents.map((doc) => doc.id));
-  fileHandles.clear();
-  for (const [id, handle] of stored) {
-    if (openIds.has(id)) fileHandles.set(id, handle);
-  }
+  setFileHandles(new Map([...stored].filter(([id]) => openIds.has(id))));
   if (!prune) return;
   // Other tabs back up their new documents before storing their handles (see
   // openFileDocument), so any document with a stored handle is in the backup
@@ -153,7 +159,7 @@ async function loadFileHandles(prune = false): Promise<void> {
  * opening the file again opens a new document. Renaming it back relinks it.
  */
 export function documentFile(doc: MarkdownDocument): FileSystemFileHandle | undefined {
-  const handle = fileHandles.get(doc.id);
+  const handle = fileHandles().get(doc.id);
   return handle?.name === doc.name ? handle : undefined;
 }
 
@@ -216,7 +222,7 @@ export function newDocument(): void {
  */
 export function openWelcomeDocument(): void {
   const copy = state.documents.find(
-    (doc) => doc.name === welcomeName && doc.content === welcome && !fileHandles.has(doc.id),
+    (doc) => doc.name === welcomeName && doc.content === welcome && !fileHandles().has(doc.id),
   );
   if (copy) selectDocument(copy.id);
   else addDocument(createDocument(welcomeName, welcome));
@@ -387,7 +393,7 @@ export async function exportActiveDocument(): Promise<void> {
   const colorScheme = theme();
   try {
     const file = await loadDocumentFile(id);
-    const readImage = file && localImageReader(grantedFolders(), file);
+    const readImage = file && localImageReader(resolve(grantedFolders), file);
     await exportHtml(name, content, { readImage, colorScheme, onBuild: () => setExporting(true) });
   } catch (error) {
     reportFileError('export', error);
@@ -440,9 +446,9 @@ function syncBackup(): void {
     const openIds = new Set(documents.map((doc) => doc.id));
     const baseIds = new Set(base.map((doc) => doc.id));
     const remoteIds = new Set(remote.map((doc) => doc.id));
-    for (const [id, handle] of fileHandles) {
+    for (const [id, handle] of fileHandles()) {
       // Closed in another tab, which removed the stored handle.
-      if (!openIds.has(id)) fileHandles.delete(id);
+      if (!openIds.has(id)) editFileHandles((handles) => handles.delete(id));
       // Closed in another tab too, but kept because this tab changed it.
       else if (baseIds.has(id) && !remoteIds.has(id)) setFileHandle(id, handle);
     }

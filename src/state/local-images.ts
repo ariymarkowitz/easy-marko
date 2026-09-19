@@ -1,4 +1,4 @@
-import { createEffect, createSignal } from 'solid-js';
+import { action, createMemo, createRoot, createSignal, refresh } from 'solid-js';
 import { hasAccess } from '../lib/file-access';
 import {
   type FileLocation,
@@ -10,8 +10,8 @@ import {
   showLocalImages,
 } from '../lib/local-images';
 import { useListeners } from '../reactive';
-import { activeDocument, loadDocumentFile } from './documents';
-import { addGrantedFolder, grantedFolders, reloadGrantedFolders } from './granted-folders';
+import { activeDocument, documentFile, loadDocumentFile } from './documents';
+import { addGrantedFolder, grantedFolders } from './granted-folders';
 import { errorMessage, showNotice } from './notices';
 
 /** What the preview can do for the active document's local images. */
@@ -22,7 +22,43 @@ type Access =
   | { status: 'prompt'; file: FileSystemFileHandle; location?: FileLocation }
   | { status: 'granted'; file: FileSystemFileHandle; location: FileLocation };
 
-const [access, setAccess] = createSignal<Access>({ status: 'unavailable' });
+function sameAccess(a: Access, b: Access): boolean {
+  if (a.status === 'unavailable' || b.status === 'unavailable') return a.status === b.status;
+  return (
+    a.status === b.status &&
+    a.file === b.file &&
+    a.location?.folder === b.location?.folder &&
+    a.location?.path.join('/') === b.location?.path.join('/')
+  );
+}
+
+async function accessTo(file: FileSystemFileHandle, folders: FileSystemDirectoryHandle[]): Promise<Access> {
+  const location = await locateFile(folders, file);
+  return location && (await hasAccess(location.folder))
+    ? { status: 'granted', file, location }
+    : { status: 'prompt', file, location };
+}
+
+const access = createRoot(() => {
+  /** The active document's file, if the browser can grant folders to read its images from. */
+  const activeFile = createMemo(
+    () => {
+      const doc = activeDocument();
+      if (!doc || typeof window.showDirectoryPicker !== 'function') return undefined;
+      // Before the stored handles have loaded, wait for them.
+      return documentFile(doc) ?? loadDocumentFile(doc.id);
+    },
+    { lazy: true, name: 'activeFile' },
+  );
+
+  return createMemo(
+    (): Access | Promise<Access> => {
+      const file = activeFile();
+      return file ? accessTo(file, grantedFolders()) : { status: 'unavailable' };
+    },
+    { lazy: true, equals: sameAccess, name: 'imageAccess' },
+  );
+});
 
 /** Counts finished image reads, so the preview shows them. */
 const [imagesRead, setImagesRead] = createSignal(0);
@@ -51,24 +87,6 @@ function imageIn(folder: FileSystemDirectoryHandle, path: string[]): LocalImage 
   return loading;
 }
 
-/** Counts access updates, so an older one that finishes late doesn't overwrite a newer one. */
-let accessUpdates = 0;
-
-async function updateAccess(documentId: string | undefined): Promise<void> {
-  const run = ++accessUpdates;
-  const supported = typeof window.showDirectoryPicker === 'function';
-  const file = documentId && supported ? await loadDocumentFile(documentId) : undefined;
-  let next: Access = { status: 'unavailable' };
-  if (file) {
-    const location = await locateFile(await grantedFolders(), file);
-    next =
-      location && (await hasAccess(location.folder))
-        ? { status: 'granted', file, location }
-        : { status: 'prompt', file, location };
-  }
-  if (run === accessUpdates) setAccess(next);
-}
-
 /**
  * The active document's rendered, sanitised HTML with its relatively
  * addressed images read from the granted folder that contains its file.
@@ -93,14 +111,18 @@ export function withLocalImages(html: string): string {
  * permission again for a stored folder that contains it, or asks the user to
  * choose one. Call straight from a user gesture.
  */
-export async function allowImageAccess(): Promise<void> {
+export const allowImageAccess = action(async function* () {
   const current = access();
   if (current.status === 'unavailable') return;
   const { file } = current;
 
+  // Asks before anything is awaited, while the user gesture still counts.
   const stored = current.status === 'prompt' ? current.location?.folder : undefined;
   if (stored?.requestPermission) {
-    if ((await stored.requestPermission({ mode: 'read' })) === 'granted') void updateAccess(activeDocument()?.id);
+    if ((await stored.requestPermission({ mode: 'read' })) !== 'granted') return;
+    yield;
+    // Permissions aren't reactive, so check again.
+    yield refresh(access);
     return;
   }
 
@@ -115,34 +137,13 @@ export async function allowImageAccess(): Promise<void> {
     });
     return;
   }
-  await addGrantedFolder(folder);
-  await updateAccess(activeDocument()?.id);
-}
+  yield addGrantedFolder(folder);
+});
 
 /**
- * Keeps the preview's access to local images up to date with the active
- * document and its file. Checks again when the window gains focus while
- * access is missing, as another tab may have granted it. Call once from the
- * app root.
+ * Checks the granted folders again when the window gains focus, as another
+ * tab may have granted one. Call once from the app root.
  */
 export function useLocalImages(): void {
-  createEffect(
-    () => {
-      const doc = activeDocument();
-      // A save can link the document to a new file.
-      return doc ? `${doc.id}\n${doc.name}\n${doc.savedHash}` : '';
-    },
-    (key) => {
-      void updateAccess(key.split('\n')[0] || undefined);
-    },
-    { name: 'localImages' },
-  );
-
-  useListeners(window, {
-    focus: () => {
-      if (access().status !== 'prompt') return;
-      reloadGrantedFolders();
-      void updateAccess(activeDocument()?.id);
-    },
-  });
+  useListeners(window, { focus: () => void refresh(grantedFolders) });
 }
