@@ -313,12 +313,12 @@ export async function openRecentFile(handle: FileSystemFileHandle): Promise<void
     if (!(await requestAccess(handle, 'read'))) return;
     await openFileDocument(await readFileHandle(handle));
   } catch (error) {
-    if (!isDomError(error, 'NotFoundError')) {
+    if (isDomError(error, 'NotFoundError')) {
+      void forgetFile(handle);
+      showNotice(`${handle.name} has been moved or deleted.`, { tone: 'error' });
+    } else {
       reportFileError('open', error);
-      return;
     }
-    void forgetFile(handle);
-    showNotice(`${handle.name} has been moved or deleted.`, { tone: 'error' });
   }
 }
 
@@ -385,7 +385,7 @@ export const exportActiveDocument = action(async function* () {
     yield;
     setExportStage('building');
     const file = await loadDocumentFile(doc);
-    const readImage = file && localImageReader(resolve(grantedFolders), file);
+    const readImage = file && localImageReader(await resolve(grantedFolders), file);
     await write(content, { readImage, colorScheme });
   } catch (error) {
     reportFileError('export', error);

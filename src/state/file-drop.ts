@@ -8,6 +8,13 @@ const [draggingFiles, setDraggingFiles] = createSignal(false);
 /** Whether files are being dragged over the window. */
 export { draggingFiles };
 
+/** `handler`, run only for drags that carry files. */
+const forFiles =
+  (handler: (event: DragEvent, data: DataTransfer) => void) =>
+  (event: DragEvent): void => {
+    if (carriesFiles(event.dataTransfer)) handler(event, event.dataTransfer);
+  };
+
 /**
  * Opens files dropped anywhere in the window, switching to any that are
  * already open, and tracks when files are dragged over it. Other drags, such
@@ -20,29 +27,25 @@ export function useFileDrop(): void {
 
   onSettled(() =>
     listen(window, {
-      dragenter: (event) => {
-        if (!carriesFiles(event.dataTransfer)) return;
+      dragenter: forFiles(() => {
         depth++;
         setDraggingFiles(true);
-      },
-      dragleave: (event) => {
-        if (!carriesFiles(event.dataTransfer)) return;
+      }),
+      dragleave: forFiles(() => {
         depth = Math.max(0, depth - 1);
         if (depth === 0) setDraggingFiles(false);
-      },
-      dragover: (event) => {
-        if (!carriesFiles(event.dataTransfer)) return;
+      }),
+      dragover: forFiles((event, data) => {
         // Allows the drop. Otherwise the browser opens the file in place of the app.
         event.preventDefault();
-        event.dataTransfer.dropEffect = 'copy';
-      },
-      drop: (event) => {
-        if (!carriesFiles(event.dataTransfer)) return;
+        data.dropEffect = 'copy';
+      }),
+      drop: forFiles((event, data) => {
         event.preventDefault();
         depth = 0;
         setDraggingFiles(false);
-        void openFiles(readDroppedFiles(event.dataTransfer));
-      },
+        void openFiles(readDroppedFiles(data));
+      }),
     }),
   );
 

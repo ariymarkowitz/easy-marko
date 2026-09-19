@@ -312,9 +312,9 @@ export function createMarkdownRenderer() {
   return (source: string): RenderedBlock[] => {
     let parsed = parse(source, new Set());
     const anchors = parsed.blocks.map((block) => anyOutput(block)?.anchors ?? collectAnchors(block.tokens));
-    const ids = assignIds(anchors).map((blockIds) => ({ ids: blockIds, key: JSON.stringify(blockIds) }));
+    const assigned = assignIds(anchors).map((ids) => ({ ids, key: JSON.stringify(ids) }));
     const stale = new Set(
-      parsed.blocks.flatMap((block, index) => (block.cached.size > 0 && !block.cached.has(ids[index].key) ? [index] : [])),
+      parsed.blocks.flatMap((block, index) => (block.cached.size > 0 && !block.cached.has(assigned[index].key) ? [index] : [])),
     );
     // Anchors come from the source alone, so reparsing leaves them and the ids the same.
     if (stale.size > 0) parsed = parse(source, stale);
@@ -324,13 +324,13 @@ export function createMarkdownRenderer() {
     const occurrences = new Map<string, number>();
     const outputs: BlockOutput[] = [];
     const rendered = blocks.map((block, index): RenderedBlock => {
-      const { ids: blockIds, key } = ids[index];
+      const { ids, key } = assigned[index];
       const textOutputs = block.text === undefined ? undefined : (nextCache.get(block.text) ?? new Map());
       // An earlier copy of the block may have rendered it in this pass.
       const output: BlockOutput =
         textOutputs?.get(key) ??
         block.cached.get(key) ??
-        blockOutput(renderBlock(block.tokens, env, blockIds), anchors[index]);
+        blockOutput(renderBlock(block.tokens, env, ids), anchors[index]);
       if (textOutputs) nextCache.set(block.text!, textOutputs.set(key, output));
       outputs.push(output);
 
@@ -347,7 +347,7 @@ export function createMarkdownRenderer() {
 
     cache = nextCache;
     // Whether a note is shown depends only on the ids, so this is known before every block has rendered.
-    if (ids.some(({ ids: blockIds }) => blockIds.defs.some(([number]) => number > 0))) {
+    if (assigned.some(({ ids }) => ids.defs.some(([number]) => number > 0))) {
       rendered.push(footnotesBlock(outputs.map((output) => output.rendered), blocks.at(-1)!.endLine));
     }
     return rendered;

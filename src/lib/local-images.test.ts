@@ -83,7 +83,7 @@ describe('showLocalImages', () => {
 
 test('embedLocalImages and localImageReader embed readable images as data URLs', async () => {
   const folder = fakeFolder('root', { 'docs/n.md': '', 'docs/img/a.png': 'png' });
-  const read = localImageReader(Promise.resolve([folder]), fakeFileHandle('docs/n.md'));
+  const read = localImageReader([folder], fakeFileHandle('docs/n.md'));
   const html = await embedLocalImages('<img src="img/a.png"><img src="missing.png"><img src="../../x.png">', read);
   const root = document.createElement('div');
   root.innerHTML = html;

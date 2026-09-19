@@ -1,5 +1,5 @@
 import { action, createMemo, onSettled, refresh } from 'solid-js';
-import { listen } from '../lib/events';
+import { listenPageShown } from '../lib/events';
 import { hasAccess } from '../lib/file-access';
 import {
   type FileLocation,
@@ -71,11 +71,12 @@ function imageIn(folder: FileSystemDirectoryHandle, path: string[]): MaybePromis
 export function withLocalImages(html: string): MaybePromise<string> {
   const current = access();
   if (current.status === 'unavailable') return html;
+  if (current.status === 'prompt') return showLocalImages(html, () => ({ status: 'no-access' }));
+  const { folder, path: filePath } = current.location;
   return showLocalImages(html, (src) => {
-    if (current.status === 'prompt') return { status: 'no-access' };
-    const path = resolvePath(current.location.path, src);
+    const path = resolvePath(filePath, src);
     // `../` past the granted folder needs a higher one.
-    return path ? imageIn(current.location.folder, path) : { status: 'no-access' };
+    return path ? imageIn(folder, path) : { status: 'no-access' };
   });
 }
 
@@ -114,9 +115,9 @@ export const allowImageAccess = action(async function* () {
 });
 
 /**
- * Checks the granted folders again when the window gains focus, as another
- * tab may have granted one. Call once from the app root.
+ * Checks the granted folders again whenever the page is shown, as another tab
+ * may have granted one. Call once from the app root.
  */
 export function useLocalImages(): void {
-  onSettled(() => listen(window, { focus: () => void refresh(grantedFolders) }));
+  onSettled(() => listenPageShown(() => void refresh(grantedFolders)));
 }

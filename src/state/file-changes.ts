@@ -19,8 +19,14 @@ interface Watched {
 /** What's known about each linked document's file, by document id. */
 const watched = new Map<string, Watched>();
 
+function clearNotice(entry: Watched): void {
+  entry.notice?.dismiss();
+  entry.notice = undefined;
+}
+
 function forget(id: string): void {
-  watched.get(id)?.notice?.dismiss();
+  const entry = watched.get(id);
+  if (entry) clearNotice(entry);
   watched.delete(id);
 }
 
@@ -38,23 +44,23 @@ async function checkDocument(id: string, handle: FileSystemFileHandle): Promise<
   const file = readable ? await handle.getFile().catch(() => undefined) : undefined;
   if (!file || file.lastModified === entry.lastModified) return;
   const content = await file.text().catch(() => undefined);
+  if (content === undefined) return;
   const doc = documentsState.documents.find((d) => d.id === id);
   // Read again next time: the document was closed, relinked or saved during the read.
-  if (content === undefined || !doc || (await resolve(linkedFiles)).get(id) !== handle || isSaving(id)) return;
+  if (!doc || (await resolve(linkedFiles)).get(id) !== handle || isSaving(id)) return;
   entry.lastModified = file.lastModified;
 
   const hash = hashText(content);
   if (hash === doc.savedHash || content === doc.content) {
     // Saved elsewhere, such as by another tab, or changed back.
     if (content === doc.content && hash !== doc.savedHash) reloadDocument(id, content);
-    entry.notice?.dismiss();
-    entry.notice = undefined;
+    clearNotice(entry);
     return;
   }
   // Already shown for this version of the file, even if it was dismissed.
   if (entry.notice?.hash === hash) return;
 
-  entry.notice?.dismiss();
+  clearNotice(entry);
   const message = hasUnsavedChanges(doc)
     ? `${doc.name} changed on disk. Reloading it replaces your unsaved changes.`
     : `${doc.name} changed on disk.`;

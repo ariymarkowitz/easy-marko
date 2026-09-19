@@ -180,13 +180,12 @@ export async function embedLocalImages(
  * highest of `folders` that contains it, if the page may already read it.
  */
 export function localImageReader(
-  folders: Promise<readonly FileSystemDirectoryHandle[]>,
+  folders: readonly FileSystemDirectoryHandle[],
   file: FileSystemFileHandle,
 ): (src: string) => Promise<string | undefined> {
-  const location = folders.then(async (list) => {
-    const found = await locateFile(list, file);
-    return found && (await hasAccess(found.folder)) ? found : undefined;
-  });
+  const location = locateFile(folders, file).then(async (found) =>
+    found && (await hasAccess(found.folder)) ? found : undefined,
+  );
   return async (src) => {
     const found = await location;
     const path = found && resolvePath(found.path, src);

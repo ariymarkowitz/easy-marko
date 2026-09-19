@@ -12,12 +12,12 @@ type EventMapOf<T> = T extends Window
         : Record<string, Event>;
 
 /** Handlers for `target`'s events, keyed by event type. */
-export type Listeners<T extends EventTarget> = {
+type Listeners<T extends EventTarget> = {
   [K in keyof EventMapOf<T> & string]?: (event: EventMapOf<T>[K]) => void;
 };
 
 /** Options for `listen`. Its `signal` is used to remove the listeners. */
-export type ListenOptions = Omit<AddEventListenerOptions, 'signal'>;
+type ListenOptions = Omit<AddEventListenerOptions, 'signal'>;
 
 /**
  * Adds each listener to `target` and returns a function removing them all.
