@@ -26,21 +26,15 @@ export default function Sidebar() {
   function dragDocument(event: PointerEvent & { currentTarget: HTMLLIElement }, id: string, menu: () => void) {
     // The close button and the rename input don't start a drag.
     if (!(event.target as Element).closest('button.document-name')) return;
-    const touch = event.pointerType === 'touch';
     dragListItem(event, event.currentTarget, {
       scroller: event.currentTarget.closest<HTMLElement>('.sidebar')!,
       move: (index) => {
         moveDocument(id, index);
         flush();
       },
-      onStart: () => {
-        setDragged(id);
-        if (touch && typeof navigator.vibrate === 'function') navigator.vibrate(10);
-      },
-      onEnd: (released, moved) => {
-        // Opened after the release has been handled, so the release doesn't count as a tap outside the menu.
-        if (touch && released && !moved) setTimeout(menu);
-      },
+      onStart: () => setDragged(id),
+      // Opened after the release has been handled, so the release doesn't count as a tap outside the menu.
+      onLongPress: () => setTimeout(menu),
       // The row stays raised until it's in its place, unless another drag has started meanwhile.
       onSettle: () => setDragged((current) => (current === id ? undefined : current)),
     });

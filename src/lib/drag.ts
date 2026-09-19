@@ -49,13 +49,14 @@ export function trackDrag(start: PointerEvent, options: DragOptions): void {
   if (start.button !== 0) return;
   const target = start.currentTarget instanceof Element ? start.currentTarget : undefined;
   const threshold = options.threshold ?? 0;
+  const root = document.documentElement;
   let dragging = false;
 
   const begin = () => {
     dragging = true;
     options.onStart?.();
-    document.documentElement.classList.add('dragging');
-    if (options.cursor) document.documentElement.style.setProperty('--drag-cursor', options.cursor);
+    root.classList.add('dragging');
+    if (options.cursor) root.style.setProperty('--drag-cursor', options.cursor);
     // Keeps the events coming while the pointer is outside the window. Capture
     // ends by itself if the element is removed; the window listeners carry on.
     if (target?.isConnected) target.setPointerCapture?.(start.pointerId);
@@ -65,8 +66,8 @@ export function trackDrag(start: PointerEvent, options: DragOptions): void {
     if (event.pointerId !== start.pointerId) return;
     stop();
     if (!dragging) return;
-    document.documentElement.classList.remove('dragging');
-    document.documentElement.style.removeProperty('--drag-cursor');
+    root.classList.remove('dragging');
+    root.style.removeProperty('--drag-cursor');
     const released = event.type === 'pointerup';
     if (released) swallowClick();
     options.onEnd?.(released);

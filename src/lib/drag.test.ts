@@ -7,14 +7,17 @@ function pointer(type: string, clientX: number, init: MouseEventInit = {}) {
   return Object.assign(event, { pointerId: 1 }) as unknown as PointerEvent;
 }
 
-function startDrag(button: HTMLElement, options: Parameters<typeof trackDrag>[1]) {
+let button: HTMLButtonElement;
+
+function startDrag(options: Parameters<typeof trackDrag>[1], init?: MouseEventInit) {
   button.addEventListener('pointerdown', (event) => trackDrag(event as PointerEvent, options));
-  button.dispatchEvent(pointer('pointerdown', 0));
+  button.dispatchEvent(pointer('pointerdown', 0, init));
 }
 
-// The click after a drag is swallowed until a timer runs.
 beforeEach(() => {
+  // The click after a drag is swallowed until a timer runs.
   vi.useFakeTimers();
+  button = document.body.appendChild(document.createElement('button'));
 });
 
 afterEach(() => {
@@ -25,9 +28,8 @@ afterEach(() => {
 
 describe('trackDrag', () => {
   test('reports pointer moves until the pointer is released, while marking the root', () => {
-    const button = document.body.appendChild(document.createElement('button'));
     const onMove = vi.fn();
-    startDrag(button, { onMove });
+    startDrag({ onMove });
     expect(document.documentElement).toHaveClass('dragging');
 
     window.dispatchEvent(pointer('pointermove', 20));
@@ -45,11 +47,10 @@ describe('trackDrag', () => {
   });
 
   test('leaves a press that moves less than the threshold to be a click', () => {
-    const button = document.body.appendChild(document.createElement('button'));
     const onMove = vi.fn();
     const onClick = vi.fn();
     button.addEventListener('click', onClick);
-    startDrag(button, { onMove, threshold: 4 });
+    startDrag({ onMove, threshold: 4 });
 
     window.dispatchEvent(pointer('pointermove', 3));
     window.dispatchEvent(pointer('pointerup', 3));
@@ -60,11 +61,10 @@ describe('trackDrag', () => {
   });
 
   test('swallows the click that ends a drag', () => {
-    const button = document.body.appendChild(document.createElement('button'));
     const onMove = vi.fn();
     const onClick = vi.fn();
     button.addEventListener('click', onClick);
-    startDrag(button, { onMove, threshold: 4 });
+    startDrag({ onMove, threshold: 4 });
 
     window.dispatchEvent(pointer('pointermove', 10));
     window.dispatchEvent(pointer('pointerup', 10));
@@ -78,9 +78,8 @@ describe('trackDrag', () => {
   });
 
   test('shows the cursor given while dragging, and reports the end of a drag', () => {
-    const button = document.body.appendChild(document.createElement('button'));
     const onEnd = vi.fn();
-    startDrag(button, { onMove: vi.fn(), onEnd, cursor: 'grabbing', threshold: 4 });
+    startDrag({ onMove: vi.fn(), onEnd, cursor: 'grabbing', threshold: 4 });
     window.dispatchEvent(pointer('pointermove', 2));
     expect(document.documentElement.style.getPropertyValue('--drag-cursor')).toBe('');
 
@@ -92,11 +91,10 @@ describe('trackDrag', () => {
   });
 
   test('with a hold, starts once the pointer has been held still', () => {
-    const button = document.body.appendChild(document.createElement('button'));
     const onStart = vi.fn();
     const onMove = vi.fn();
     const onEnd = vi.fn();
-    startDrag(button, { onStart, onMove, onEnd, threshold: 10, hold: 400 });
+    startDrag({ onStart, onMove, onEnd, threshold: 10, hold: 400 });
 
     window.dispatchEvent(pointer('pointermove', 5));
     vi.advanceTimersByTime(399);
@@ -112,10 +110,9 @@ describe('trackDrag', () => {
   });
 
   test('with a hold, gives up if the pointer moves past the threshold first', () => {
-    const button = document.body.appendChild(document.createElement('button'));
     const onStart = vi.fn();
     const onMove = vi.fn();
-    startDrag(button, { onStart, onMove, threshold: 10, hold: 400 });
+    startDrag({ onStart, onMove, threshold: 10, hold: 400 });
 
     window.dispatchEvent(pointer('pointermove', 20));
     vi.advanceTimersByTime(400);
@@ -125,18 +122,15 @@ describe('trackDrag', () => {
   });
 
   test('reports a cancelled drag as not released', () => {
-    const button = document.body.appendChild(document.createElement('button'));
     const onEnd = vi.fn();
-    startDrag(button, { onMove: vi.fn(), onEnd });
+    startDrag({ onMove: vi.fn(), onEnd });
     window.dispatchEvent(pointer('pointercancel', 0));
     expect(onEnd).toHaveBeenCalledWith(false);
   });
 
   test('ignores buttons other than the primary one', () => {
-    const button = document.body.appendChild(document.createElement('button'));
     const onMove = vi.fn();
-    button.addEventListener('pointerdown', (event) => trackDrag(event as PointerEvent, { onMove }));
-    button.dispatchEvent(pointer('pointerdown', 0, { button: 2 }));
+    startDrag({ onMove }, { button: 2 });
     window.dispatchEvent(pointer('pointermove', 10));
     expect(onMove).not.toHaveBeenCalled();
   });

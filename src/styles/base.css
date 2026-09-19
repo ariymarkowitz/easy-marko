@@ -317,10 +317,9 @@ button,
   background-color: var(--color-bg-hover);
 }
 
-/* Set by lib/drag.ts while a resizer or an edge button is dragged. */
+/* Set by lib/drag.ts during any pointer drag; --drag-cursor is set for drags that aren't resizes. */
 :root.dragging,
 :root.dragging * {
-  /* Set by lib/drag.ts for drags that aren't resizes. */
   cursor: var(--drag-cursor, col-resize) !important;
   user-select: none !important;
 }
