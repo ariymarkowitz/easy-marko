@@ -29,8 +29,9 @@ export interface Scheduler {
 }
 
 /**
- * Calls `fn` once `wait` is over. A call scheduled while another is waiting
- * joins it, so `fn` runs once for both. `fn` may schedule the next call.
+ * Calls `fn` once `wait` is over. Only one `fn` is scheduled at a time;
+ * calling `schedule()` again does nothing until `fn` has been called.
+ * `fn` may schedule the next call.
  */
 export function scheduler(fn: () => void, wait: Wait): Scheduler {
   let cancel: (() => void) | undefined;
