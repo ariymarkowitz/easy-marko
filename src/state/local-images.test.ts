@@ -1,4 +1,4 @@
-import { createEffect, createRoot, flush } from 'solid-js';
+import { createEffect, createMemo, createRoot, flush } from 'solid-js';
 import { afterAll, afterEach, beforeAll, expect, test, vi } from 'vitest';
 import { openFile } from '../lib/files';
 import { fakeFileHandle, fakeFolder } from '../lib/file-system.fakes';
@@ -32,12 +32,11 @@ beforeAll(() => {
   vi.spyOn(window, 'confirm').mockReturnValue(true);
   dispose = createRoot((dispose) => {
     useLocalImages();
-    createEffect(
-      () => withLocalImages(html),
-      (value) => {
-        shown = value;
-      },
-    );
+    // Through a memo, like the preview, as withLocalImages can be async.
+    const preview = createMemo(() => withLocalImages(html));
+    createEffect(preview, (value) => {
+      shown = value;
+    });
     return dispose;
   });
 });

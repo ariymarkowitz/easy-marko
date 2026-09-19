@@ -1,4 +1,4 @@
-import { action, createMemo, createRoot, createSignal, refresh } from 'solid-js';
+import { action, createMemo, createRoot, refresh } from 'solid-js';
 import { hasAccess } from '../lib/file-access';
 import {
   type FileLocation,
@@ -60,43 +60,36 @@ const access = createRoot(() => {
   );
 });
 
-/** Counts finished image reads, so the preview shows them. */
-const [imagesRead, setImagesRead] = createSignal(0);
+/**
+ * Images by folder, then by path in the folder, each file read once and kept
+ * while the page is open. An image is a promise until its read settles.
+ */
+const images = new WeakMap<FileSystemDirectoryHandle, Map<string, LocalImage | Promise<LocalImage>>>();
 
-/** Read images by folder, then by path in the folder. Kept while the page is open. */
-const images = new WeakMap<FileSystemDirectoryHandle, Map<string, LocalImage>>();
-
-function imageIn(folder: FileSystemDirectoryHandle, path: string[]): LocalImage {
+function imageIn(folder: FileSystemDirectoryHandle, path: string[]): LocalImage | Promise<LocalImage> {
   let byPath = images.get(folder);
   if (!byPath) images.set(folder, (byPath = new Map()));
   const key = path.join('/');
   const known = byPath.get(key);
   if (known) return known;
 
-  const loading: LocalImage = { status: 'loading' };
-  byPath.set(key, loading);
-  readFolderFile(folder, path)
-    .then(
-      (file): LocalImage => ({ status: 'loaded', url: URL.createObjectURL(file) }),
-      (): LocalImage => ({ status: 'missing' }),
-    )
-    .then((image) => {
-      byPath.set(key, image);
-      setImagesRead((count) => count + 1);
-    });
-  return loading;
+  const read = readFolderFile(folder, path).then(
+    (file): LocalImage => ({ status: 'loaded', url: URL.createObjectURL(file) }),
+    (): LocalImage => ({ status: 'missing' }),
+  );
+  byPath.set(key, read);
+  void read.then((image) => byPath.set(key, image));
+  return read;
 }
 
 /**
  * The active document's rendered, sanitised HTML with its relatively
  * addressed images read from the granted folder that contains its file.
  * Images show a placeholder while no folder is granted, with a button that
- * calls allowImageAccess.
+ * calls allowImageAccess. A promise while images it needs are being read.
  */
-export function withLocalImages(html: string): string {
+export function withLocalImages(html: string): string | Promise<string> {
   const current = access();
-  // Re-render as images finish loading.
-  imagesRead();
   if (current.status === 'unavailable') return html;
   return showLocalImages(html, (src) => {
     if (current.status === 'prompt') return { status: 'no-access' };

@@ -44,11 +44,11 @@ test('locateFile picks the highest folder containing the file', async () => {
 describe('showLocalImages', () => {
   const html = '<p><img src="a.png" alt="A"><img src="b.png"><img src="c.png"><img src="d.png" alt="D"><img src="https://x/e.png"></p>';
 
-  test('shows each relative image by its state and leaves other images alone', () => {
-    const shown = showLocalImages(html, (src) =>
+  test('shows each relative image by its state and leaves other images alone', async () => {
+    const shown = await showLocalImages(html, (src) =>
       ({
         'a.png': { status: 'loaded', url: 'blob:a' },
-        'b.png': { status: 'loading' },
+        'b.png': Promise.resolve({ status: 'loaded', url: 'blob:b' }),
         'c.png': { status: 'missing' },
         'd.png': { status: 'no-access' },
       })[src] as never,
@@ -56,12 +56,18 @@ describe('showLocalImages', () => {
     const root = document.createElement('div');
     root.innerHTML = shown;
     const imgs = root.querySelectorAll('img');
-    expect([...imgs].map((img) => img.getAttribute('src'))).toEqual(['blob:a', null, 'https://x/e.png']);
+    expect([...imgs].map((img) => img.getAttribute('src'))).toEqual(['blob:a', 'blob:b', 'https://x/e.png']);
     const placeholders = root.querySelectorAll('.local-image');
     expect(placeholders[0].textContent).toBe('c.png (not found)');
     expect(placeholders[0].querySelector('button')).toBeNull();
     expect(placeholders[1].querySelector('.local-image-label')?.textContent).toBe('D');
     expect(placeholders[1].querySelector('.local-image-allow')?.textContent).toBe('Allow access');
+  });
+
+  test('is synchronous while no image is a promise', () => {
+    expect(showLocalImages('<img src="a.png">', () => ({ status: 'loaded', url: 'blob:a' }))).toBe(
+      '<img src="blob:a">',
+    );
   });
 
   test('puts alt text in the placeholder as text', () => {

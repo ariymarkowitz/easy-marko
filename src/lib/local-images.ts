@@ -84,7 +84,6 @@ function blobToDataUrl(blob: Blob): Promise<string> {
 /** What the preview can show for a local image. */
 export type LocalImage =
   | { status: 'loaded'; url: string }
-  | { status: 'loading' }
   /** The folder is granted, but the file isn't in it. */
   | { status: 'missing' }
   /** No granted folder contains the image. */
@@ -137,20 +136,27 @@ function parseRelativeImages(html: string): RelativeImages | undefined {
 
 /**
  * Sanitised HTML with its relatively addressed images shown as `imageFor`
- * says: loaded ones point at their URL, loading ones have no `src` yet, and
- * the rest are replaced by a placeholder. Placeholders for images without
- * access have an "Allow access" button (`.local-image-allow`).
+ * says: loaded ones point at their URL, and the rest are replaced by a
+ * placeholder. Placeholders for images without access have an "Allow access"
+ * button (`.local-image-allow`). A promise if `imageFor` gives any image as
+ * one, resolving once they all have.
  */
-export function showLocalImages(html: string, imageFor: (src: string) => LocalImage): string {
+export function showLocalImages(
+  html: string,
+  imageFor: (src: string) => LocalImage | Promise<LocalImage>,
+): string | Promise<string> {
   const parsed = parseRelativeImages(html);
   if (!parsed) return html;
-  for (const { img, src } of parsed.images) {
-    const image = imageFor(src);
-    if (image.status === 'loaded') img.src = image.url;
-    else if (image.status === 'loading') img.removeAttribute('src');
-    else img.replaceWith(placeholder(img.alt, src, image.status));
-  }
-  return parsed.template.innerHTML;
+  const found = parsed.images.map(({ src }) => imageFor(src));
+  const show = (images: LocalImage[]) => {
+    parsed.images.forEach(({ img, src }, i) => {
+      const image = images[i];
+      if (image.status === 'loaded') img.src = image.url;
+      else img.replaceWith(placeholder(img.alt, src, image.status));
+    });
+    return parsed.template.innerHTML;
+  };
+  return found.some((image) => image instanceof Promise) ? Promise.all(found).then(show) : show(found as LocalImage[]);
 }
 
 /** Sanitised HTML with its relatively addressed images embedded as the data URLs `read` gives, where it gives one. */

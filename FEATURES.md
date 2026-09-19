@@ -146,7 +146,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 
   - Paths resolve from the highest granted folder containing the file. A granted folder without the image shows "not found". `../` paths need a higher folder, and absolute paths aren't supported.
 
-  - Images load into `blob:` URLs that last while the page is open. Folder handles persist in IndexedDB, so later files in a granted folder show their images straight away. They reload when the window gains focus, to pick up folders granted in other tabs.
+  - Images load into `blob:` URLs that last while the page is open. A block keeps its previous HTML until the images it adds have been read, so they don't flash as broken. Folder handles persist in IndexedDB, so later files in a granted folder show their images straight away. They reload when the window gains focus, to pick up folders granted in other tabs.
 
 - Incremental rendering. The document is split into blocks on every change. Only uncached blocks get parsed and rendered, and the DOM reuses nodes by key. Heading ids and footnote numbers depend on earlier blocks, so cached blocks keep their slugs and labels, and a block whose ids changed is parsed again in a second pass.
 

@@ -64,15 +64,19 @@ export default function Preview() {
       <article class="markdown">
         {/* Keyed by source text, so unchanged blocks keep their DOM nodes between edits. */}
         <For each={blocks()} keyed={(block) => block.key}>
-          {(block) => (
-            <div
-              class="md-block"
-              data-line={block().line}
-              data-end-line={block().endLine}
-              // eslint-disable-next-line solid/no-innerhtml -- the renderer sanitises every block; local images only change image sources and add placeholders
-              innerHTML={withLocalImages(block().html)}
-            />
-          )}
+          {(block) => {
+            // Async while the block's local images are being read.
+            const html = createMemo(() => withLocalImages(block().html));
+            return (
+              <div
+                class="md-block"
+                data-line={block().line}
+                data-end-line={block().endLine}
+                // eslint-disable-next-line solid/no-innerhtml -- the renderer sanitises every block; local images only change image sources and add placeholders
+                innerHTML={html()}
+              />
+            );
+          }}
         </For>
       </article>
     </section>
