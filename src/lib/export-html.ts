@@ -9,7 +9,7 @@ import tokensCss from '../styles/tokens.css?raw';
 import { optimizeCss, styledClasses } from './css-optimize';
 import { escapeHtml } from './escape-html';
 import { exportFontsCss } from './export-fonts';
-import { htmlFile, saveFile } from './files';
+import { chooseSaveFile, htmlFile } from './files';
 import { embedLocalImages } from './local-images';
 import { createMarkdownRenderer } from './markdown';
 
@@ -43,16 +43,8 @@ function baseName(name: string): string {
 
 /** Sanitised HTML for the whole document, once the languages of its code have loaded. */
 async function renderMarkdown(source: string): Promise<string> {
-  const loads: Promise<void>[] = [];
-  const renderer = createMarkdownRenderer({ onLanguageLoad: (loaded) => loads.push(loaded) });
-  const render = () =>
-    renderer(source)
-      .map((block) => block.html)
-      .join('');
-  const html = render();
-  if (loads.length === 0) return html;
-  await Promise.all(loads);
-  return render();
+  const blocks = createMarkdownRenderer()(source);
+  return (await Promise.all(blocks.map((block) => block.html))).join('');
 }
 
 /**
@@ -140,21 +132,20 @@ function afterNextPaint(): Promise<void> {
 }
 
 /**
- * Saves a document as `<name>.html`. The HTML is built once a destination is
- * chosen, so the save dialog opens straight from the click, and nothing is
- * built if it's cancelled. `onBuild` is called when building starts, and the
- * browser paints what it changes before the document renders, which blocks
- * the page for a moment.
+ * Asks where to save the document `name` as `<name>.html`, so call this
+ * straight from a user gesture. Resolves undefined if cancelled, else a
+ * function that builds the HTML and writes it. That lets the browser paint
+ * first, as rendering the document blocks the page for a moment.
  */
-export async function exportHtml(
+export async function chooseExportFile(
   name: string,
-  source: string,
-  { onBuild, ...options }: ExportOptions & { onBuild?: () => void } = {},
-): Promise<void> {
-  const build = async () => {
-    onBuild?.();
-    await afterNextPaint();
-    return buildHtmlDocument(name, source, options);
-  };
-  await saveFile(`${baseName(name)}.html`, build, { type: htmlFile });
+): Promise<((source: string, options?: ExportOptions) => Promise<void>) | undefined> {
+  const write = await chooseSaveFile(`${baseName(name)}.html`, { type: htmlFile });
+  return (
+    write &&
+    (async (source, options) => {
+      await afterNextPaint();
+      await write(await buildHtmlDocument(name, source, options));
+    })
+  );
 }

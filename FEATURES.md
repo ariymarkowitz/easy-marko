@@ -58,7 +58,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 
 - New, open and save use the File System Access API, falling back to a file input and download. Open accepts `.md`, `.markdown`, `.mdown` and `.txt`. Shortcuts: Cmd/Ctrl+O opens, Cmd/Ctrl+S saves.
 
-- IndexedDB stores file handles, so Save writes to the same file after a reload. The first save to a restored handle asks for write permission, and asks where to save if that's refused. Tabs share handles, and closing a document in any tab removes its handle.
+- IndexedDB stores file handles, so Save writes to the same file after a reload. The first save to a restored handle asks for write permission, and asks where to save if that's refused. Tabs share handles, and closing a document in any tab removes its handle. If IndexedDB can't be used, a tab keeps its handles until it closes.
 
 - The same file won't open twice. Matching uses file handles, so files opened without the File System Access API can't be matched.
 
@@ -68,7 +68,7 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 
 - Drop files on the window to open them. Chromium provides handles for dropped files, so Save writes back to them. Folders and non-text files get reported instead. Dragged text still drops into the editor.
 
-- Recent files: the sidebar lists the 10 files opened or saved most recently, newest first. Clicking one opens it, or switches to it if it's already open, asking for read permission after a reload. Moved or deleted files get reported and removed, and the X button removes one by hand. Only files with handles appear (Chromium). The list lives in IndexedDB, is shared by tabs, and reloads when the window gains focus.
+- Recent files: the sidebar lists the 10 files opened or saved most recently, newest first. Clicking one opens it, or switches to it if it's already open, asking for read permission after a reload. Moved or deleted files get reported and removed, and the X button removes one by hand. Only files with handles appear (Chromium). The list lives in IndexedDB, is shared by tabs, and reloads when the window gains focus. It appears once it has been read. Changes take turns, so files remembered together (like several dropped at once) are all kept. If IndexedDB can't be used, the list lasts until the tab closes.
 
 - File changes on disk: while the page is visible, the app checks linked files every 2s and on window focus, reading a file only when its modification time changes.
 
@@ -126,11 +126,13 @@ Everything Easy Marko does, with the behaviour decisions behind it.
 
 - markdown-it with raw HTML, linkify and typographer, plus tables and strikethrough.
 
+- The preview shows "Loading…" until its first render has what it needs (the stored file handles, and any code languages or local images). After that, edits keep showing the previous render until the new one is ready.
+
 - YAML front matter: a `---` line at the very top, up to a closing `---` or `...` line, renders as a YAML-highlighted code block whose lines wrap, in slightly smaller type, with square corners and rules above and below. Unclosed, indented or nested front matter stays ordinary Markdown. The source pane highlights it as YAML too, and YAML keys are in the accent colour in both panes, in front matter and fenced YAML alike.
 
 - KaTeX maths, at 1.18em so its x-height matches the body text's. Inline `$…$` follows Pandoc's rules, so amounts like `$5 and $10` stay text.
 
-- Fenced code highlighting uses the editor's Lezer parsers and colours. Code shows plain until its language loads, and then only the blocks waiting on that language re-render.
+- Fenced code highlighting uses the editor's Lezer parsers and colours. A block whose code needs a language that hasn't loaded yet waits for it and then shows highlighted, rather than showing plain first. Languages load once per session. Code in a language that fails to load shows plain.
 
 - Code colours follow the Alabaster theme from tonsky.me's syntax highlighting guide, in the app's palette: constants (strings, numbers, booleans, null) are green, variables where they're defined are blue, functions, classes, types and members where they're defined are orange, and comments are purple italic. Keywords, variable uses, calls and operators stay plain, and punctuation is muted. The same colours apply in the source pane, the preview and HTML exports.
 

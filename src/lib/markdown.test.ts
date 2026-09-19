@@ -9,7 +9,8 @@ afterEach(() => {
 const joined = (blocks: RenderedBlock[]) => blocks.map((block) => block.html).join('');
 
 /** Parses rendered HTML the way the preview's innerHTML does. */
-function parse(html: string): HTMLElement {
+function parse(html: string | Promise<string>): HTMLElement {
+  if (typeof html !== 'string') throw new Error('The HTML is waiting for a code language');
   const container = document.createElement('div');
   container.innerHTML = html;
   return container;
@@ -176,45 +177,39 @@ describe('incremental parsing', () => {
 
 describe('code highlighting', () => {
   // Languages stay loaded for the whole test run, so each test uses its own.
-  test('highlights fenced code once its language loads, re-rendering only that block', async () => {
-    const loads: Promise<void>[] = [];
-    const render = createMarkdownRenderer({ onLanguageLoad: (loaded) => loads.push(loaded) });
+  test('renders a block once the language of its code loads, and keeps it for later renders', async () => {
+    const render = createMarkdownRenderer();
     const source = '# Title\n\n```python\nimport os\n```\n';
 
-    const [, before] = render(source);
-    expect(before.html).toBe('<pre tabindex="0"><code class="language-python">import os\n</code></pre>\n');
-    expect(loads).toHaveLength(1);
+    const [title, code] = render(source);
+    expect(title.html).toBe('<h1 id="title">Title</h1>\n');
+    expect(code.html).toBeInstanceOf(Promise);
+    const html = await code.html;
+    expect(html).toContain('<span class="tok-keyword">import</span>');
 
-    await Promise.all(loads);
     const spy = vi.spyOn(markdown.renderer, 'render');
-    const [, after] = render(source);
-    expect(spy).toHaveBeenCalledTimes(1);
-    expect(after.html).toContain('<span class="tok-keyword">import</span>');
+    expect(render(source)[1].html).toBe(html);
+    expect(spy).not.toHaveBeenCalled();
+  });
 
-    render(source);
-    expect(spy).toHaveBeenCalledTimes(1);
-    expect(loads).toHaveLength(1);
+  test('renders the footnotes list once the languages of its notes load', async () => {
+    const blocks = createMarkdownRenderer()('Text[^1]\n\n[^1]: Note\n\n    ```go\n    package main\n    ```\n');
+    const list = blocks.at(-1)!;
+    expect(list.key).toBe('\0footnotes');
+    expect(await list.html).toContain('<span class="tok-keyword">package</span>');
   });
 
   test('escapes highlighted code', async () => {
-    const loads: Promise<void>[] = [];
-    const render = createMarkdownRenderer({ onLanguageLoad: (loaded) => loads.push(loaded) });
-    const source = '```ruby\nputs "<b>&</b>"\n```';
-    render(source);
-    await Promise.all(loads);
-    const [block] = render(source);
-    expect(block.html).toContain('tok-');
-    expect(parse(block.html).querySelector('b')).toBeNull();
-    expect(parse(block.html)).toHaveTextContent('puts "<b>&</b>"');
+    const [block] = createMarkdownRenderer()('```ruby\nputs "<b>&</b>"\n```');
+    const html = await block.html;
+    expect(html).toContain('tok-');
+    expect(parse(html).querySelector('b')).toBeNull();
+    expect(parse(html)).toHaveTextContent('puts "<b>&</b>"');
   });
 
   test('leaves code in unknown languages as plain text', () => {
-    const loads: Promise<void>[] = [];
-    const [block] = createMarkdownRenderer({ onLanguageLoad: (loaded) => loads.push(loaded) })(
-      '```not-a-language\n<b>x</b>\n```',
-    );
+    const [block] = createMarkdownRenderer()('```not-a-language\n<b>x</b>\n```');
     expect(block.html).toBe('<pre tabindex="0"><code class="language-not-a-language">&lt;b&gt;x&lt;/b&gt;\n</code></pre>\n');
-    expect(loads).toHaveLength(0);
   });
 });
 
@@ -439,7 +434,7 @@ describe('footnotes', () => {
 
   test('puts the list after the last block, and definitions render nothing in place', () => {
     const blocks = createMarkdownRenderer()('Text[^1]\n\n[^1]: Note\n\nAfter\n');
-    expect(blocks.map((block) => [block.html.slice(0, 8), block.line, block.endLine])).toEqual([
+    expect(blocks.map((block) => [(block.html as string).slice(0, 8), block.line, block.endLine])).toEqual([
       ['<p>Text<', 0, 1],
       ['', 2, 4],
       ['<p>After', 4, 5],
@@ -532,13 +527,13 @@ describe('GitHub alerts', () => {
 });
 
 describe('front matter', () => {
-  test('renders a YAML block at the top of the document as its own block', () => {
+  test('renders a YAML block at the top of the document as its own block', async () => {
     const blocks = createMarkdownRenderer()('---\ntitle: <Hi>\ntags: [a]\n---\n# Heading\n');
     expect(blocks.map((block) => [block.line, block.endLine])).toEqual([
       [0, 4],
       [4, 5],
     ]);
-    const pre = parse(blocks[0].html).querySelector('pre.front-matter')!;
+    const pre = parse(await blocks[0].html).querySelector('pre.front-matter')!;
     expect(pre.textContent).toBe('title: <Hi>\ntags: [a]\n');
     expect(blocks[1].html).toContain('<h1');
   });

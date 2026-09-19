@@ -71,21 +71,25 @@ export async function transaction<T>(
 const LIST_KEY = 'list';
 
 /**
- * Reading and writing a store that holds one list, whole. Best effort: `read`
- * gives undefined if IndexedDB can't be read, and a failed `write` is dropped.
+ * Reading and writing a store that holds one list, whole. Best effort: if
+ * IndexedDB can't be read, `read` gives the list as this tab last read or
+ * wrote it, and a failed `write` is dropped.
  */
 export function listStore<T>(store: StoreName): {
-  read: () => Promise<T[] | undefined>;
+  read: () => Promise<readonly T[]>;
   write: (list: readonly T[]) => Promise<void>;
 } {
+  /** This tab's copy of the list, for when IndexedDB can't be read. */
+  let copy: readonly T[] = [];
   return {
     read: () =>
       transaction<T[] | undefined>(store, 'readonly', (s) => s.get(LIST_KEY)).then(
-        (list) => list ?? [],
-        () => undefined,
+        (list) => (copy = list ?? []),
+        () => copy,
       ),
     // Best effort: see each store for what's lost.
     write: async (list) => {
+      copy = list;
       await transaction(store, 'readwrite', (s) => s.put(list, LIST_KEY)).catch(() => {});
     },
   };

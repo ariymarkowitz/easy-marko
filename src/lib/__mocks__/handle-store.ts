@@ -9,6 +9,6 @@ export async function storeHandle(id: string, handle: FileSystemFileHandle): Pro
   storedHandles.set(id, handle);
 }
 
-export async function deleteHandles(ids: Iterable<string>): Promise<void> {
+export async function deleteHandles(ids: readonly string[]): Promise<void> {
   for (const id of ids) storedHandles.delete(id);
 }

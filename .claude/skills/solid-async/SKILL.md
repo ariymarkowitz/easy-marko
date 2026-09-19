@@ -5,7 +5,7 @@ description: How to write async code in this Solid 2 app idiomatically — async
 
 # Async in Solid 2
 
-Solid 2 makes async part of the reactive graph: a computation can return a Promise and readers wait for it. Code that works around async by hand is a sign the model isn't being used. Background: `docs/solid-2.0/05-async-data.md` (reads) and `06-actions-optimistic.md` (writes); `01` for `lazy` and `02` for writable memos. `src/state/local-images.ts` and `src/state/granted-folders.ts` follow this guide.
+Solid 2 makes async part of the reactive graph: a computation can return a Promise and readers wait for it. Code that works around async by hand is a sign the model isn't being used. Background: `docs/solid-2.0/05-async-data.md` (reads) and `06-actions-optimistic.md` (writes); `01` for `lazy` and `02` for writable memos. `src/state/local-images.ts`, `src/state/stored-list.ts` and the file handles and file actions in `src/state/documents.ts` follow this guide.
 
 This is for reactive code: `state/`, components and hooks. `lib/` is framework-free, and plain async functions are right there; state code wraps them.
 
@@ -21,7 +21,7 @@ This is for reactive code: `state/`, components and hooks. `lib/` is framework-f
 | A key string built from fields so an effect re-runs | Make the underlying data a signal/store so it can be tracked |
 | An async function a click calls that writes state | `action(async function* …)` |
 | A busy flag set at the start and cleared in `finally` | A `createOptimistic(false)` flag the action sets; it reverts when the action settles |
-| A promise queue so a reload can't overwrite a newer write | Write through an action (see below), then check whether the queue is still needed |
+| A promise queue so a reload can't overwrite a newer write | Write the storage, then `refresh` (see below). Queue only read-modify-writes that can overlap |
 
 A plain promise cache is still fine for memoising work (such as reading each file once). The smell is using it to *trigger* updates.
 
@@ -38,8 +38,7 @@ const access = createMemo((): Access | Promise<Access> => {
 - **Read every dependency before the first `await`.** Only the synchronous part of the compute is tracked. Pass the values into an async helper, or chain memos (reading a pending memo inside another memo just waits for it).
 - **Return synchronously when you can.** A memo that returns a promise holds its readers until it settles, even for an already-resolved promise. Return plain values on the fast path (see `showLocalImages`, which returns a string unless an image is still being read).
 - **Module-level memos don't need a `createRoot`.** A memo created without an owner disposes itself when nothing reads it (RFC 01), and a root at module scope has no parent, so it's never disposed and adds nothing. Roots are for things that need an owner, such as `onCleanup` (see `createMediaQuery`). Add `{ lazy: true }` so the memo doesn't run at import. Lazy memos are torn down when their last subscriber goes and recomputed on the next read.
-- **A setter on derived async data:** function-form `createSignal(async () => …)` is a writable async signal. Actions can set it directly; `refresh()` re-runs its function (see `granted-folders.ts`).
-- **Write to async data only from actions.** Observed on rc.7: a plain `set` on a writable async signal while a `refresh` of it is in flight is lost, because the stale result lands over it. The same write inside an action is applied after the refresh lands.
+- **Data kept in storage (IndexedDB) is an async memo of the read,** and changes write the storage, then `await refresh(x)`, which settles once `x` shows the change (see `createStoredList` and `fileHandles`). Don't also set the value in memory: on rc.7, a write to a writable async signal (`createSignal(async () => …)`) is lost when a refresh of it is in flight, whether or not the write is in an action. If the storage can fail, have the read fall back to the tab's last copy, as `listStore` and `readHandles` do.
 - **Browser state that isn't reactive** (permissions, IndexedDB written by other tabs) needs `refresh(x)` at the moment it may have changed, such as after `requestPermission` or on window focus.
 
 ## Writing: actions
@@ -56,6 +55,7 @@ const askAgain = action(async function* (folder: FileSystemDirectoryHandle) {
 - After an `await`, `yield;` before writing signals so the writes join the action's transition.
 - `yield otherAction(...)` and `yield refresh(x)` wait for them.
 - Actions don't queue: calling one again while it runs starts a second one alongside it. Guard or serialise yourself if overlapping runs would conflict (such as two read-modify-writes of the same IndexedDB record).
+- **Writes queued in the same tick as an action call join its transition** (checked on rc.7), whether made just before or just after the call, and are held until the action settles. So an action called alongside other writes delays them: a drop handler that hides its indicator and then opens files would keep the indicator up until the files open. Writes in later ticks aren't held, even to a store the action writes. Keep actions to functions that write state after awaits; a function that only writes storage and refreshes, or only calls actions, can be a plain async function. `flush()` before the call if a caller must write in the same tick.
 - For a "working…" indicator, set a `createOptimistic(false)` flag to true in the action. It reverts by itself when the action settles, so there is no `finally`. Don't use `isPending` for this.
 - Callers can `await` the action, but derived async values that depend on its writes may land a little later. In tests, wait for the output (`vi.waitFor`), not just the action.
 
@@ -68,7 +68,7 @@ const askAgain = action(async function* (folder: FileSystemDirectoryHandle) {
 
 ## Reading outside the graph
 
-- In an event handler or action, reading an async memo **before its first value throws `NotReadyError`**. During a later recomputation it returns the previous value. Don't guard handlers on async state that may not have loaded; refresh unconditionally, or read it only where the UI that calls the handler already depends on it.
+- In an event handler or action, reading an async memo **before its first value throws `NotReadyError`**. During a later recomputation it returns the previous value. Don't guard handlers on async state that may not have loaded; refresh unconditionally, or read it only where the UI that calls the handler already depends on it. `latest(x)` gives undefined instead of throwing, for a handler that can treat "not loaded" as "nothing".
 - `await resolve(() => x())` gives a settled value in imperative code (such as the HTML export). It can't be called in a reactive scope.
 - In tests, observe async values the way the app does, with an effect over a memo inside `createRoot`, and assert with `vi.waitFor`. Polling with `resolve()` returned out-of-date values for the local-images chain.
 

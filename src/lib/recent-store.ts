@@ -10,7 +10,7 @@ export interface RecentFile {
 
 const recentFiles = listStore<RecentFile>(STORES.recentFiles);
 
-/** The recent files, newest first, or undefined if IndexedDB can't be read. */
+/** The recent files, newest first. */
 export const readRecentFiles = recentFiles.read;
 
 /** Best effort: the list is a convenience. */

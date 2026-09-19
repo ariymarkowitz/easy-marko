@@ -10,7 +10,7 @@ import {
   showLocalImages,
 } from '../lib/local-images';
 import { useListeners } from '../reactive';
-import { activeDocument, documentFile, loadDocumentFile } from './documents';
+import { activeDocument, documentFile } from './documents';
 import { addGrantedFolder, grantedFolders } from './granted-folders';
 import { errorMessage, showNotice } from './notices';
 
@@ -22,24 +22,19 @@ type Access =
   | { status: 'prompt'; file: FileSystemFileHandle; location?: FileLocation }
   | { status: 'granted'; file: FileSystemFileHandle; location: FileLocation };
 
-async function accessTo(
-  file: FileSystemFileHandle | Promise<FileSystemFileHandle | undefined>,
-  folders: FileSystemDirectoryHandle[],
-): Promise<Access> {
-  const handle = await file;
-  if (!handle) return { status: 'unavailable' };
-  const location = await locateFile(folders, handle);
+async function accessTo(file: FileSystemFileHandle, folders: readonly FileSystemDirectoryHandle[]): Promise<Access> {
+  const location = await locateFile(folders, file);
   return location && (await hasAccess(location.folder))
-    ? { status: 'granted', file: handle, location }
-    : { status: 'prompt', file: handle, location };
+    ? { status: 'granted', file, location }
+    : { status: 'prompt', file, location };
 }
 
 const access = createMemo(
   (): Access | Promise<Access> => {
+    if (typeof window.showDirectoryPicker !== 'function') return { status: 'unavailable' };
     const doc = activeDocument();
-    if (!doc || typeof window.showDirectoryPicker !== 'function') return { status: 'unavailable' };
-    // Before the stored handles have loaded, wait for them.
-    return accessTo(documentFile(doc) ?? loadDocumentFile(doc.id), grantedFolders());
+    const file = doc && documentFile(doc);
+    return file ? accessTo(file, grantedFolders()) : { status: 'unavailable' };
   },
   { lazy: true },
 );

@@ -30,6 +30,7 @@ This is a SolidJS 2.x project. Solid is not React: components run once (there is
 - `src/state/`: app state as module-level signals and stores, action functions, and `use*` hooks for their effects (persistence, cross-tab backup sync, theme sync).
   - `notices.ts`: `showNotice()` for in-app messages and errors (no `alert()`), and `errorMessage()` to show a caught error. Rendered by `components/Notices.tsx`.
   - `granted-folders.ts`: the cached list of folders granted for local images, used by the preview and HTML export.
+  - `stored-list.ts`: a list kept in IndexedDB, read as an async memo (recent files, granted folders).
   - `layout.ts`: what the layout shows, from the settings and window width (narrow windows overlay the sidebar and have no split view). Read `viewMode()`/`sidebarOpen()` from it, not the stored settings.
   - `pane-link.ts`: scroll sync and alt-click jumps between the source and preview. Relies on the preview blocks' `data-line`/`data-end-line` attributes.
   - `scroll-positions.ts`: each document's saved scroll position, which `pane-link.ts` restores.

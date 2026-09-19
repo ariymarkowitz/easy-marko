@@ -428,6 +428,14 @@ button,
   overflow-y: auto;
 }
 
+/* Shown until the preview's first render has loaded what it needs. */
+.preview-loading {
+  margin: 0;
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
 .md-block:first-child > :first-child {
   margin-top: 0;
 }

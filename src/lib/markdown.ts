@@ -26,8 +26,8 @@ export interface RenderedBlock {
   line: number;
   /** Zero-based source line just past the block's end. */
   endLine: number;
-  /** Sanitised HTML. */
-  html: string;
+  /** Sanitised HTML, or a promise of it while the languages of its code load. */
+  html: string | Promise<string>;
 }
 
 interface RenderEnv extends Env, FootnoteEnv {
@@ -163,26 +163,48 @@ interface RenderedFootnote {
   html: string;
 }
 
-interface BlockOutput {
+interface Rendered {
   html: string;
   /** The notes the block defines that are shown, for the footnotes list. */
   footnotes: RenderedFootnote[];
-  /** Languages of fenced code left unhighlighted because they hadn't loaded. */
-  waitingFor: LanguageDescription[];
+}
+
+interface BlockOutput {
+  /** A promise while the languages of the block's code load. */
+  rendered: Rendered | Promise<Rendered>;
   anchors: BlockAnchors;
 }
 
-/** Renders a block's tokens to sanitised HTML, highlighting code whose language has loaded. */
-function renderBlock(tokens: Token[], env: RenderEnv, ids: BlockIds): Pick<BlockOutput, 'html' | 'footnotes' | 'waitingFor'> {
+/** Loads of code languages, started once each. Each settles when its language has loaded or failed to. */
+const languageLoads = new Map<LanguageDescription, Promise<void>>();
+
+function loadLanguage(language: LanguageDescription): Promise<void> {
+  let load = languageLoads.get(language);
+  if (!load) {
+    load = language.load().then(
+      () => undefined,
+      (error: unknown) => console.error(`Couldn't load ${language.name} highlighting`, error),
+    );
+    languageLoads.set(language, load);
+  }
+  return load;
+}
+
+/**
+ * Renders a block's tokens to sanitised HTML with its code highlighted. A
+ * promise if a language of its code hasn't loaded, which renders the block
+ * again once it has. Code in a language that failed to load stays plain.
+ */
+function renderBlock(tokens: Token[], env: RenderEnv, ids: BlockIds, wait = true): Rendered | Promise<Rendered> {
   applyIds(tokens, ids);
-  const waitingFor = new Set<LanguageDescription>();
+  const loads = new Set<Promise<void>>();
   const options = {
     ...markdown.options,
     // Returning '' makes markdown-it escape the code as plain text.
     highlight: (code: string, name: string) => {
       const language = findLanguage(name);
       if (!language) return '';
-      if (!language.support) waitingFor.add(language);
+      if (wait && !language.support) loads.add(loadLanguage(language));
       return highlight(code, language) ?? '';
     },
   };
@@ -191,21 +213,25 @@ function renderBlock(tokens: Token[], env: RenderEnv, ids: BlockIds): Pick<Block
   // Notes render in the footnotes list at the end, not where they're defined.
   const { body, notes } = extractFootnotes(tokens);
   const footnotes = notes.map((note) => ({ number: note.number, html: render(note.content) }));
-  return { html: render(body), footnotes, waitingFor: [...waitingFor] };
+  const html = render(body);
+  if (loads.size === 0) return { html, footnotes };
+  return Promise.all(loads).then(() => renderBlock(tokens, env, ids, false));
 }
 
-/** The footnotes list, placed after the last block. */
-function footnotesBlock(footnotes: RenderedFootnote[], line: number): RenderedBlock {
-  return { key: '\0footnotes', line, endLine: line, html: footnotesListHtml(footnotes) };
+/** A block's output, which is kept once its rendering settles, so later renders use it straight away. */
+function blockOutput(rendered: Rendered | Promise<Rendered>, anchors: BlockAnchors): BlockOutput {
+  const output = { rendered, anchors };
+  if (rendered instanceof Promise) void rendered.then((settled) => (output.rendered = settled));
+  return output;
 }
 
-export interface MarkdownRendererOptions {
-  /**
-   * Called when fenced code needs a language that hasn't loaded, with a
-   * promise that settles once it has loaded or failed to. Rendering again
-   * after that highlights the code.
-   */
-  onLanguageLoad?: (loaded: Promise<void>) => void;
+/** The footnotes list of the blocks' notes, placed after the last block. */
+function footnotesBlock(blocks: (Rendered | Promise<Rendered>)[], line: number): RenderedBlock {
+  const listHtml = (all: Rendered[]) => footnotesListHtml(all.flatMap((block) => block.footnotes));
+  const html = blocks.some((block) => block instanceof Promise)
+    ? Promise.all(blocks).then(listHtml)
+    : listHtml(blocks as Rendered[]);
+  return { key: '\0footnotes', line, endLine: line, html };
 }
 
 interface Block {
@@ -214,7 +240,7 @@ interface Block {
   /** The block's source, which keys the cache. Undefined if the block has no line map. */
   text?: string;
   tokens: Token[];
-  /** Valid cached outputs for the block's source, keyed by the ids they rendered with. Empty if it was parsed. */
+  /** Cached outputs for the block's source, keyed by the ids they rendered with. Empty if it was parsed. */
   cached: Outputs;
 }
 
@@ -230,8 +256,8 @@ const anyOutput = (block: Block) => block.cached.values().next().value;
  * Creates a renderer that splits a document into top-level blocks and caches
  * each block's HTML by its source text. An edit only parses the inline content
  * of, and renders (running KaTeX and the sanitiser for), the blocks it changed.
- * The whole document is still split into blocks each time. Blocks whose code
- * was waiting for a language re-render once it loads.
+ * The whole document is still split into blocks each time. A block with code
+ * in a language that hasn't loaded has HTML that's a promise until it has.
  *
  * Heading ids and footnote numbers depend on the blocks before them, so a
  * cached block also re-renders when its ids change. Each block's output
@@ -242,21 +268,9 @@ const anyOutput = (block: Block) => block.cached.values().next().value;
  * The cache holds one output for each source and set of ids, so copies of a
  * repeated block share it.
  */
-export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
+export function createMarkdownRenderer() {
   let cache = new Map<string, Outputs>();
   let definitions = '';
-  const requested = new Set<LanguageDescription>();
-
-  const load = (language: LanguageDescription) => {
-    if (requested.has(language)) return;
-    requested.add(language);
-    options.onLanguageLoad?.(
-      language.load().then(
-        () => undefined,
-        (error: unknown) => console.error(`Couldn't load ${language.name} highlighting`, error),
-      ),
-    );
-  };
 
   /** Splits a document's block tokens into blocks, finding each one's cached outputs unless it's in `reparse`. */
   const splitBlocks = (source: string, tokens: Token[], env: RenderEnv, reparse: Set<number>): Block[] => {
@@ -268,18 +282,6 @@ export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
       definitions = nextDefinitions;
     }
 
-    // Skips cached outputs waiting for a language that has loaded since. Once for each source, not each copy.
-    const valid = new Map<string, Outputs>();
-    const validOutputs = (text: string): Outputs => {
-      let outputs = valid.get(text);
-      if (!outputs) {
-        const entries = [...(cache.get(text) ?? noOutputs)];
-        outputs = new Map(entries.filter(([, output]) => output.waitingFor.every((language) => !language.support)));
-        valid.set(text, outputs);
-      }
-      return outputs;
-    };
-
     // CodeMirror normalises line endings to \n, so line maps index into this.
     const lines = source.split('\n');
     return topLevelBlocks(tokens).map(({ start, end }, index) => {
@@ -289,7 +291,7 @@ export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
       const line = firstMap?.[0] ?? 0;
       const endLine = lastMap?.[1] ?? firstMap?.[1] ?? 0;
       const text = firstMap ? lines.slice(line, endLine).join('\n') : undefined;
-      const cached = text === undefined || reparse.has(index) ? noOutputs : validOutputs(text);
+      const cached = text === undefined || reparse.has(index) ? noOutputs : (cache.get(text) ?? noOutputs);
       return { line, endLine, text, tokens: blockTokens, cached };
     });
   };
@@ -322,18 +324,17 @@ export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
 
     const nextCache = new Map<string, Outputs>();
     const occurrences = new Map<string, number>();
-    const footnotes: RenderedFootnote[] = [];
+    const outputs: BlockOutput[] = [];
     const rendered = blocks.map((block, index): RenderedBlock => {
       const { ids: blockIds, key } = ids[index];
-      const outputs = block.text === undefined ? undefined : (nextCache.get(block.text) ?? new Map());
+      const textOutputs = block.text === undefined ? undefined : (nextCache.get(block.text) ?? new Map());
       // An earlier copy of the block may have rendered it in this pass.
-      const output =
-        outputs?.get(key) ??
+      const output: BlockOutput =
+        textOutputs?.get(key) ??
         block.cached.get(key) ??
-        ({ ...renderBlock(block.tokens, env, blockIds), anchors: anchors[index] } satisfies BlockOutput);
-      if (outputs) nextCache.set(block.text!, outputs.set(key, output));
-      output.waitingFor.forEach(load);
-      footnotes.push(...output.footnotes);
+        blockOutput(renderBlock(block.tokens, env, blockIds), anchors[index]);
+      if (textOutputs) nextCache.set(block.text!, textOutputs.set(key, output));
+      outputs.push(output);
 
       const id = block.text ?? `\0block:${index}`;
       const seen = occurrences.get(id) ?? 0;
@@ -342,12 +343,15 @@ export function createMarkdownRenderer(options: MarkdownRendererOptions = {}) {
         key: seen === 0 ? id : `${id}\0${seen}`,
         line: block.line,
         endLine: block.endLine,
-        html: output.html,
+        html: output.rendered instanceof Promise ? output.rendered.then((settled) => settled.html) : output.rendered.html,
       };
     });
 
     cache = nextCache;
-    if (footnotes.length > 0) rendered.push(footnotesBlock(footnotes, blocks.at(-1)!.endLine));
+    // Whether a note is shown depends only on the ids, so this is known before every block has rendered.
+    if (ids.some(({ ids: blockIds }) => blockIds.defs.some(([number]) => number > 0))) {
+      rendered.push(footnotesBlock(outputs.map((output) => output.rendered), blocks.at(-1)!.endLine));
+    }
     return rendered;
   };
 }

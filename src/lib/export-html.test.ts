@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { buildHtmlDocument, exportHtml } from './export-html';
+import { buildHtmlDocument, chooseExportFile } from './export-html';
 import { type SubsetOptions, subsetFont } from './font-subset';
 import { markdown } from './markdown';
 
@@ -163,7 +163,7 @@ describe('buildHtmlDocument', () => {
   });
 });
 
-describe('exportHtml', () => {
+describe('chooseExportFile', () => {
   test('saves <name>.html through the save dialog', async () => {
     let written = '';
     const handle = {
@@ -178,15 +178,16 @@ describe('exportHtml', () => {
     const picker = vi.fn(async () => handle as unknown as FileSystemFileHandle);
     window.showSaveFilePicker = picker;
 
-    await exportHtml('Notes.md', '# Notes');
+    const write = await chooseExportFile('Notes.md');
     expect(picker).toHaveBeenCalledWith({
       suggestedName: 'Notes.html',
       types: [{ description: 'HTML', accept: { 'text/html': ['.html'] } }],
     });
+    await write!('# Notes');
     expect(written).toContain('<h1 id="notes">Notes</h1>');
   });
 
-  test('lets the browser paint after onBuild, before rendering', async () => {
+  test('lets the browser paint before rendering', async () => {
     const handle = { name: 'Notes.html', createWritable: async () => ({ write: async () => {}, close: async () => {} }) };
     window.showSaveFilePicker = vi.fn(async () => handle as unknown as FileSystemFileHandle);
     const events: string[] = [];
@@ -201,16 +202,16 @@ describe('exportHtml', () => {
       return parse(...args);
     });
 
-    await exportHtml('Notes.md', '# Notes', { onBuild: () => events.push('build') });
-    expect(events.slice(0, 3)).toEqual(['build', 'frame', 'render']);
+    const write = await chooseExportFile('Notes.md');
+    events.push('chosen');
+    await write!('# Notes');
+    expect(events.slice(0, 3)).toEqual(['chosen', 'frame', 'render']);
   });
 
-  test("doesn't render anything when the save dialog is cancelled", async () => {
+  test('gives nothing to write when the save dialog is cancelled', async () => {
     window.showSaveFilePicker = vi.fn(async () => {
       throw new DOMException('Cancelled', 'AbortError');
     });
-    const spy = vi.spyOn(markdown, 'parse');
-    await exportHtml('Notes.md', '# Notes');
-    expect(spy).not.toHaveBeenCalled();
+    expect(await chooseExportFile('Notes.md')).toBeUndefined();
   });
 });

@@ -112,27 +112,40 @@ async function saveTarget(
 }
 
 /**
+ * Asks where to save a file called `name`: to `handle` if given and writing
+ * to it is allowed, otherwise with a save dialog. Resolves undefined if
+ * cancelled, else a function that writes the file. The dialog has to open
+ * straight from a user gesture, so slow content is made once it has closed.
+ * `type` defaults to Markdown.
+ */
+export async function chooseSaveFile(
+  name: string,
+  { handle, type = markdownFile }: { handle?: FileSystemFileHandle; type?: FileType } = {},
+): Promise<((text: string) => Promise<SavedFile>) | undefined> {
+  const target = await saveTarget(name, type, handle);
+  if (target === undefined) return undefined;
+  return async (text) => {
+    if (!target) {
+      download(name, text, type.mimeType);
+      return { name };
+    }
+    const writable = await target.createWritable();
+    await writable.write(text);
+    await writable.close();
+    return { name: target.name, handle: target };
+  };
+}
+
+/**
  * Saves to `handle` if given, otherwise asks where to save. Also asks if the
- * user doesn't allow writing to `handle`. `content` can be a function, called
- * once there's somewhere to save to, so slow content doesn't delay the dialog.
- * `type` defaults to Markdown. Resolves undefined if cancelled.
+ * user doesn't allow writing to `handle`. Resolves undefined if cancelled.
  */
 export async function saveFile(
   name: string,
-  content: string | (() => Promise<string>),
-  { handle, type = markdownFile }: { handle?: FileSystemFileHandle; type?: FileType } = {},
+  content: string,
+  options?: { handle?: FileSystemFileHandle },
 ): Promise<SavedFile | undefined> {
-  const target = await saveTarget(name, type, handle);
-  if (target === undefined) return undefined;
-  const text = typeof content === 'string' ? content : await content();
-  if (!target) {
-    download(name, text, type.mimeType);
-    return { name };
-  }
-  const writable = await target.createWritable();
-  await writable.write(text);
-  await writable.close();
-  return { name: target.name, handle: target };
+  return (await chooseSaveFile(name, options))?.(content);
 }
 
 function download(name: string, content: string, mimeType: string): void {

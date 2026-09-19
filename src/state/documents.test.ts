@@ -2,7 +2,7 @@ import { createRoot, flush } from 'solid-js';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { storedHandles } from '../lib/__mocks__/handle-store';
 import { fakeFileHandle } from '../lib/file-system.fakes';
-import { openFile, saveFile } from '../lib/files';
+import { chooseSaveFile, openFile, saveFile } from '../lib/files';
 import { STORAGE_KEYS } from '../lib/storage';
 import welcome from '../content/welcome.md?raw';
 import {
@@ -83,16 +83,9 @@ describe('exportActiveDocument', () => {
   test('is exporting while the file builds, and ignores another export meanwhile', async () => {
     addDocument();
     let finish!: () => void;
-    let building!: Promise<void>;
-    vi.mocked(saveFile).mockImplementationOnce(async (name, content) => {
-      // Building starts once the dialog closes. Its HTML isn't needed here.
-      building = (content as () => Promise<string>)().then(
-        () => {},
-        () => {},
-      );
-      await new Promise<void>((resolve) => (finish = resolve));
-      return { name };
-    });
+    vi.mocked(chooseSaveFile).mockResolvedValueOnce(
+      (text) => new Promise((resolve) => (finish = () => resolve({ name: text && 'Untitled.html' }))),
+    );
 
     const exported = exportActiveDocument();
     await settle();
@@ -100,11 +93,11 @@ describe('exportActiveDocument', () => {
     expect(exporting()).toBe(true);
 
     await exportActiveDocument();
-    expect(saveFile).toHaveBeenCalledTimes(1);
+    expect(chooseSaveFile).toHaveBeenCalledTimes(1);
 
+    await vi.waitFor(() => expect(finish).toBeDefined());
     finish();
     await exported;
-    await building;
     flush();
     expect(exporting()).toBe(false);
   });
@@ -112,25 +105,19 @@ describe('exportActiveDocument', () => {
   test('ignores another export while the save dialog is open', async () => {
     addDocument();
     let cancel!: () => void;
-    vi.mocked(saveFile).mockImplementationOnce(
+    vi.mocked(chooseSaveFile).mockImplementationOnce(
       () => new Promise((resolve) => (cancel = () => resolve(undefined))),
     );
 
     const exported = exportActiveDocument();
     await settle();
+    flush();
+    expect(exporting()).toBe(false);
     await exportActiveDocument();
-    expect(saveFile).toHaveBeenCalledTimes(1);
+    expect(chooseSaveFile).toHaveBeenCalledTimes(1);
 
     cancel();
     await exported;
-    flush();
-    expect(exporting()).toBe(false);
-  });
-
-  test("isn't exporting when the save dialog is cancelled", async () => {
-    addDocument();
-    vi.mocked(saveFile).mockResolvedValueOnce(undefined);
-    await exportActiveDocument();
     flush();
     expect(exporting()).toBe(false);
   });

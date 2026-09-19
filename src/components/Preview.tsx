@@ -1,4 +1,4 @@
-import { createMemo, createSignal, For } from 'solid-js';
+import { createMemo, For, Loading } from 'solid-js';
 import { createMarkdownRenderer } from '../lib/markdown';
 import { activeDocument } from '../state/documents';
 import { allowImageAccess, withLocalImages } from '../state/local-images';
@@ -38,15 +38,8 @@ function followFragmentLink(event: MouseEvent & { currentTarget: HTMLElement }):
 }
 
 export default function Preview() {
-  // Counts loaded code languages, so blocks rendered before theirs loaded re-render highlighted.
-  const [languagesLoaded, setLanguagesLoaded] = createSignal(0);
-  const render = createMarkdownRenderer({
-    onLanguageLoad: (loaded) => void loaded.then(() => setLanguagesLoaded((count) => count + 1)),
-  });
-  const blocks = createMemo(() => {
-    languagesLoaded();
-    return render(activeDocument()?.content ?? '');
-  });
+  const render = createMarkdownRenderer();
+  const blocks = createMemo(() => render(activeDocument()?.content ?? ''));
   return (
     <section
       ref={previewPaneRef()}
@@ -61,24 +54,27 @@ export default function Preview() {
         if ((event.target as Element).closest('.local-image-allow')) void allowImageAccess();
       }}
     >
-      <article class="markdown">
-        {/* Keyed by source text, so unchanged blocks keep their DOM nodes between edits. */}
-        <For each={blocks()} keyed={(block) => block.key}>
-          {(block) => {
-            // Async while the block's local images are being read.
-            const html = createMemo(() => withLocalImages(block().html));
-            return (
-              <div
-                class="md-block"
-                data-line={block().line}
-                data-end-line={block().endLine}
-                // eslint-disable-next-line solid/no-innerhtml -- the renderer sanitises every block; local images only change image sources and add placeholders
-                innerHTML={html()}
-              />
-            );
-          }}
-        </For>
-      </article>
+      <Loading fallback={<p class="preview-loading">Loading…</p>}>
+        <article class="markdown">
+          {/* Keyed by source text, so unchanged blocks keep their DOM nodes between edits. */}
+          <For each={blocks()} keyed={(block) => block.key}>
+            {(block) => {
+              // Async while the languages of the block's code load, then while its local images are read.
+              const rendered = createMemo(() => block().html);
+              const html = createMemo(() => withLocalImages(rendered()));
+              return (
+                <div
+                  class="md-block"
+                  data-line={block().line}
+                  data-end-line={block().endLine}
+                  // eslint-disable-next-line solid/no-innerhtml -- the renderer sanitises every block; local images only change image sources and add placeholders
+                  innerHTML={html()}
+                />
+              );
+            }}
+          </For>
+        </article>
+      </Loading>
     </section>
   );
 }

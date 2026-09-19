@@ -1,14 +1,8 @@
-import { createEffect } from 'solid-js';
+import { createEffect, resolve } from 'solid-js';
 import { hasAccess } from '../lib/file-access';
 import { hashText } from '../lib/hash';
 import { useListeners } from '../reactive';
-import {
-  documentFile,
-  documentsState,
-  hasUnsavedChanges,
-  isSaving,
-  reloadDocument,
-} from './documents';
+import { documentsState, hasUnsavedChanges, isSaving, linkedFiles, reloadDocument } from './documents';
 import { showNotice } from './notices';
 
 /** How often files are checked while the page is visible, besides whenever the window gains focus. */
@@ -46,7 +40,7 @@ async function checkDocument(id: string, handle: FileSystemFileHandle): Promise<
   const content = await file.text().catch(() => undefined);
   const doc = documentsState.documents.find((d) => d.id === id);
   // Read again next time: the document was closed, relinked or saved during the read.
-  if (content === undefined || !doc || documentFile(doc) !== handle || isSaving(id)) return;
+  if (content === undefined || !doc || (await resolve(linkedFiles)).get(id) !== handle || isSaving(id)) return;
   entry.lastModified = file.lastModified;
 
   const hash = hashText(content);
@@ -82,11 +76,7 @@ let running: Promise<void> | undefined;
  */
 export function checkFiles(): Promise<void> {
   running ??= (async () => {
-    const linked = new Map<string, FileSystemFileHandle>();
-    for (const doc of documentsState.documents) {
-      const handle = documentFile(doc);
-      if (handle) linked.set(doc.id, handle);
-    }
+    const linked = await resolve(linkedFiles);
     for (const id of watched.keys()) {
       if (!linked.has(id)) forget(id);
     }
@@ -108,7 +98,7 @@ export function useFileChanges(): void {
   };
 
   createEffect(
-    () => documentsState.documents.map((doc) => `${doc.id}\n${doc.name}`).join('\n'),
+    linkedFiles,
     () => {
       check();
       const timer = setInterval(check, FILE_CHECK_INTERVAL);
