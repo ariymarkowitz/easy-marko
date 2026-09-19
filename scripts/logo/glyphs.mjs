@@ -13,7 +13,6 @@ const fontFile = fileURLToPath(
 
 export const accent = '#4c7bf4';
 export const light = '#fafafa';
-export const background = '#1c1c1c';
 
 export async function loadFont() {
   const face = new hb.Face(new hb.Blob(await decompressWoff2(readFileSync(fontFile))));
