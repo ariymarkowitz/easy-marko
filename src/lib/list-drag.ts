@@ -11,8 +11,6 @@ const SCROLL_EDGE = 32;
 const SCROLL_STEP = 6;
 /** How long, in milliseconds, items take to slide into their places. */
 const SLIDE_DURATION = 150;
-/** Marks this module's animations, so cancelling them leaves others (like colour transitions) alone. */
-const SLIDE_ID = 'list-drag-slide';
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -91,7 +89,7 @@ export function dragListItem(start: PointerEvent, item: HTMLElement, options: Li
     onStart: () => {
       // An item still sliding from an earlier drag is picked up where it's drawn.
       const top = item.getBoundingClientRect().top;
-      cancelSlides(item);
+      cancelSlide(item);
       draw(top - item.getBoundingClientRect().top);
       grab = start.clientY - top;
       scrolling.schedule();
@@ -105,11 +103,8 @@ export function dragListItem(start: PointerEvent, item: HTMLElement, options: Li
     },
     onEnd: (released) => {
       scrolling.cancel();
-      const settle = slide(item, offset);
-      draw(0);
       // A new drag of the item cancels the slide, and the new drag carries on instead.
-      if (settle) void settle.finished.then(options.onSettle, () => {});
-      else options.onSettle?.();
+      slide(item, offset, options.onSettle);
       if (touch && released && !moved) options.onLongPress?.();
     },
   });
@@ -118,27 +113,55 @@ export function dragListItem(start: PointerEvent, item: HTMLElement, options: Li
 /** Runs `reorder`, which moves `items` in the page, sliding each from where it was drawn to its new place. */
 function slideAfter(items: HTMLElement[], reorder: () => void): void {
   const before = items.map((item) => item.getBoundingClientRect().top);
+  items.forEach(cancelSlide);
   reorder();
-  items.forEach((item, index) => {
-    cancelSlides(item);
-    slide(item, before[index] - item.getBoundingClientRect().top);
-  });
+  items.forEach((item, index) => slide(item, before[index] - item.getBoundingClientRect().top));
 }
+
+interface Slide {
+  /** How far from its place the element starts, in pixels. */
+  distance: number;
+  /** When the slide started, from `performance.now()`. */
+  start: number;
+  onEnd?: () => void;
+}
+
+/** The elements sliding into their places, all moved by one loop. */
+const slides = new Map<HTMLElement, Slide>();
+
+/**
+ * Moves each sliding element for this frame. The slides set the translate
+ * themselves rather than through the Web Animations API, which Chrome runs on
+ * the compositor: there a slide can start a frame after the reorder it
+ * follows, leaving the items a row out of place for that frame.
+ */
+const sliding = scheduler(() => {
+  const now = performance.now();
+  for (const [element, { distance, start, onEnd }] of slides) {
+    const progress = Math.min((now - start) / SLIDE_DURATION, 1);
+    // Eases out: fast at first, then slowing into place.
+    element.style.translate = progress < 1 ? `0 ${distance * (1 - progress) ** 3}px` : '';
+    if (progress < 1) continue;
+    slides.delete(element);
+    onEnd?.();
+  }
+  if (slides.size > 0) sliding.schedule();
+}, nextFrame);
 
 /**
  * Slides `element` into its place from `distance` pixels below it (above if
- * negative). Returns the animation, or undefined when there's nothing to slide
- * or motion is reduced.
+ * negative), then calls `onEnd`, unless the slide is cancelled first.
  */
-function slide(element: HTMLElement, distance: number): Animation | undefined {
-  if (Math.abs(distance) < 0.5 || reducedMotion.matches) return undefined;
-  return element.animate([{ translate: `0 ${distance}px` }, { translate: '0 0' }], {
-    id: SLIDE_ID,
-    duration: SLIDE_DURATION,
-    easing: 'ease-out',
-  });
+function slide(element: HTMLElement, distance: number, onEnd?: () => void): void {
+  cancelSlide(element);
+  const still = Math.abs(distance) < 0.5 || reducedMotion.matches;
+  element.style.translate = still ? '' : `0 ${distance}px`;
+  if (still) return onEnd?.();
+  slides.set(element, { distance, start: performance.now(), onEnd });
+  sliding.schedule();
 }
 
-function cancelSlides(element: HTMLElement): void {
-  for (const animation of element.getAnimations()) if (animation.id === SLIDE_ID) animation.cancel();
+/** Stops `element`'s slide, leaving it drawn in its place. */
+function cancelSlide(element: HTMLElement): void {
+  if (slides.delete(element)) element.style.translate = '';
 }
