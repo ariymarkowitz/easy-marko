@@ -522,18 +522,20 @@ button,
   display: flex;
   align-items: center;
   border-radius: var(--radius);
+  /* Opaque, so items sliding past one another while one is dragged don't show through. */
+  background-color: var(--color-bg);
 }
 
 .document-item:hover,
 .document-item:has([aria-current]) {
-  background-color: var(--color-hover);
+  background-color: var(--color-bg-hover);
 }
 
 /* A document being dragged to a new place in the list (Sidebar.tsx). */
 .document-item.dragged {
   position: relative;
   z-index: 1;
-  background-color: var(--color-hover);
+  background-color: var(--color-bg-hover);
   box-shadow: var(--shadow-overlay);
 }
 

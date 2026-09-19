@@ -24,10 +24,19 @@
   --color-border-strong: light-dark(rgb(0 0 0 / 45%), rgb(255 255 255 / 35%));
   /* Tables in rendered Markdown. */
   --color-table: light-dark(#ececec, #302e36);
+  /* How far hovers darken (light theme) or lighten (dark theme) what they sit on. */
+  --hover-light: 5%;
+  --hover-dark: 6%;
   /* Translucent, so hovers darken/lighten whatever they sit on. */
-  --color-hover: light-dark(rgb(0 0 0 / 5%), rgb(255 255 255 / 6%));
-  /* An opaque hover for controls on the page, where a translucent one would show what's behind them. */
-  --color-bg-hover: light-dark(#eeeeee, #1f1f1f);
+  --color-hover: light-dark(rgb(0 0 0 / var(--hover-light)), rgb(255 255 255 / var(--hover-dark)));
+  /*
+   * An opaque hover for controls on the page, where a translucent one would
+   * show what's behind them: the same colour as --color-hover over --color-bg.
+   */
+  --color-bg-hover: light-dark(
+    color-mix(in srgb, var(--color-bg), #000 var(--hover-light)),
+    color-mix(in srgb, var(--color-bg), #fff var(--hover-dark))
+  );
   /* The source and preview panes, a shade lighter than the page. Also exported HTML's page. */
   --color-pane: light-dark(#ffffff, #1c1b1f);
   --color-text: light-dark(#2a2a2a, #e8e8e8);
